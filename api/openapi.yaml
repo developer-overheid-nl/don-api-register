@@ -1,0 +1,315 @@
+openapi: 3.1.0
+info:
+  description: API for retrieveing all the API's and repositories on Developer Overheid
+  license:
+    name: EUPL-1.2
+    url: https://joinup.ec.europa.eu/sites/default/files/inline-files/EUPL%20v1_2%20NL.txt
+  title: Developer Overheid API
+  version: dev
+servers:
+- url: /
+paths:
+  /apis:
+    get:
+      description: Get all the API's
+      operationId: listAPI
+      parameters:
+      - $ref: '#/components/parameters/PaginationPage'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/APIListItem'
+                type: array
+          description: List of API's
+          headers:
+            Link:
+              $ref: '#/components/headers/Link'
+              description: "Links to the previous, next, last or first pages"
+            API-Version:
+              $ref: '#/components/headers/API-Version'
+      summary: List API's
+      tags:
+      - API
+  /apis/{id}:
+    get:
+      description: Get a single API
+      operationId: getAPI
+      parameters:
+      - explode: false
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIListItem'
+          description: An API
+          headers:
+            API-Version:
+              $ref: '#/components/headers/API-Version'
+        "404":
+          $ref: '#/components/responses/ResourceNotFound'
+      summary: Get API
+      tags:
+      - API
+  /repositories:
+    get:
+      description: Get all the repositories
+      operationId: listRepository
+      parameters:
+      - $ref: '#/components/parameters/PaginationPage'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/RepositoryListItem'
+                type: array
+          description: List of Repositories
+          headers:
+            Link:
+              $ref: '#/components/headers/Link'
+              description: "Links to the previous, next, last or first pages"
+            API-Version:
+              $ref: '#/components/headers/API-Version'
+      summary: List repositories
+      tags:
+      - Repository
+components:
+  headers:
+    API-Version:
+      description: Version of this API
+      explode: false
+      schema:
+        example: 1.0.0
+        externalDocs:
+          description: API Design Rule API-57
+          url: https://gitdocumentatie.logius.nl/publicatie/api/adr/1.0/#api-57
+      style: simple
+    Link:
+      description: HTTP Link Header
+      explode: false
+      schema:
+        example: "<https://example.com/?page=2; rel=\"prev\", <https://example.com/?page=3>;\
+          \ rel=\"next\","
+        externalDocs:
+          description: W3C reference
+          url: https://www.w3.org/wiki/LinkHeader
+      style: simple
+  parameters:
+    PaginationPage:
+      description: A page number within the paginated result set.
+      explode: true
+      in: query
+      name: page
+      required: false
+      schema:
+        type: integer
+      style: form
+  responses:
+    ResourceNotFound:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/inline_object'
+      description: Resource does not exist
+      headers:
+        API-Version:
+          $ref: '#/components/headers/API-Version'
+  schemas:
+    APIListItem:
+      example:
+        is_reference_implementation: true
+        api_type: odata
+        environments:
+        - api_url: https://openapi-generator.tech
+          name: production
+          specification_url: https://openapi-generator.tech
+          documentation_url: https://openapi-generator.tech
+        - api_url: https://openapi-generator.tech
+          name: production
+          specification_url: https://openapi-generator.tech
+          documentation_url: https://openapi-generator.tech
+        service_name: service_name
+        organization:
+          name: name
+          ooid: 0
+        contact:
+          phone: phone
+          email: email
+          url: https://openapi-generator.tech
+        description: description
+        id: id
+        terms_of_use:
+          government_only: true
+          uptime_guarantee: 6.027456183070403
+          support_response_time: 1
+          pay_per_use: true
+        api_authentication: api_key
+      properties:
+        id:
+          type: string
+        service_name:
+          type: string
+        description:
+          type: string
+        organization:
+          $ref: '#/components/schemas/APIListItem_organization'
+        api_type:
+          enum:
+          - odata
+          - rest_json
+          - rest_xml
+          - soap_xml
+          - grpc
+          - graphql
+          - sparql
+          - unknown
+          - wfs
+          - wms
+          type: string
+        api_authentication:
+          enum:
+          - api_key
+          - ip_allow_list
+          - none
+          - mutual_tls
+          - unknown
+          type: string
+        environments:
+          items:
+            $ref: '#/components/schemas/APIListItem_environments_inner'
+          type: array
+        contact:
+          $ref: '#/components/schemas/APIListItem_contact'
+        is_reference_implementation:
+          type: boolean
+        terms_of_use:
+          $ref: '#/components/schemas/APIListItem_terms_of_use'
+    RepositoryListItem:
+      example:
+        fork_count: 6
+        owner_name: owner_name
+        last_change: 2000-01-23T04:56:07.000+00:00
+        merge_request_open_count: 5
+        description: description
+        source: github
+        stars: 0
+        issue_open_count: 1
+        url: https://openapi-generator.tech
+        archived: true
+        avatar_url: https://openapi-generator.tech
+        name: name
+        programming_languages:
+        - programming_languages
+        - programming_languages
+      properties:
+        source:
+          enum:
+          - github
+          - gitlab
+          type: string
+        owner_name:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        last_change:
+          format: date-time
+          type: string
+        url:
+          format: uri
+          type: string
+        avatar_url:
+          format: uri
+          type: string
+        stars:
+          type: integer
+        fork_count:
+          type: integer
+        issue_open_count:
+          type: integer
+        merge_request_open_count:
+          type: integer
+        archived:
+          type: boolean
+        programming_languages:
+          items:
+            type: string
+          type: array
+    APIListItem_organization:
+      example:
+        name: name
+        ooid: 0
+      properties:
+        ooid:
+          description: Organisaties overheid ID
+          type: integer
+        name:
+          type: string
+    APIListItem_environments_inner:
+      example:
+        api_url: https://openapi-generator.tech
+        name: production
+        specification_url: https://openapi-generator.tech
+        documentation_url: https://openapi-generator.tech
+      properties:
+        name:
+          enum:
+          - production
+          - acceptance
+          - demo
+          type: string
+        api_url:
+          format: uri
+          type: string
+        specification_url:
+          format: uri
+          type: string
+        documentation_url:
+          format: uri
+          type: string
+    APIListItem_contact:
+      example:
+        phone: phone
+        email: email
+        url: https://openapi-generator.tech
+      properties:
+        email:
+          type: string
+        phone:
+          type: string
+        url:
+          format: uri
+          type: string
+    APIListItem_terms_of_use:
+      example:
+        government_only: true
+        uptime_guarantee: 6.027456183070403
+        support_response_time: 1
+        pay_per_use: true
+      properties:
+        government_only:
+          type: boolean
+        pay_per_use:
+          type: boolean
+        uptime_guarantee:
+          type: number
+        support_response_time:
+          type: integer
+    inline_object:
+      example:
+        detail: detail
+      properties:
+        detail:
+          type: string

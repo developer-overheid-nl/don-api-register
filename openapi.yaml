@@ -1,0 +1,247 @@
+openapi: "3.1.0"
+info:
+  title: "Developer Overheid API"
+  description: "API for retrieveing all the API's and repositories on Developer Overheid"
+  license:
+    name: EUPL-1.2
+    url: https://joinup.ec.europa.eu/sites/default/files/inline-files/EUPL%20v1_2%20NL.txt
+  version: "dev"
+servers:
+  - url: "/"
+paths:
+  /apis:
+    get:
+      summary: List API's
+      description: Get all the API's
+      operationId: listAPI
+      tags:
+        - API
+      parameters:
+        - $ref: "#/components/parameters/PaginationPage"
+      responses:
+        "200":
+          description: "List of API's"
+          headers:
+            Link:
+              $ref: "#/components/headers/Link"
+              description: "Links to the previous, next, last or first pages"
+            API-Version:
+              $ref: "#/components/headers/API-Version"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/APIListItem"
+  /apis/{id}:
+    get:
+      summary: Get API
+      description: Get a single API
+      operationId: getAPI
+      tags:
+        - API
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "An API"
+          headers:
+            API-Version:
+              $ref: "#/components/headers/API-Version"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIListItem"
+        "404":
+          $ref: "#/components/responses/ResourceNotFound"
+  /repositories:
+    get:
+      summary: List repositories
+      description: Get all the repositories
+      operationId: listRepository
+      tags:
+        - Repository
+      parameters:
+        - $ref: "#/components/parameters/PaginationPage"
+      responses:
+        "200":
+          description: "List of Repositories"
+          headers:
+            Link:
+              $ref: "#/components/headers/Link"
+              description: "Links to the previous, next, last or first pages"
+            API-Version:
+              $ref: "#/components/headers/API-Version"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RepositoryListItem"
+
+components:
+  schemas:
+    APIListItem:
+      type: object
+      properties:
+        id:
+          type: string
+        service_name:
+          type: string
+        description:
+          type: string
+        organization:
+          type: object
+          properties:
+            ooid:
+              type: integer
+              description: Organisaties overheid ID
+            name:
+              type: string
+        api_type:
+          type: string
+          enum:
+            - odata
+            - rest_json
+            - rest_xml
+            - soap_xml
+            - grpc
+            - graphql
+            - sparql
+            - unknown
+            - wfs
+            - wms
+        api_authentication:
+          type: string
+          enum:
+            - api_key
+            - ip_allow_list
+            - none
+            - mutual_tls
+            - unknown
+        environments:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                enum:
+                  - production
+                  - acceptance
+                  - demo
+              api_url:
+                type: string
+                format: uri
+              specification_url:
+                type: string
+                format: uri
+              documentation_url:
+                type: string
+                format: uri
+        contact:
+          type: object
+          properties:
+            email:
+              type: string
+            phone:
+              type: string
+            url:
+              type: string
+              format: uri
+        is_reference_implementation:
+          type: boolean
+        terms_of_use:
+          type: object
+          properties:
+            government_only:
+              type: boolean
+            pay_per_use:
+              type: boolean
+            uptime_guarantee:
+              type: number
+            support_response_time:
+              type: integer
+    RepositoryListItem:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - github
+            - gitlab
+        owner_name:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        last_change:
+          type: string
+          format: date-time
+        url:
+          type: string
+          format: uri
+        avatar_url:
+          type: string
+          format: uri
+        stars:
+          type: integer
+        fork_count:
+          type: integer
+        issue_open_count:
+          type: integer
+        merge_request_open_count:
+          type: integer
+        archived:
+          type: boolean
+        programming_languages:
+          type: array
+          items:
+            type: string
+
+  responses:
+    ResourceNotFound:
+      description: Resource does not exist
+      headers:
+        API-Version:
+          $ref: "#/components/headers/API-Version"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+
+  parameters:
+    PaginationPage:
+      name: page
+      in: query
+      description: A page number within the paginated result set.
+      schema:
+        type: integer
+
+  headers:
+    API-Version:
+      description: Version of this API
+      schema:
+        type: string
+        example: "1.0.0"
+        externalDocs:
+          description: API Design Rule API-57
+          url: https://gitdocumentatie.logius.nl/publicatie/api/adr/1.0/#api-57
+    Link:
+      description: HTTP Link Header
+      schema:
+        type: string
+        example: <https://example.com/?page=2; rel="prev", <https://example.com/?page=3>; rel="next",
+        externalDocs:
+          description: W3C reference
+          url: https://www.w3.org/wiki/LinkHeader
+
+security: []

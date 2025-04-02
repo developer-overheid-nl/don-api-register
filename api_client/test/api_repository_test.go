@@ -11,20 +11,21 @@ package don_api_register
 
 import (
 	"context"
+	"testing"
+
+	don_api_register "github.com/developer-overheid-nl/don-api-register"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
-	openapiclient "github.com/GIT_USER_ID/GIT_REPO_ID"
 )
 
 func Test_don_api_register_RepositoryAPIService(t *testing.T) {
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
+	configuration := don_api_register.NewConfiguration()
+	apiClient := don_api_register.NewAPIClient(configuration)
 
 	t.Run("Test RepositoryAPIService ListRepository", func(t *testing.T) {
 
-		t.Skip("skip test")  // remove to run test
+		t.Skip("skip test") // remove to run test
 
 		resp, httpRes, err := apiClient.RepositoryAPI.ListRepository(context.Background()).Execute()
 

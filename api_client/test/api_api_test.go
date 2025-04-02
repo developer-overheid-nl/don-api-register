@@ -13,15 +13,16 @@ import (
 	"context"
 	"testing"
 
-	openapiclient "github.com/developer-overheid-nl/don-api-register"
+	don_api_register "github.com/developer-overheid-nl/don-api-register"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_don_api_register_APIAPIService(t *testing.T) {
 
-	configuration := openapiclient.NewConfiguration()
-	apiClient := openapiclient.NewAPIClient(configuration)
+	configuration := don_api_register.NewConfiguration()
+	apiClient := don_api_register.NewAPIClient(configuration)
 
 	t.Run("Test APIAPIService GetAPI", func(t *testing.T) {
 

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	don_api_register "github.com/developer-overheid-nl/don-api-register/api_client"
+	don_api_register "github.com/developer-overheid-nl/don-api-register/pkg/api_client"
 )
 
 func main() {

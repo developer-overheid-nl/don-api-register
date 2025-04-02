@@ -1,4 +1,4 @@
-module github.com/developer-overheid-nl/don-api-register
+module github.com/developer-overheid-nl/don-api-register/api_client
 
 go 1.23.0
 

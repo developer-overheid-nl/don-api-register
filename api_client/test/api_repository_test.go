@@ -13,7 +13,7 @@ import (
 	"context"
 	"testing"
 
-	don_api_register "github.com/developer-overheid-nl/don-api-register"
+	don_api_register "github.com/developer-overheid-nl/don-api-register/api_client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

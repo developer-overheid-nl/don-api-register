@@ -1,135 +1,134 @@
 openapi: 3.1.0
 info:
-  description: API for retrieveing all the API's and repositories on Developer Overheid
-  license:
-    name: EUPL-1.2
-    url: https://joinup.ec.europa.eu/sites/default/files/inline-files/EUPL%20v1_2%20NL.txt
-  title: Developer Overheid API
-  version: dev
+  contact:
+    email: developer.overheid@geonovum.nl
+    name: Team developer.overheid.nl
+    url: https://apis.developer.overheid.nl
+  description: API van het API register (apis.developer.overheid.nl)
+  title: API register API v1
+  version: 1.0.0
 servers:
-- url: /
+- url: https://api.developer.overheid.nl/apis/v1
+tags:
+- description: Alle API operaties die horen bij API's.
+  name: API's
 paths:
   /apis:
     get:
-      description: Get all the API's
-      operationId: listAPI
-      parameters:
-      - $ref: '#/components/parameters/PaginationPage'
+      description: Alle API's ophalen
+      operationId: listApis
       responses:
         "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/APIListItem'
+                  $ref: '#/components/schemas/Api'
                 type: array
-          description: List of API's
+          description: OK
           headers:
-            Link:
-              $ref: '#/components/headers/Link'
-              description: "Links to the previous, next, last or first pages"
             API-Version:
-              $ref: '#/components/headers/API-Version'
-      summary: List API's
+              description: Semver of this API
+              explode: false
+              schema:
+                example: 1.0.0
+                externalDocs:
+                  description: " /core/version-header: Return the full version number\
+                    \ in a response header"
+                  url: https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header
+                pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\\
+                  d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\
+                  +([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                type: string
+              style: simple
+            Link:
+              description: "Links to the previous, next, last or first pages"
+              explode: false
+              schema:
+                example: "<https://developer.overheid.nl/api/v1/apis?page=2>; rel='prev',\
+                  \ <https://developer.overheid.nl/api/v1/apis?page=3>; rel='next'"
+                externalDocs:
+                  description: W3C reference
+                  url: https://www.w3.org/wiki/LinkHeader
+                type: string
+              style: simple
+      summary: Alle API's ophalen
       tags:
-      - API
+      - API's
   /apis/{id}:
     get:
-      description: Get a single API
-      operationId: getAPI
+      description: API ophalen
+      operationId: retrieveApi
       parameters:
-      - explode: false
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-        style: simple
+      - $ref: '#/components/parameters/id'
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/APIListItem'
-          description: An API
+                $ref: '#/components/schemas/Api'
+          description: OK
           headers:
             API-Version:
-              $ref: '#/components/headers/API-Version'
+              description: Semver of this API
+              explode: false
+              schema:
+                example: 1.0.0
+                externalDocs:
+                  description: " /core/version-header: Return the full version number\
+                    \ in a response header"
+                  url: https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header
+                pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\\
+                  d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\
+                  +([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                type: string
+              style: simple
         "404":
-          $ref: '#/components/responses/ResourceNotFound'
-      summary: Get API
-      tags:
-      - API
-  /repositories:
-    get:
-      description: Get all the repositories
-      operationId: listRepository
-      parameters:
-      - $ref: '#/components/parameters/PaginationPage'
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                items:
-                  $ref: '#/components/schemas/RepositoryListItem'
-                type: array
-          description: List of Repositories
+          description: Resource does not exist
           headers:
-            Link:
-              $ref: '#/components/headers/Link'
-              description: "Links to the previous, next, last or first pages"
             API-Version:
-              $ref: '#/components/headers/API-Version'
-      summary: List repositories
+              description: Semver of this API
+              explode: false
+              schema:
+                example: 1.0.0
+                externalDocs:
+                  description: " /core/version-header: Return the full version number\
+                    \ in a response header"
+                  url: https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header
+                pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\\
+                  d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\
+                  +([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                type: string
+              style: simple
+      summary: API ophalen
       tags:
-      - Repository
+      - API's
+    parameters:
+    - $ref: '#/components/parameters/id'
 components:
-  headers:
-    API-Version:
-      description: Version of this API
-      explode: false
-      schema:
-        example: 1.0.0
-        externalDocs:
-          description: API Design Rule API-57
-          url: https://gitdocumentatie.logius.nl/publicatie/api/adr/1.0/#api-57
-      style: simple
-    Link:
-      description: HTTP Link Header
-      explode: false
-      schema:
-        example: "<https://example.com/?page=2; rel=\"prev\", <https://example.com/?page=3>;\
-          \ rel=\"next\","
-        externalDocs:
-          description: W3C reference
-          url: https://www.w3.org/wiki/LinkHeader
-      style: simple
   parameters:
+    id:
+      description: id
+      explode: false
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+      style: simple
     PaginationPage:
       description: A page number within the paginated result set.
       explode: true
       in: query
       name: page
       required: false
-      schema:
-        type: integer
+      schema: {}
       style: form
-  responses:
-    ResourceNotFound:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/inline_object'
-      description: Resource does not exist
-      headers:
-        API-Version:
-          $ref: '#/components/headers/API-Version'
   schemas:
-    APIListItem:
+    Api:
       example:
-        is_reference_implementation: true
-        api_type: odata
+        docsUri: docsUri
+        auth: auth
         environments:
         - api_url: https://openapi-generator.tech
           name: production
@@ -139,125 +138,52 @@ components:
           name: production
           specification_url: https://openapi-generator.tech
           documentation_url: https://openapi-generator.tech
-        service_name: service_name
-        organization:
-          name: name
-          ooid: 0
-        contact:
-          phone: phone
-          email: email
-          url: https://openapi-generator.tech
+        repositoryUri: repositoryUri
         description: description
-        id: id
-        terms_of_use:
-          government_only: true
-          uptime_guarantee: 6.027456183070403
-          support_response_time: 1
-          pay_per_use: true
-        api_authentication: api_key
+        organisation:
+          label: label
+          uri: uri
+        adrScore: adrScore
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        type: type
+        title: title
+        oasUri: oasUri
       properties:
         id:
+          format: uuid
           type: string
-        service_name:
+        type:
+          type: string
+        oasUri:
+          type: string
+        docsUri:
+          type: string
+        title:
           type: string
         description:
           type: string
-        organization:
-          $ref: '#/components/schemas/APIListItem_organization'
-        api_type:
-          enum:
-          - odata
-          - rest_json
-          - rest_xml
-          - soap_xml
-          - grpc
-          - graphql
-          - sparql
-          - unknown
-          - wfs
-          - wms
+        auth:
           type: string
-        api_authentication:
-          enum:
-          - api_key
-          - ip_allow_list
-          - none
-          - mutual_tls
-          - unknown
+        adrScore:
           type: string
+        repositoryUri:
+          type: string
+        organisation:
+          $ref: '#/components/schemas/Api_organisation'
         environments:
           items:
-            $ref: '#/components/schemas/APIListItem_environments_inner'
+            $ref: '#/components/schemas/Api_environments_inner'
           type: array
-        contact:
-          $ref: '#/components/schemas/APIListItem_contact'
-        is_reference_implementation:
-          type: boolean
-        terms_of_use:
-          $ref: '#/components/schemas/APIListItem_terms_of_use'
-    RepositoryListItem:
+    Api_organisation:
       example:
-        fork_count: 6
-        owner_name: owner_name
-        last_change: 2000-01-23T04:56:07.000+00:00
-        merge_request_open_count: 5
-        description: description
-        source: github
-        stars: 0
-        issue_open_count: 1
-        url: https://openapi-generator.tech
-        archived: true
-        avatar_url: https://openapi-generator.tech
-        name: name
-        programming_languages:
-        - programming_languages
-        - programming_languages
+        label: label
+        uri: uri
       properties:
-        source:
-          enum:
-          - github
-          - gitlab
+        label:
           type: string
-        owner_name:
+        uri:
           type: string
-        name:
-          type: string
-        description:
-          type: string
-        last_change:
-          format: date-time
-          type: string
-        url:
-          format: uri
-          type: string
-        avatar_url:
-          format: uri
-          type: string
-        stars:
-          type: integer
-        fork_count:
-          type: integer
-        issue_open_count:
-          type: integer
-        merge_request_open_count:
-          type: integer
-        archived:
-          type: boolean
-        programming_languages:
-          items:
-            type: string
-          type: array
-    APIListItem_organization:
-      example:
-        name: name
-        ooid: 0
-      properties:
-        ooid:
-          description: Organisaties overheid ID
-          type: integer
-        name:
-          type: string
-    APIListItem_environments_inner:
+    Api_environments_inner:
       example:
         api_url: https://openapi-generator.tech
         name: production
@@ -278,38 +204,4 @@ components:
           type: string
         documentation_url:
           format: uri
-          type: string
-    APIListItem_contact:
-      example:
-        phone: phone
-        email: email
-        url: https://openapi-generator.tech
-      properties:
-        email:
-          type: string
-        phone:
-          type: string
-        url:
-          format: uri
-          type: string
-    APIListItem_terms_of_use:
-      example:
-        government_only: true
-        uptime_guarantee: 6.027456183070403
-        support_response_time: 1
-        pay_per_use: true
-      properties:
-        government_only:
-          type: boolean
-        pay_per_use:
-          type: boolean
-        uptime_guarantee:
-          type: number
-        support_response_time:
-          type: integer
-    inline_object:
-      example:
-        detail: detail
-      properties:
-        detail:
           type: string

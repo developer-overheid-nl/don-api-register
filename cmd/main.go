@@ -1,14 +1,17 @@
 package main
 
 import (
-	"fmt"
+	"log"
+	"net/http"
 
-	don_api_register "github.com/developer-overheid-nl/don-api-register/pkg/api_client"
+	api "github.com/developer-overheid-nl/don-api-register/pkg/api_client"
 )
 
 func main() {
-	cfg := don_api_register.NewConfiguration()
-	client := don_api_register.NewAPIClient(cfg)
+	APIsAPIService := api.NewAPIsAPIService()
+	APIsAPIController := api.NewAPIsAPIController(APIsAPIService)
 
-	fmt.Println("Client ready:", client)
+	router := api.NewRouter(APIsAPIController)
+
+	log.Fatal(http.ListenAndServe(":8080", router))
 }

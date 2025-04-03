@@ -9,7 +9,7 @@
  * Contact: developer.overheid@geonovum.nl
  */
 
-package openapi
+package api_client
 
 // ImplResponse defines an implementation response with error code and the associated body
 type ImplResponse struct {

@@ -9,7 +9,7 @@
  * Contact: developer.overheid@geonovum.nl
  */
 
-package openapi
+package api_client
 
 import (
 	"net/http"

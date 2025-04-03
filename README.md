@@ -22,15 +22,5 @@ For more information, please visit [https://apis.developer.overheid.nl](https://
 To run the server, follow these simple steps:
 
 ```
-go run main.go
-```
-
-To run the server in a docker container
-```
-docker build --network=host -t openapi .
-```
-
-Once image is built use
-```
-docker run --rm -it openapi
+go run cmd/main.go
 ```

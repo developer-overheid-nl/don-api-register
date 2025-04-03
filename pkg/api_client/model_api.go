@@ -10,7 +10,7 @@
 package openapi
 
 type Api struct {
-	Id int `json:"id,omitempty"`
+	Id string `json:"id,omitempty"`
 
 	Type string `json:"type,omitempty"`
 
@@ -24,7 +24,7 @@ type Api struct {
 
 	Auth string `json:"auth,omitempty"`
 
-	AdrScore int `json:"adrScore,omitempty"`
+	AdrScore string `json:"adrScore,omitempty"`
 
 	RepositoryUri string `json:"repositoryUri,omitempty"`
 

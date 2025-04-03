@@ -9,14 +9,6 @@
     "auth": "string",
     "adrScore": "string",
     "repositoryUri": "string",
-    "organisation": { "label": "string", "uri": "string" },
-    "environments": [
-      {
-        "name": "production",
-        "api_url": "http://example.com",
-        "specification_url": "http://example.com",
-        "documentation_url": "http://example.com"
-      }
-    ]
+    "organisation": { "label": "string", "uri": "string" }
   }
 ]

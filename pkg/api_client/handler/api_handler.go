@@ -97,7 +97,7 @@ func (c *APIsAPIController) CreateApiFromOas(w http.ResponseWriter, r *http.Requ
 
 func (c *APIsAPIController) ServeOASFile(w http.ResponseWriter, r *http.Request) {
 	log.Println("[DEBUG] Serving openapi.json from api/openapi.json")
-	http.ServeFile(w, r, "/api/openapi.json")
+	http.ServeFile(w, r, "./api/openapi.json")
 }
 
 func (c *APIsAPIController) Routes() api_client.Routes {

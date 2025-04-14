@@ -53,23 +53,28 @@ func NewRouter(apiVersion string, routers ...Router) *mux.Router {
 
 type statusTrackingResponseWriter struct {
 	http.ResponseWriter
-	status int
+	status     int
+	apiVersion string
+	headerSent bool
 }
 
 func (w *statusTrackingResponseWriter) WriteHeader(code int) {
+	if !w.headerSent && code >= 200 && code < 300 {
+		w.Header().Set("API-Version", w.apiVersion)
+		w.headerSent = true
+	}
 	w.status = code
 	w.ResponseWriter.WriteHeader(code)
 }
 
 func addAPIVersionHeader(version string, next http.Handler) http.Handler {
-	const APIVersionHeader = "API-Version"
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rec := &statusTrackingResponseWriter{ResponseWriter: w, status: 200}
-		next.ServeHTTP(rec, r)
-
-		if rec.status >= 200 && rec.status < 300 {
-			w.Header().Set(APIVersionHeader, version)
+		rec := &statusTrackingResponseWriter{
+			ResponseWriter: w,
+			status:         http.StatusOK,
+			apiVersion:     version,
 		}
+		next.ServeHTTP(rec, r)
 	})
 }
 

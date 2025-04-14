@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	version, err := api.LoadOASVersion("/Users/matthijshovestad/workspace/geonovum/don-api-register/cmd/openapi.json")
+	version, err := api.LoadOASVersion("./api/openapi.json")
 	if err != nil {
 		log.Fatalf("failed to load OAS version: %v", err)
 	}

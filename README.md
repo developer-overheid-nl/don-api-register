@@ -18,9 +18,10 @@ To see how to make this your own, look here:
 For more information, please visit [https://apis.developer.overheid.nl](https://apis.developer.overheid.nl)
 
 
-### Running the server
+### Running the server local
 To run the server, follow these simple steps:
 
 ```
+docker-compose up -d
 go run cmd/main.go
 ```

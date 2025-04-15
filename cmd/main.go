@@ -15,10 +15,7 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Geen .env bestand gevonden, overslaan...")
-	}
+	_ = godotenv.Load()
 
 	version, err := api.LoadOASVersion("./api/openapi.json")
 	if err != nil {
@@ -30,7 +27,11 @@ func main() {
 		dbcon = "postgres://don:don@localhost:5432/don_v1?sslmode=disable"
 	}
 
-	db, _ := database.Connect(dbcon)
+	db, err := database.Connect(dbcon)
+	if err != nil {
+		log.Printf("[WARN] Geen databaseverbinding: %v", err)
+		log.Println("[INFO] API wordt gestart zonder databasefunctionaliteit")
+	}
 	apiRepo := repositories.NewApiRepository(db)
 	APIsAPIService := services.NewAPIsAPIService(apiRepo)
 	APIsAPIController := handler.NewAPIsAPIController(APIsAPIService)
@@ -38,9 +39,9 @@ func main() {
 	// Start server
 	router := api.NewRouter(version, APIsAPIController)
 
-	log.Println("Server is running on port 8080")
+	log.Println("Server is running on port 1337")
 	for name, route := range APIsAPIController.Routes() {
-		log.Printf("%s: http://localhost:8080%s [%s]", name, route.Pattern, route.Method)
+		log.Printf("%s: http://localhost:1337%s [%s]", name, route.Pattern, route.Method)
 	}
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":1337", router))
 }

@@ -55,7 +55,7 @@ func (c *APIsAPIController) RetrieveApi(w http.ResponseWriter, r *http.Request) 
 	params := mux.Vars(r)
 	idParam := params["id"]
 	if idParam == "" {
-		c.errorHandler(w, r, &api_client.RequiredError{"id"}, nil)
+		c.errorHandler(w, r, &api_client.RequiredError{Field: "id"}, nil)
 		return
 	}
 

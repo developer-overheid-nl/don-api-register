@@ -41,7 +41,7 @@ func main() {
 
 	log.Println("Server is running on port 1337")
 	for name, route := range APIsAPIController.Routes() {
-		log.Printf("%s: http://localhost:1337%s [%s]", name, route.Pattern, route.Method)
+		log.Printf("%s: :1337%s [%s]", name, route.Pattern, route.Method)
 	}
 	log.Fatal(http.ListenAndServe(":1337", router))
 }

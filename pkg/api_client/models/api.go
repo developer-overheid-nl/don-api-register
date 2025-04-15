@@ -10,25 +10,21 @@
 package models
 
 type Api struct {
-	Id string `json:"id,omitempty"`
+	Id            string           `gorm:"primaryKey"`
+	Type          string           `json:"type,omitempty"`
+	OasUri        string           `json:"oasUri,omitempty"`
+	DocsUri       string           `json:"docsUri,omitempty"`
+	Title         string           `json:"title,omitempty"`
+	Description   string           `json:"description,omitempty"`
+	Auth          string           `json:"auth,omitempty"`
+	AdrScore      *string          `json:"adrScore,omitempty"`
+	RepositoryUri *string          `json:"repositoryUri,omitempty"`
+	Organisation  *ApiOrganisation `json:"organisation" gorm:"embedded"`
+}
 
-	Type string `json:"type,omitempty"`
-
-	OasUri string `json:"oasUri,omitempty"`
-
-	DocsUri string `json:"docsUri,omitempty"`
-
-	Title string `json:"title,omitempty"`
-
-	Description string `json:"description,omitempty"`
-
-	Auth string `json:"auth,omitempty"`
-
-	AdrScore *string `json:"adrScore,omitempty"`
-
-	RepositoryUri *string `json:"repositoryUri,omitempty"`
-
-	Organisation *ApiOrganisation `json:"organisation,omitempty"`
+type ApiOrganisation struct {
+	Label string `json:"label,omitempty"`
+	Uri   string `json:"uri,omitempty"`
 }
 
 type PaginatedResponse struct {

@@ -1,19 +1,22 @@
 package database
 
 import (
-	"database/sql"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"log"
 
 	_ "github.com/lib/pq"
 )
 
-func Connect(connStr string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", connStr)
+func Connect(connStr string) (*gorm.DB, error) {
+	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
-		return nil, err
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	if err = db.Ping(); err != nil {
-		return nil, err
+	if err := db.AutoMigrate(&models.Api{}); err != nil {
+		log.Fatalf("Migration failed: %v", err)
 	}
 
 	return db, nil

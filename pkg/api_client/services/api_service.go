@@ -2,12 +2,11 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
-	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/serializers"
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/google/uuid"
 	"io"
 	"log"
 	"net/http"
@@ -25,34 +24,26 @@ func NewAPIsAPIService(repo repositories.ApiRepository) *APIsAPIService {
 }
 
 func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Api, error) {
-	raw, err := s.repo.GetApiByID(ctx, id)
-	if err != nil || raw == nil {
+	api, err := s.repo.GetApiByID(ctx, id)
+	if err != nil || api == nil {
 		return nil, err
 	}
-	api := serializers.SerializeApi(*raw)
-	return &api, nil
+	return api, nil
 }
 
 func (s *APIsAPIService) ListApis(ctx context.Context, page, perPage int) (models.PaginatedResponse, error) {
-	rawList, pagination, err := s.repo.GetApis(ctx, page, perPage)
+	apis, pagination, err := s.repo.GetApis(ctx, page, perPage)
 	if err != nil {
 		return models.PaginatedResponse{}, err
 	}
 
-	var result []models.Api
-	for _, raw := range rawList {
-		result = append(result, serializers.SerializeApi(raw))
-	}
-
 	return models.PaginatedResponse{
 		Pagination: pagination,
-		Results:    result,
+		Results:    apis,
 	}, nil
 }
 
 func (s *APIsAPIService) CreateApiFromOas(ctx context.Context, oasUrl string) (*models.Api, error) {
-	log.Printf("[DEBUG] CreateApiFromOas gestart met URL: %s", oasUrl)
-
 	parsedUrl, err := url.Parse(oasUrl)
 	if err != nil {
 		return nil, fmt.Errorf("ongeldige URL: %w", err)
@@ -83,11 +74,11 @@ func (s *APIsAPIService) CreateApiFromOas(ctx context.Context, oasUrl string) (*
 
 	api := BuildApiFromSpec(spec, oasUrl)
 
-	if b, err := json.MarshalIndent(api, "", "  "); err == nil {
-		log.Printf("[DEBUG] Gebouwd Api object:\n%s", b)
-	} else {
-		log.Printf("[ERROR] Kan Api object niet serializen: %v", err)
+	if err := s.repo.Save(api); err != nil {
+		log.Printf("[ERROR] Kan API niet opslaan: %v", err)
+		return nil, fmt.Errorf("kan API niet opslaan: %w", err)
 	}
+
 	return api, nil
 }
 
@@ -102,7 +93,7 @@ func CorsGet(c *http.Client, u string, corsurl string) (*http.Response, error) {
 
 func BuildApiFromSpec(spec *openapi3.T, oasUrl string) *models.Api {
 	api := &models.Api{}
-
+	api.Id = uuid.New().String()
 	if spec.Info != nil {
 		api.Title = spec.Info.Title
 		api.Description = spec.Info.Description

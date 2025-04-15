@@ -50,7 +50,6 @@ jobs:
         with:
           context: .
           push: true
-          target: serve
           tags: |
             ghcr.io/developer-overheid-nl/don-api:latest
             ghcr.io/developer-overheid-nl/don-api:${{ github.sha }}

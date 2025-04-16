@@ -10,5 +10,5 @@
 package models
 
 type CreateApiFromOasRequest struct {
-	OasUrl string `json:"oasUrl"`
+	OasUri string `json:"oasUri"`
 }

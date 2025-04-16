@@ -50,6 +50,142 @@
             }
           }
         }
+      },
+      "post": {
+        "operationId": "createApiFromOas",
+        "summary": "Registreer een nieuwe API met een OpenAPI URL",
+        "description": "Valideer en sla een nieuwe API op via een OpenAPI-bestand (OAS) dat via een URL wordt aangeleverd.",
+        "tags": [
+          "API's"
+        ],
+        "requestBody": {
+          "description": "Informatie over het te registreren OAS-bestand",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "oasUri"
+                ],
+                "properties": {
+                  "oasUri": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Publiek toegankelijke URL naar een OpenAPI 3.x-bestand"
+                  },
+                  "docsUri": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL naar de documentatie van de API"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Titel van de API"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Beschrijving van de API"
+                  },
+                  "auth": {
+                    "type": "string",
+                    "description": "Authenticatiemethode die door de API wordt gebruikt"
+                  },
+                  "repositoryUri": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL naar de repository van de API"
+                  },
+                  "contact_name": {
+                    "type": "string",
+                    "description": "Naam van de contactpersoon voor de API"
+                  },
+                  "contact_email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "E-mailadres van de contactpersoon voor de API"
+                  },
+                  "contact_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL naar de contactpagina van de API"
+                  },
+                  "servers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "description": {
+                          "type": "string",
+                          "description": "Beschrijving van de server"
+                        },
+                        "uri": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "URL van de server"
+                        }
+                      }
+                    },
+                    "description": "Lijst van servers die beschikbaar zijn voor de API"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "De API is succesvol geregistreerd",
+            "headers": {
+              "API-Version": {
+                "$ref": "https://static.developer.overheid.nl/adr/components.yaml#/headers/API-Version"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Api"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fout in aanvraag of ongeldige OAS URL. De volgende verplichte gegevens ontbreken:",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "missingProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "description": "Naam van de ontbrekende eigenschap"
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Gedetailleerde foutmelding"
+                    }
+                  },
+                  "required": [
+                    "missingProperties",
+                    "message"
+                  ]
+                },
+                "example": {
+                  "missingProperties": [
+                    "title",
+                    "description"
+                  ],
+                  "message": "De volgende verplichte gegevens ontbreken: title, description"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "OAS-bestand kon niet gevalideerd worden"
+          }
+        }
       }
     },
     "/api/{id}": {
@@ -124,60 +260,6 @@
           }
         }
       }
-    },
-    "/oas": {
-      "post": {
-        "operationId": "createApiFromOas",
-        "summary": "Registreer een nieuwe API met een OpenAPI URL",
-        "description": "Valideer en sla een nieuwe API op via een OpenAPI-bestand (OAS) dat via een URL wordt aangeleverd.",
-        "tags": [
-          "API's"
-        ],
-        "requestBody": {
-          "description": "Informatie over het te registreren OAS-bestand",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "oasUrl"
-                ],
-                "properties": {
-                  "oasUrl": {
-                    "type": "string",
-                    "format": "uri",
-                    "description": "Publiek toegankelijke URL naar een OpenAPI 3.x-bestand"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "De API is succesvol geregistreerd",
-            "headers": {
-              "API-Version": {
-                "$ref": "https://static.developer.overheid.nl/adr/components.yaml#/headers/API-Version"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Api"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Fout in aanvraag of ongeldige OAS URL"
-          },
-          "422": {
-            "description": "OAS-bestand kon niet gevalideerd worden"
-          }
-        }
-      }
     }
   },
   "components": {
@@ -187,9 +269,6 @@
           "id": {
             "type": "string",
             "format": "uuid"
-          },
-          "type": {
-            "type": "string"
           },
           "oasUri": {
             "type": "string"
@@ -212,10 +291,31 @@
           "repositoryUri": {
             "type": "string"
           },
+          "contact_name": {
+            "type": "string"
+          },
+          "contact_email": {
+            "type": "string"
+          },
+          "contact_url": {
+            "type": "string"
+          },
           "organisation": {
             "type": "object",
             "properties": {
               "label": {
+                "type": "string"
+              },
+              "uri": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "servers": {
+            "type": "object",
+            "properties": {
+              "description": {
                 "type": "string"
               },
               "uri": {

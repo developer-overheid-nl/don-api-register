@@ -80,13 +80,13 @@ func (c *APIsAPIController) RetrieveApi(w http.ResponseWriter, r *http.Request) 
 }
 
 func (c *APIsAPIController) CreateApiFromOas(w http.ResponseWriter, r *http.Request) {
-	var body models.CreateApiFromOasRequest
+	var body models.Api
 	if err := api_client.DecodeJSONBody(w, r, &body); err != nil {
 		c.errorHandler(w, r, err, nil)
 		return
 	}
 
-	api, err := c.service.CreateApiFromOas(r.Context(), body.OasUrl)
+	api, err := c.service.CreateApiFromOas(r.Context(), body.OasUri)
 	if err != nil {
 		c.errorHandler(w, r, err, &api_client.ImplResponse{Code: http.StatusUnprocessableEntity})
 		return
@@ -144,7 +144,7 @@ func (c *APIsAPIController) Routes() api_client.Routes {
 		},
 		"CreateApiFromOas": api_client.Route{
 			Method:      http.MethodPost,
-			Pattern:     "/apis/v1/oas",
+			Pattern:     "/apis/v1/apis",
 			HandlerFunc: c.CreateApiFromOas,
 		},
 		"ServeOASFile": api_client.Route{

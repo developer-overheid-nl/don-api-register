@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // APIsAPIService implementeert APIsAPIServicer met de benodigde repository
@@ -18,7 +19,7 @@ type APIsAPIService struct {
 	repo repositories.ApiRepository
 }
 
-// Constructor-functie
+// NewAPIsAPIService Constructor-functie
 func NewAPIsAPIService(repo repositories.ApiRepository) *APIsAPIService {
 	return &APIsAPIService{repo: repo}
 }
@@ -72,64 +73,17 @@ func (s *APIsAPIService) CreateApiFromOas(ctx context.Context, oasUrl string) (*
 		return nil, fmt.Errorf("ongeldig OpenAPI-bestand: %w", err)
 	}
 
-	newApi := BuildApiFromSpec(spec, oasUrl)
+	api, missing := s.BuildApiAndValidate(spec, oasUrl)
 
-	// check of api met dezelfde OAS-URL al bestaat
-	existingApi, err := s.repo.FindByOasUrl(ctx, oasUrl)
-	if err != nil {
-		return nil, err
+	if len(missing) > 0 {
+		return nil, fmt.Errorf("De volgende verplichte gegevens ontbreken: %s", strings.Join(missing, ", "))
 	}
 
-	if existingApi != nil {
-		changed := false
-
-		if newApi.Title != existingApi.Title {
-			existingApi.Title = newApi.Title
-			println("existingApi.Title", existingApi.Title)
-			println("newApi.Title", newApi.Title)
-			changed = true
-		}
-		if newApi.Description != existingApi.Description {
-			println("existingApi.Description", existingApi.Description)
-			println("newApi.Description", newApi.Description)
-			existingApi.Description = newApi.Description
-			changed = true
-		}
-		if newApi.Auth != existingApi.Auth {
-			existingApi.Auth = newApi.Auth
-			println("existingApi.Auth", existingApi.Auth)
-			println("newApi.Auth", newApi.Auth)
-			changed = true
-		}
-		if newApi.DocsUri != existingApi.DocsUri {
-			existingApi.DocsUri = newApi.DocsUri
-			println("existingApi.DocsUri", existingApi.DocsUri)
-			println("newApi.DocsUri", newApi.DocsUri)
-			changed = true
-		}
-		if newApi.Organisation != nil && (existingApi.Organisation == nil ||
-			newApi.Organisation.Label != existingApi.Organisation.Label ||
-			newApi.Organisation.Uri != existingApi.Organisation.Uri) {
-			existingApi.Organisation = newApi.Organisation
-			println("existingApi.Organisation", existingApi.Organisation.Uri, existingApi.Organisation.Label)
-			println("newApi.Organisation", newApi.Organisation.Uri, newApi.Organisation.Label)
-			changed = true
-		}
-
-		if changed {
-			if err := s.repo.Save(existingApi); err != nil {
-				return nil, fmt.Errorf("update van bestaande API mislukt: %w", err)
-			}
-			return existingApi, nil
-		}
-		return existingApi, nil
+	if err := s.repo.Save(api); err != nil {
+		return nil, fmt.Errorf("kan API niet opslaan: %w", err)
 	}
 
-	// api bestaat nog niet, dus sla nieuwe op
-	if err := s.repo.Save(newApi); err != nil {
-		return nil, fmt.Errorf("kan nieuwe API niet opslaan: %w", err)
-	}
-	return newApi, nil
+	return api, nil
 }
 
 func (s *APIsAPIService) UpdateApi(ctx context.Context, api models.Api) error {
@@ -145,16 +99,20 @@ func CorsGet(c *http.Client, u string, corsurl string) (*http.Response, error) {
 	return c.Do(req)
 }
 
-func BuildApiFromSpec(spec *openapi3.T, oasUrl string) *models.Api {
+func (s *APIsAPIService) BuildApiAndValidate(spec *openapi3.T, oasUrl string) (*models.Api, []string) {
 	api := &models.Api{}
 	api.Id = uuid.New().String()
 	if spec.Info != nil {
 		api.Title = spec.Info.Title
 		api.Description = spec.Info.Description
+		if spec.Info.Contact != nil {
+			api.ContactName = spec.Info.Contact.Name
+			api.ContactEmail = spec.Info.Contact.Email
+			api.ContactUrl = spec.Info.Contact.URL
+		}
 	}
 
 	api.OasUri = oasUrl
-
 	if spec.ExternalDocs != nil {
 		api.DocsUri = spec.ExternalDocs.URL
 	}
@@ -165,14 +123,56 @@ func BuildApiFromSpec(spec *openapi3.T, oasUrl string) *models.Api {
 		api.Auth = deriveAuthType(spec)
 	}
 
-	if spec.Info != nil && spec.Info.Contact != nil {
-		api.Organisation = &models.ApiOrganisation{
-			Label: spec.Info.Contact.Name,
-			Uri:   spec.Info.Contact.URL,
+	var serversToSave []models.Server
+	for _, s := range spec.Servers {
+		if s.URL != "" {
+			server := models.Server{
+				Id:          uuid.New().String(),
+				Uri:         s.URL,
+				Description: s.Description,
+			}
+			serversToSave = append(serversToSave, server)
+			api.Servers = serversToSave
 		}
 	}
+	missing := ValidateApi(api)
+	if len(missing) == 0 {
+		for _, server := range serversToSave {
+			if err := s.repo.SaveServer(server); err != nil {
+				missing = append(missing, fmt.Sprintf("kan server niet opslaan (%s): %v", server.Uri, err))
+			}
+		}
+	}
+	return api, missing
+}
 
-	return api
+func ValidateApi(api *models.Api) []string {
+	var missing []string
+	if api.Title == "" {
+		missing = append(missing, "title")
+	}
+	if api.Description == "" {
+		missing = append(missing, "description")
+	}
+	if api.RepositoryUri == "" {
+		missing = append(missing, "RepositoryUri")
+	}
+	if api.ContactUrl == "" {
+		missing = append(missing, "ContactUrl")
+	}
+	if api.ContactName == "" {
+		missing = append(missing, "ContactName")
+	}
+	if api.ContactEmail == "" {
+		missing = append(missing, "ContactEmail")
+	}
+	if api.DocsUri == "" {
+		missing = append(missing, "DocsUri")
+	}
+	if api.Servers == nil || len(api.Servers) == 0 {
+		missing = append(missing, "Servers")
+	}
+	return missing
 }
 
 func deriveAuthType(spec *openapi3.T) string {

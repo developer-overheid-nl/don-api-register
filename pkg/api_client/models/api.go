@@ -10,21 +10,31 @@
 package models
 
 type Api struct {
-	Id            string           `gorm:"primaryKey"`
-	Type          string           `json:"type,omitempty"`
-	OasUri        string           `json:"oasUri,omitempty"`
-	DocsUri       string           `json:"docsUri,omitempty"`
-	Title         string           `json:"title,omitempty"`
-	Description   string           `json:"description,omitempty"`
-	Auth          string           `json:"auth,omitempty"`
-	AdrScore      *string          `json:"adrScore,omitempty"`
-	RepositoryUri *string          `json:"repositoryUri,omitempty"`
-	Organisation  *ApiOrganisation `json:"organisation" gorm:"embedded"`
+	Id             string   `gorm:"primaryKey"`
+	OasUri         string   `json:"oasUri,omitempty"`
+	DocsUri        string   `json:"docsUri,omitempty"`
+	Title          string   `json:"title,omitempty"`
+	Description    string   `json:"description,omitempty"`
+	Auth           string   `json:"auth,omitempty"` //Niet verplicht
+	AdrScore       string   `json:"adrScore,omitempty"`
+	RepositoryUri  string   `json:"repositoryUri,omitempty"`
+	ContactName    string   `json:"contact_name,omitempty"`
+	ContactUrl     string   `json:"contact_url,omitempty"`
+	ContactEmail   string   `json:"contact_email,omitempty"`
+	OrganisationId string   `json:"organisationId,omitempty"` //Niet verplicht
+	Servers        []Server `gorm:"many2many:api_servers;" json:"servers,omitempty"`
 }
 
 type ApiOrganisation struct {
+	Id    string `gorm:"primaryKey"`
 	Label string `json:"label,omitempty"`
 	Uri   string `json:"uri,omitempty"`
+}
+
+type Server struct {
+	Id          string `gorm:"primaryKey"`
+	Description string `json:"description,omitempty"`
+	Uri         string `json:"uri,omitempty"`
 }
 
 type PaginatedResponse struct {

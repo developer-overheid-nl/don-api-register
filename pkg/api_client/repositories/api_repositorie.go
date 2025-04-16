@@ -14,6 +14,7 @@ type ApiRepository interface {
 	Save(api *models.Api) error
 	UpdateApi(ctx context.Context, api models.Api) error
 	FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api, error)
+	SaveServer(server models.Server) error
 }
 
 type apiRepository struct {
@@ -88,4 +89,8 @@ func (r *apiRepository) FindByOasUrl(ctx context.Context, oasUrl string) (*model
 		return nil, err
 	}
 	return &api, nil
+}
+
+func (r *apiRepository) SaveServer(server models.Server) error {
+	return r.db.Create(&server).Error
 }

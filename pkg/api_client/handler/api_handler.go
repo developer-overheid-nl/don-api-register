@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	"net/http"
@@ -54,6 +55,7 @@ func (c *APIsAPIController) ListApis(w http.ResponseWriter, r *http.Request) {
 func (c *APIsAPIController) RetrieveApi(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	idParam := params["id"]
+	println(idParam)
 	if idParam == "" {
 		c.errorHandler(w, r, &api_client.RequiredError{Field: "id"}, nil)
 		return
@@ -89,13 +91,38 @@ func (c *APIsAPIController) CreateApiFromOas(w http.ResponseWriter, r *http.Requ
 		c.errorHandler(w, r, err, &api_client.ImplResponse{Code: http.StatusUnprocessableEntity})
 		return
 	}
-
 	status := http.StatusCreated
 	_ = api_client.EncodeJSONResponse(api, &status, w)
 }
 
 func (c *APIsAPIController) ServeOASFile(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./api/openapi.json")
+}
+
+func (c *APIsAPIController) UpdateApi(w http.ResponseWriter, r *http.Request) {
+	var apiObj models.Api
+
+	if err := json.NewDecoder(r.Body).Decode(&apiObj); err != nil {
+		c.errorHandler(w, r, err, &api_client.ImplResponse{
+			Code: http.StatusBadRequest,
+			Body: map[string]string{"error": "Invalid JSON payload"},
+		})
+		return
+	}
+
+	err := c.service.UpdateApi(r.Context(), apiObj)
+	if err != nil {
+		println(err)
+		c.errorHandler(w, r, err, &api_client.ImplResponse{
+			Code: http.StatusInternalServerError,
+			Body: map[string]string{"error": "Failed to update or insert API"},
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(apiObj)
 }
 
 func (c *APIsAPIController) Routes() api_client.Routes {
@@ -107,12 +134,17 @@ func (c *APIsAPIController) Routes() api_client.Routes {
 		},
 		"RetrieveApi": api_client.Route{
 			Method:      http.MethodGet,
-			Pattern:     "/apis/v1/apis/{id}",
+			Pattern:     "/apis/v1/api/{id}",
 			HandlerFunc: c.RetrieveApi,
+		},
+		"UpdateApi": api_client.Route{
+			Method:      http.MethodPut,
+			Pattern:     "/apis/v1/api/{id}",
+			HandlerFunc: c.UpdateApi,
 		},
 		"CreateApiFromOas": api_client.Route{
 			Method:      http.MethodPost,
-			Pattern:     "/apis/v1/apis",
+			Pattern:     "/apis/v1/oas",
 			HandlerFunc: c.CreateApiFromOas,
 		},
 		"ServeOASFile": api_client.Route{

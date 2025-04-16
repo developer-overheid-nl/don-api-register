@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"gorm.io/gorm"
 	"math"
@@ -11,6 +12,8 @@ type ApiRepository interface {
 	GetApis(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error)
 	GetApiByID(ctx context.Context, id string) (*models.Api, error)
 	Save(api *models.Api) error
+	UpdateApi(ctx context.Context, api models.Api) error
+	FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api, error)
 }
 
 type apiRepository struct {
@@ -22,7 +25,7 @@ func NewApiRepository(db *gorm.DB) ApiRepository {
 }
 
 func (r *apiRepository) Save(api *models.Api) error {
-	return r.db.Create(api).Error
+	return r.db.Save(api).Error
 }
 
 func (r *apiRepository) GetApis(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
@@ -67,5 +70,22 @@ func (r *apiRepository) GetApiByID(ctx context.Context, id string) (*models.Api,
 		return nil, err
 	}
 
+	return &api, nil
+}
+
+func (r *apiRepository) UpdateApi(ctx context.Context, api models.Api) error {
+	return r.db.WithContext(ctx).Model(&models.Api{}).
+		Where("id = ?", api.Id).
+		Updates(api).Error
+}
+
+func (r *apiRepository) FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api, error) {
+	var api models.Api
+	if err := r.db.WithContext(ctx).Where("oas_uri = ?", oasUrl).First(&api).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
 	return &api, nil
 }

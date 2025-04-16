@@ -50,7 +50,82 @@
             }
           }
         }
+      }
+    },
+    "/api/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/id"
+        }
+      ],
+      "get": {
+        "operationId": "retrieveApi",
+        "description": "API ophalen",
+        "summary": "API ophalen",
+        "tags": [
+          "API's"
+        ],
+        "responses": {
+          "200": {
+            "headers": {
+              "API-Version": {
+                "$ref": "https://static.developer.overheid.nl/adr/components.yaml#/headers/API-Version"
+              }
+            },
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Api"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "https://static.developer.overheid.nl/adr/components.yaml#/responses/404"
+          }
+        }
       },
+      "put": {
+        "operationId": "editApi",
+        "description": "API aanpassen",
+        "summary": "API aanpassen",
+        "tags": [
+          "API's"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Api"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "headers": {
+              "API-Version": {
+                "$ref": "https://static.developer.overheid.nl/adr/components.yaml#/headers/API-Version"
+              }
+            },
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Api"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "https://static.developer.overheid.nl/adr/components.yaml#/responses/404"
+          }
+        }
+      }
+    },
+    "/oas": {
       "post": {
         "operationId": "createApiFromOas",
         "summary": "Registreer een nieuwe API met een OpenAPI URL",
@@ -100,41 +175,6 @@
           },
           "422": {
             "description": "OAS-bestand kon niet gevalideerd worden"
-          }
-        }
-      }
-    },
-    "/apis/{id}": {
-      "parameters": [
-        {
-          "$ref": "#/components/parameters/id"
-        }
-      ],
-      "get": {
-        "operationId": "retrieveApi",
-        "description": "API ophalen",
-        "summary": "API ophalen",
-        "tags": [
-          "API's"
-        ],
-        "responses": {
-          "200": {
-            "headers": {
-              "API-Version": {
-                "$ref": "https://static.developer.overheid.nl/adr/components.yaml#/headers/API-Version"
-              }
-            },
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Api"
-                }
-              }
-            }
-          },
-          "404": {
-            "$ref": "https://static.developer.overheid.nl/adr/components.yaml#/responses/404"
           }
         }
       }

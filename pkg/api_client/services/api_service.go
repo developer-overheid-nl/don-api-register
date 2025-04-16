@@ -72,14 +72,68 @@ func (s *APIsAPIService) CreateApiFromOas(ctx context.Context, oasUrl string) (*
 		return nil, fmt.Errorf("ongeldig OpenAPI-bestand: %w", err)
 	}
 
-	api := BuildApiFromSpec(spec, oasUrl)
+	newApi := BuildApiFromSpec(spec, oasUrl)
 
-	if err := s.repo.Save(api); err != nil {
-		log.Printf("[ERROR] Kan API niet opslaan: %v", err)
-		return nil, fmt.Errorf("kan API niet opslaan: %w", err)
+	// check of api met dezelfde OAS-URL al bestaat
+	existingApi, err := s.repo.FindByOasUrl(ctx, oasUrl)
+	if err != nil {
+		return nil, err
 	}
 
-	return api, nil
+	if existingApi != nil {
+		changed := false
+
+		if newApi.Title != existingApi.Title {
+			existingApi.Title = newApi.Title
+			println("existingApi.Title", existingApi.Title)
+			println("newApi.Title", newApi.Title)
+			changed = true
+		}
+		if newApi.Description != existingApi.Description {
+			println("existingApi.Description", existingApi.Description)
+			println("newApi.Description", newApi.Description)
+			existingApi.Description = newApi.Description
+			changed = true
+		}
+		if newApi.Auth != existingApi.Auth {
+			existingApi.Auth = newApi.Auth
+			println("existingApi.Auth", existingApi.Auth)
+			println("newApi.Auth", newApi.Auth)
+			changed = true
+		}
+		if newApi.DocsUri != existingApi.DocsUri {
+			existingApi.DocsUri = newApi.DocsUri
+			println("existingApi.DocsUri", existingApi.DocsUri)
+			println("newApi.DocsUri", newApi.DocsUri)
+			changed = true
+		}
+		if newApi.Organisation != nil && (existingApi.Organisation == nil ||
+			newApi.Organisation.Label != existingApi.Organisation.Label ||
+			newApi.Organisation.Uri != existingApi.Organisation.Uri) {
+			existingApi.Organisation = newApi.Organisation
+			println("existingApi.Organisation", existingApi.Organisation.Uri, existingApi.Organisation.Label)
+			println("newApi.Organisation", newApi.Organisation.Uri, newApi.Organisation.Label)
+			changed = true
+		}
+
+		if changed {
+			if err := s.repo.Save(existingApi); err != nil {
+				return nil, fmt.Errorf("update van bestaande API mislukt: %w", err)
+			}
+			return existingApi, nil
+		}
+		return existingApi, nil
+	}
+
+	// api bestaat nog niet, dus sla nieuwe op
+	if err := s.repo.Save(newApi); err != nil {
+		return nil, fmt.Errorf("kan nieuwe API niet opslaan: %w", err)
+	}
+	return newApi, nil
+}
+
+func (s *APIsAPIService) UpdateApi(ctx context.Context, api models.Api) error {
+	return s.repo.UpdateApi(ctx, api)
 }
 
 func CorsGet(c *http.Client, u string, corsurl string) (*http.Response, error) {
@@ -99,7 +153,6 @@ func BuildApiFromSpec(spec *openapi3.T, oasUrl string) *models.Api {
 		api.Description = spec.Info.Description
 	}
 
-	api.Type = spec.OpenAPI
 	api.OasUri = oasUrl
 
 	if spec.ExternalDocs != nil {

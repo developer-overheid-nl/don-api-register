@@ -26,7 +26,13 @@ func NewApiRepository(db *gorm.DB) ApiRepository {
 }
 
 func (r *apiRepository) Save(api *models.Api) error {
-	return r.db.Save(api).Error
+	oldApi, _ := r.FindByOasUrl(context.Background(), api.OasUri)
+	if oldApi == nil {
+		return r.db.Create(api).Error
+	} else {
+		api.Id = oldApi.Id
+		return r.db.Save(api).Error
+	}
 }
 
 func (r *apiRepository) GetApis(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
@@ -65,7 +71,7 @@ func (r *apiRepository) GetApis(ctx context.Context, page, perPage int) ([]model
 func (r *apiRepository) GetApiByID(ctx context.Context, id string) (*models.Api, error) {
 	var api models.Api
 	if err := r.db.First(&api, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, err
@@ -92,5 +98,5 @@ func (r *apiRepository) FindByOasUrl(ctx context.Context, oasUrl string) (*model
 }
 
 func (r *apiRepository) SaveServer(server models.Server) error {
-	return r.db.Create(&server).Error
+	return r.db.Save(&server).Error
 }

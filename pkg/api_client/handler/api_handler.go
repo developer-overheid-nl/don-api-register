@@ -86,9 +86,9 @@ func (c *APIsAPIController) CreateApiFromOas(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	api, err := c.service.CreateApiFromOas(r.Context(), body.OasUri)
+	api, err := c.service.CreateApiFromOas(r.Context(), body)
 	if err != nil {
-		c.errorHandler(w, r, err, &api_client.ImplResponse{Code: http.StatusUnprocessableEntity})
+		c.errorHandler(w, r, err, &api_client.ImplResponse{Code: http.StatusBadRequest})
 		return
 	}
 	status := http.StatusCreated

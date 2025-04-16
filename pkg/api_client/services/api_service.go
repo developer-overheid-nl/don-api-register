@@ -44,8 +44,8 @@ func (s *APIsAPIService) ListApis(ctx context.Context, page, perPage int) (model
 	}, nil
 }
 
-func (s *APIsAPIService) CreateApiFromOas(ctx context.Context, oasUrl string) (*models.Api, error) {
-	parsedUrl, err := url.Parse(oasUrl)
+func (s *APIsAPIService) CreateApiFromOas(ctx context.Context, requestBody models.Api) (*models.Api, error) {
+	parsedUrl, err := url.Parse(requestBody.OasUri)
 	if err != nil {
 		return nil, fmt.Errorf("ongeldige URL: %w", err)
 	}
@@ -73,10 +73,10 @@ func (s *APIsAPIService) CreateApiFromOas(ctx context.Context, oasUrl string) (*
 		return nil, fmt.Errorf("ongeldig OpenAPI-bestand: %w", err)
 	}
 
-	api, missing := s.BuildApiAndValidate(spec, oasUrl)
+	api, missing := s.BuildApiAndValidate(spec, requestBody)
 
 	if len(missing) > 0 {
-		return nil, fmt.Errorf("De volgende verplichte gegevens ontbreken: %s", strings.Join(missing, ", "))
+		return nil, fmt.Errorf("De volgende gegevens ontbreken: %s", strings.Join(missing, ", "))
 	}
 
 	if err := s.repo.Save(api); err != nil {
@@ -99,7 +99,7 @@ func CorsGet(c *http.Client, u string, corsurl string) (*http.Response, error) {
 	return c.Do(req)
 }
 
-func (s *APIsAPIService) BuildApiAndValidate(spec *openapi3.T, oasUrl string) (*models.Api, []string) {
+func (s *APIsAPIService) BuildApiAndValidate(spec *openapi3.T, requestBody models.Api) (*models.Api, []string) {
 	api := &models.Api{}
 	api.Id = uuid.New().String()
 	if spec.Info != nil {
@@ -112,7 +112,7 @@ func (s *APIsAPIService) BuildApiAndValidate(spec *openapi3.T, oasUrl string) (*
 		}
 	}
 
-	api.OasUri = oasUrl
+	api.OasUri = requestBody.OasUri
 	if spec.ExternalDocs != nil {
 		api.DocsUri = spec.ExternalDocs.URL
 	}
@@ -135,7 +135,7 @@ func (s *APIsAPIService) BuildApiAndValidate(spec *openapi3.T, oasUrl string) (*
 			api.Servers = serversToSave
 		}
 	}
-	missing := ValidateApi(api)
+	missing := ValidateApi(api, requestBody)
 	if len(missing) == 0 {
 		for _, server := range serversToSave {
 			if err := s.repo.SaveServer(server); err != nil {
@@ -146,31 +146,63 @@ func (s *APIsAPIService) BuildApiAndValidate(spec *openapi3.T, oasUrl string) (*
 	return api, missing
 }
 
-func ValidateApi(api *models.Api) []string {
+func ValidateApi(api *models.Api, requestBody models.Api) []string {
 	var missing []string
 	if api.Title == "" {
-		missing = append(missing, "title")
+		if requestBody.Title != "" {
+			api.Title = requestBody.Title
+		} else {
+			missing = append(missing, "title")
+		}
 	}
 	if api.Description == "" {
-		missing = append(missing, "description")
+		if requestBody.Description != "" {
+			api.Description = requestBody.Description
+		} else {
+			missing = append(missing, "description")
+		}
 	}
 	if api.RepositoryUri == "" {
-		missing = append(missing, "RepositoryUri")
+		if requestBody.RepositoryUri != "" {
+			api.RepositoryUri = requestBody.RepositoryUri
+		} else {
+			missing = append(missing, "RepositoryUri")
+		}
 	}
 	if api.ContactUrl == "" {
-		missing = append(missing, "ContactUrl")
+		if requestBody.ContactUrl != "" {
+			api.ContactUrl = requestBody.ContactUrl
+		} else {
+			missing = append(missing, "ContactUrl")
+		}
 	}
 	if api.ContactName == "" {
-		missing = append(missing, "ContactName")
+		if requestBody.ContactName != "" {
+			api.ContactName = requestBody.ContactName
+		} else {
+			missing = append(missing, "ContactName")
+		}
 	}
 	if api.ContactEmail == "" {
-		missing = append(missing, "ContactEmail")
+		if requestBody.ContactEmail != "" {
+			api.ContactEmail = requestBody.ContactEmail
+		} else {
+			missing = append(missing, "ContactEmail")
+		}
 	}
 	if api.DocsUri == "" {
-		missing = append(missing, "DocsUri")
+		if requestBody.DocsUri != "" {
+			api.DocsUri = requestBody.DocsUri
+		} else {
+			missing = append(missing, "DocsUri")
+		}
 	}
 	if api.Servers == nil || len(api.Servers) == 0 {
-		missing = append(missing, "Servers")
+		if requestBody.Servers != nil && len(requestBody.Servers) > 0 {
+			api.Servers = requestBody.Servers
+		} else {
+			missing = append(missing, "Servers")
+		}
 	}
 	return missing
 }

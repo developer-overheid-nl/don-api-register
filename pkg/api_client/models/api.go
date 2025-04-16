@@ -15,18 +15,18 @@ type Api struct {
 	DocsUri        string   `json:"docsUri,omitempty"`
 	Title          string   `json:"title,omitempty"`
 	Description    string   `json:"description,omitempty"`
-	Auth           string   `json:"auth,omitempty"` //Niet verplicht
+	Auth           string   `json:"auth,omitempty"`
 	AdrScore       string   `json:"adrScore,omitempty"`
 	RepositoryUri  string   `json:"repositoryUri,omitempty"`
 	ContactName    string   `json:"contact_name,omitempty"`
 	ContactUrl     string   `json:"contact_url,omitempty"`
 	ContactEmail   string   `json:"contact_email,omitempty"`
-	OrganisationId string   `json:"organisationId,omitempty"` //Niet verplicht
+	OrganisationId string   `json:"organisationId,omitempty"`
 	Servers        []Server `gorm:"many2many:api_servers;" json:"servers,omitempty"`
 }
 
 type ApiOrganisation struct {
-	Id    string `gorm:"primaryKey"`
+	Id    string `gorm:"primarykey"`
 	Label string `json:"label,omitempty"`
 	Uri   string `json:"uri,omitempty"`
 }

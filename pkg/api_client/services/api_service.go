@@ -132,11 +132,25 @@ func (s *APIsAPIService) BuildApiAndValidate(spec *openapi3.T, requestBody model
 				Description: s.Description,
 			}
 			serversToSave = append(serversToSave, server)
-			api.Servers = serversToSave
 		}
 	}
+	api.Servers = serversToSave
 	missing := ValidateApi(api, requestBody)
 	if len(missing) == 0 {
+		if len(serversToSave) == 0 {
+			print(api.Servers[0].Uri)
+			for _, s := range api.Servers {
+				if s.Uri != "" {
+					server := models.Server{
+						Id:          uuid.New().String(),
+						Uri:         s.Uri,
+						Description: s.Description,
+					}
+					serversToSave = append(serversToSave, server)
+				}
+			}
+			api.Servers = serversToSave
+		}
 		for _, server := range serversToSave {
 			if err := s.repo.SaveServer(server); err != nil {
 				missing = append(missing, fmt.Sprintf("kan server niet opslaan (%s): %v", server.Uri, err))
@@ -190,6 +204,13 @@ func ValidateApi(api *models.Api, requestBody models.Api) []string {
 			missing = append(missing, "ContactEmail")
 		}
 	}
+	//if api.Auth == "" {
+	//	if requestBody.Auth != "" {
+	//		api.Auth = requestBody.Auth
+	//	} else {
+	//		missing = append(missing, "Auth")
+	//	}
+	//}
 	if api.DocsUri == "" {
 		if requestBody.DocsUri != "" {
 			api.DocsUri = requestBody.DocsUri

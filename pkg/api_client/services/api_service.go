@@ -218,8 +218,8 @@ func ValidateApi(api *models.Api, requestBody models.Api) []string {
 			missing = append(missing, "DocsUri")
 		}
 	}
-	if api.Servers == nil || len(api.Servers) == 0 {
-		if requestBody.Servers != nil && len(requestBody.Servers) > 0 {
+	if len(api.Servers) == 0 {
+		if len(requestBody.Servers) > 0 {
 			api.Servers = requestBody.Servers
 		} else {
 			missing = append(missing, "Servers")

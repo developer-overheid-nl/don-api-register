@@ -12,7 +12,8 @@
   },
   "servers": [
     {
-      "url": "https://api.developer.overheid.nl/apis/v1"
+      "url": "https://api.developer.overheid.nl/apis/v1",
+      "description": "Production"
     }
   ],
   "tags": [
@@ -151,7 +152,7 @@
           "400": {
             "description": "Fout in aanvraag of ongeldige OAS URL. De volgende verplichte gegevens ontbreken:",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "type": "object",
                   "properties": {

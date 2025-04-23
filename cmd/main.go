@@ -26,7 +26,7 @@ func main() {
 		os.Getenv("DB_USERNAME") + ":" +
 		os.Getenv("DB_PASSWORD") + "@" +
 		os.Getenv("DB_HOST") +
-		":5432/" + os.Getenv("DB_DBNAME") +
+		"/" + os.Getenv("DB_DBNAME") +
 		"?search_path=" + os.Getenv("DB_SCHEMA")
 
 	db, err := database.Connect(dbcon)

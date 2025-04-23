@@ -47,12 +47,6 @@ jobs:
 
       - name: Build & Push Docker image
         uses: docker/build-push-action@v6
-        env:
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_HOSTNAME: ${{ secrets.DB_HOSTNAME }}
-          DB_DBNAME: ${{ secrets.DB_DBNAME }}
-          DB_SCHEMA: ${{ secrets.DB_SCHEMA }}
         with:
           context: .
           push: true

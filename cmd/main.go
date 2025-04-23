@@ -25,9 +25,9 @@ func main() {
 	dbcon := "postgres://" +
 		os.Getenv("DB_USERNAME") + ":" +
 		os.Getenv("DB_PASSWORD") + "@" +
-		os.Getenv("DB_HOST") +
-		"/" + os.Getenv("DB_DBNAME") +
-		"?search_path=" + os.Getenv("DB_SCHEMA")
+		os.Getenv("DB_HOST") + "/" +
+		os.Getenv("DB_DBNAME") + "?search_path=" +
+		os.Getenv("DB_SCHEMA")
 
 	db, err := database.Connect(dbcon)
 	if err != nil {

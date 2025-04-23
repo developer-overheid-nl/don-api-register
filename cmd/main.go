@@ -22,10 +22,12 @@ func main() {
 		log.Fatalf("failed to load OAS version: %v", err)
 	}
 
-	dbcon := os.Getenv("DB_AUTH")
-	if dbcon == "" {
-		dbcon = "postgres://don:don@localhost:5432/don_v1?sslmode=disable"
-	}
+	dbcon := "postgres://" +
+		os.Getenv("DB_USERNAME") + ":" +
+		os.Getenv("DB_PASSWORD") + "@" +
+		os.Getenv("DB_HOST") +
+		":5432/" + os.Getenv("DB_DBNAME") +
+		"?search_path=" + os.Getenv("DB_SCHEMA")
 
 	db, err := database.Connect(dbcon)
 	if err != nil {
@@ -39,9 +41,9 @@ func main() {
 	// Start server
 	router := api.NewRouter(version, APIsAPIController)
 
-	log.Println("Server is running on port 1337")
+	log.Println("Server is running on port 1338")
 	for name, route := range APIsAPIController.Routes() {
-		log.Printf("%s: :1337%s [%s]", name, route.Pattern, route.Method)
+		log.Printf("%s: :1338%s [%s]", name, route.Pattern, route.Method)
 	}
-	log.Fatal(http.ListenAndServe(":1337", router))
+	log.Fatal(http.ListenAndServe(":1338", router))
 }

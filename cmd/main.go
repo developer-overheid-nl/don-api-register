@@ -28,7 +28,7 @@ func main() {
 		os.Getenv("DB_HOST") + "/" +
 		os.Getenv("DB_DBNAME") + "?search_path=" +
 		os.Getenv("DB_SCHEMA")
-	print(dbcon)
+	println(dbcon)
 	db, err := database.Connect(dbcon)
 	if err != nil {
 		log.Printf("[WARN] Geen databaseverbinding: %v", err)

@@ -9,6 +9,7 @@
 
 package models
 
-type CreateApiFromOasRequest struct {
-	OasUri string `json:"oasUri"`
+type ValidationErrorResponse struct {
+	MissingProperties []string `json:"missingProperties,omitempty"`
+	Message           string   `json:"message"`
 }

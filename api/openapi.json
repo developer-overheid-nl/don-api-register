@@ -12,7 +12,7 @@
   },
   "servers": [
     {
-      "url": "https://api.developer.overheid.nl/apis/v1",
+      "url": "https://api.developer.overheid.nl/v1",
       "description": "Production"
     }
   ],

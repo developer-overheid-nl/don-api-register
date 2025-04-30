@@ -44,26 +44,26 @@ func (s *APIsAPIService) ListApis(ctx context.Context, page, perPage int) (model
 	}, nil
 }
 
-func (s *APIsAPIService) CreateApiFromOas(ctx context.Context, requestBody models.Api) (*models.Api, error) {
+func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.Api, []string, error) {
 	parsedUrl, err := url.Parse(requestBody.OasUri)
 	if err != nil {
-		return nil, fmt.Errorf("ongeldige URL: %w", err)
+		return nil, nil, fmt.Errorf("ongeldige URL: %w", err)
 	}
 
 	client := &http.Client{}
 	resp, err := CorsGet(client, parsedUrl.String(), "https://developer.overheid.nl")
 	if err != nil {
-		return nil, fmt.Errorf("fout bij ophalen OAS: %s, %s, %w", parsedUrl.String(), requestBody.Title, err)
+		return nil, nil, fmt.Errorf("fout bij ophalen OAS: %s, %s, %w", parsedUrl.String(), requestBody.Title, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("OAS download faalt met status %d", resp.StatusCode)
+		return nil, nil, fmt.Errorf("OAS download faalt met status %d", resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("kan response body niet lezen: %w", err)
+		return nil, nil, fmt.Errorf("kan response body niet lezen: %w", err)
 	}
 
 	loader := openapi3.NewLoader()
@@ -71,20 +71,20 @@ func (s *APIsAPIService) CreateApiFromOas(ctx context.Context, requestBody model
 	spec, err := loader.LoadFromData(body)
 	if err != nil {
 		log.Printf("[ERROR] Ongeldige OpenAPI: %s, Error: %v", parsedUrl.String(), err)
-		return nil, fmt.Errorf("ongeldig OpenAPI-bestand: %w", err)
+		return nil, nil, fmt.Errorf("ongeldig OpenAPI-bestand: %w", err)
 	}
 
 	api, missing := s.BuildApiAndValidate(spec, requestBody)
 
 	if len(missing) > 0 {
-		return nil, fmt.Errorf("De volgende gegevens ontbreken: %s", strings.Join(missing, ", "))
+		return nil, missing, fmt.Errorf("validatie mislukt")
 	}
 
 	if err := s.repo.Save(api); err != nil {
-		return nil, fmt.Errorf("kan API niet opslaan: %w", err)
+		return nil, nil, fmt.Errorf("kan API niet opslaan: %w", err)
 	}
 
-	return api, nil
+	return api, nil, nil
 }
 
 func (s *APIsAPIService) UpdateApi(ctx context.Context, api models.Api) error {

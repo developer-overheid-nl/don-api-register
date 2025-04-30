@@ -2,11 +2,13 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client"
 	"github.com/gorilla/mux"
@@ -88,10 +90,22 @@ func (c *APIsAPIController) CreateApiFromOas(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	api, err := c.service.CreateApiFromOas(r.Context(), body)
+	api, missing, err := c.service.CreateApiFromOas(body)
 	if err != nil {
 		log.Printf("CreateApiFromOas error: %v", err)
-		c.errorHandler(w, r, err, &api_client.ImplResponse{Code: http.StatusBadRequest})
+
+		if len(missing) > 0 {
+			w.Header().Set("Content-Type", "application/problem+json")
+			w.WriteHeader(http.StatusBadRequest)
+
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"missingProperties": missing,
+				"message":           fmt.Sprintf("De volgende gegevens ontbreken: %s", strings.Join(missing, ", ")),
+			})
+			return
+		}
+
+		c.errorHandler(w, r, err, &api_client.ImplResponse{Code: http.StatusUnprocessableEntity})
 		return
 	}
 
@@ -133,22 +147,22 @@ func (c *APIsAPIController) Routes() api_client.Routes {
 	return api_client.Routes{
 		"ListApis": api_client.Route{
 			Method:      http.MethodGet,
-			Pattern:     "/apis/v1/apis",
+			Pattern:     "/v1/apis",
 			HandlerFunc: c.ListApis,
 		},
 		"RetrieveApi": api_client.Route{
 			Method:      http.MethodGet,
-			Pattern:     "/apis/v1/api/{id}",
+			Pattern:     "/v1/api/{id}",
 			HandlerFunc: c.RetrieveApi,
 		},
 		"UpdateApi": api_client.Route{
 			Method:      http.MethodPut,
-			Pattern:     "/apis/v1/api/{id}",
+			Pattern:     "/v1/api/{id}",
 			HandlerFunc: c.UpdateApi,
 		},
 		"CreateApiFromOas": api_client.Route{
 			Method:      http.MethodPost,
-			Pattern:     "/apis/v1/apis",
+			Pattern:     "/v1/apis",
 			HandlerFunc: c.CreateApiFromOas,
 		},
 		"ServeOASFile": api_client.Route{

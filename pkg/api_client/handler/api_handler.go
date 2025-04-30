@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -82,15 +83,18 @@ func (c *APIsAPIController) RetrieveApi(w http.ResponseWriter, r *http.Request) 
 func (c *APIsAPIController) CreateApiFromOas(w http.ResponseWriter, r *http.Request) {
 	var body models.Api
 	if err := api_client.DecodeJSONBody(w, r, &body); err != nil {
-		c.errorHandler(w, r, err, nil)
+		log.Printf("DecodeJSONBody error: %v", err)
+		c.errorHandler(w, r, err, &api_client.ImplResponse{Code: http.StatusBadRequest})
 		return
 	}
 
 	api, err := c.service.CreateApiFromOas(r.Context(), body)
 	if err != nil {
+		log.Printf("CreateApiFromOas error: %v", err)
 		c.errorHandler(w, r, err, &api_client.ImplResponse{Code: http.StatusBadRequest})
 		return
 	}
+
 	status := http.StatusCreated
 	_ = api_client.EncodeJSONResponse(api, &status, w)
 }

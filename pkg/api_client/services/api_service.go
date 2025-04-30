@@ -53,7 +53,7 @@ func (s *APIsAPIService) CreateApiFromOas(ctx context.Context, requestBody model
 	client := &http.Client{}
 	resp, err := CorsGet(client, parsedUrl.String(), "https://developer.overheid.nl")
 	if err != nil {
-		return nil, fmt.Errorf("fout bij ophalen OAS: %w", err)
+		return nil, fmt.Errorf("fout bij ophalen OAS: %s, %s, %w", parsedUrl.String(), requestBody.Title, err)
 	}
 	defer resp.Body.Close()
 
@@ -69,7 +69,7 @@ func (s *APIsAPIService) CreateApiFromOas(ctx context.Context, requestBody model
 	loader := openapi3.NewLoader()
 	spec, err := loader.LoadFromData(body)
 	if err != nil {
-		log.Printf("[ERROR] Ongeldige OpenAPI: %v", err)
+		log.Printf("[ERROR] Ongeldige OpenAPI: %s, Error: %v", parsedUrl.String(), err)
 		return nil, fmt.Errorf("ongeldig OpenAPI-bestand: %w", err)
 	}
 

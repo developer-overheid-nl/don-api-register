@@ -11,7 +11,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
 // APIsAPIService implementeert APIsAPIServicer met de benodigde repository

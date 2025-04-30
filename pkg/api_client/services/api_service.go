@@ -67,6 +67,7 @@ func (s *APIsAPIService) CreateApiFromOas(ctx context.Context, requestBody model
 	}
 
 	loader := openapi3.NewLoader()
+	loader.IsExternalRefsAllowed = true
 	spec, err := loader.LoadFromData(body)
 	if err != nil {
 		log.Printf("[ERROR] Ongeldige OpenAPI: %s, Error: %v", parsedUrl.String(), err)

@@ -67,7 +67,7 @@ func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, params *retrieveApiPar
 }
 
 // CreateApiFromOas handles POST /apis
-func (c *APIsAPIController) CreateApiFromOas(body *models.Api) (*models.Api, error) {
+func (c *APIsAPIController) CreateApiFromOas(ctx *gin.Context, body *models.Api) (*models.Api, error) {
 	created, missing, err := c.service.CreateApiFromOas(*body)
 	if err != nil {
 		if len(missing) > 0 {

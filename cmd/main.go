@@ -1,15 +1,17 @@
 package main
 
 import (
-	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/handler"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+
 	api "github.com/developer-overheid-nl/don-api-register/pkg/api_client"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/database"
-	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/handler"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 )
@@ -17,7 +19,7 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-	version, err := api.LoadOASVersion("./api/openapi.json")
+	version, err := helpers.LoadOASVersion("./api/openapi.json")
 	if err != nil {
 		log.Fatalf("failed to load OAS version: %v", err)
 	}
@@ -41,8 +43,5 @@ func main() {
 	router := api.NewRouter(version, APIsAPIController)
 
 	log.Println("Server is running on port 1337")
-	for name, route := range APIsAPIController.Routes() {
-		log.Printf("%s: :1337%s [%s]", name, route.Pattern, route.Method)
-	}
 	log.Fatal(http.ListenAndServe(":1337", router))
 }

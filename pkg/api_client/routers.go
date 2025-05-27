@@ -9,10 +9,40 @@ import (
 )
 
 func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.Fizz {
+	// 0) Gin + Fizz init
 	g := gin.Default()
 	g.Use(APIVersionMiddleware(apiVersion))
 	f := fizz.NewFromEngine(g)
 
+	// 1) Voeg je Server-url toe (inclusief version path)
+	f.Generator().SetServers([]*openapi.Server{
+		{
+			URL:         "https://api.developer.overheid.nl/v1",
+			Description: "Production",
+		},
+	})
+
+	// 2) Definieer je API-Version header in de global components
+	gen := f.Generator()
+	gen.API().Components.Headers["API-Version"] = &openapi.HeaderOrRef{
+		Header: &openapi.Header{
+			Description: "De API-versie van de response",
+			Schema: &openapi.SchemaOrRef{
+				Schema: &openapi.Schema{
+					Type: "string",
+				},
+			},
+		},
+	}
+
+	// 3) Maak een herbruikbare OperationOption voor de header
+	apiVersionHeader := fizz.Header(
+		"API-Version",
+		"De API-versie van de response",
+		"", // lege string betekent: primitive string in de spec
+	)
+
+	// 4) Basis-info van je API
 	info := &openapi.Info{
 		Title:       "API register API v1",
 		Description: "API van het API register (apis.developer.overheid.nl)",
@@ -24,30 +54,42 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		},
 	}
 
-	// 1) Register all endpoints with tonic.Handler
+	// 5) Registreer al je endpoints met tonic.Handler én de header-optie
 	rg := f.Group("/apis/v1", "API's", "Beheer van API-register")
 
 	rg.GET("/apis",
-		[]fizz.OperationOption{fizz.Summary("Alle API's ophalen")},
+		[]fizz.OperationOption{
+			fizz.Summary("Alle API's ophalen"),
+			apiVersionHeader,
+		},
 		tonic.Handler(controller.ListApis, 200),
 	)
 
 	rg.GET("/api/:id",
-		[]fizz.OperationOption{fizz.Summary("Specifieke API ophalen")},
+		[]fizz.OperationOption{
+			fizz.Summary("Specifieke API ophalen"),
+			apiVersionHeader,
+		},
 		tonic.Handler(controller.RetrieveApi, 200),
 	)
 
 	rg.POST("/apis",
-		[]fizz.OperationOption{fizz.Summary("Registreer een nieuwe API met een OpenAPI URL")},
+		[]fizz.OperationOption{
+			fizz.Summary("Registreer een nieuwe API met een OpenAPI URL"),
+			apiVersionHeader,
+		},
 		tonic.Handler(controller.CreateApiFromOas, 201),
 	)
 
 	rg.PUT("/api/:id",
-		[]fizz.OperationOption{fizz.Summary("Update een bestaande API")},
+		[]fizz.OperationOption{
+			fizz.Summary("Update een bestaande API"),
+			apiVersionHeader,
+		},
 		tonic.Handler(controller.UpdateApi, 200),
 	)
 
-	// 2) Expose OpenAPI spec *after* all routes are registered
+	// 6) Pas ná alle routes pas de OpenAPI endpoint toe
 	f.GET("/openapi.json", []fizz.OperationOption{}, f.OpenAPI(info, "json"))
 
 	return f

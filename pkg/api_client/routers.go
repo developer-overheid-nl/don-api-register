@@ -71,7 +71,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	}
 
 	// 5) Registreer al je endpoints met tonic.Handler én de header-optie
-	rg := f.Group("/apis/v1", "API's", "Beheer van API-register")
+	rg := f.Group("/v1", "API's", "Beheer van API-register")
 
 	rg.GET("/apis",
 		[]fizz.OperationOption{

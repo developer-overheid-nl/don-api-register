@@ -9,7 +9,7 @@
  * Contact: developer.overheid@geonovum.nl
  */
 
-package api_client
+package helpers
 
 import (
 	"log"

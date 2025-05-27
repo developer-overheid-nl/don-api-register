@@ -1,89 +1,122 @@
-import os
-import yaml
+
+import psycopg2
+import json
 import requests
+from collections import defaultdict
 
-def find_all_specification_metadata(folder_path: str) -> list[dict]:
-    spec_list = []
+# 1. Verbind met je database
+conn = psycopg2.connect(
+    dbname="don",
+    user="don",
+    password="dBfvPRKWC2ELpgUmzGRhaHEdvCJIEzMN69S0KUMTy58WL1Hsm4a5ZzpNWRBA3Bzj",
+    host="localhost",
+    port=1337
+)
+cur = conn.cursor()
 
-    for root, _, files in os.walk(folder_path):
-        for file in files:
-            if file.endswith((".yaml", ".yml")):
-                full_path = os.path.join(root, file)
-                try:
-                    with open(full_path, "r", encoding="utf-8") as f:
-                        content = yaml.safe_load(f)
+# 2. Haal alle API metadata (behalve servers/environments) op
+cur.execute("""
+SELECT
+    api.api_id,
+    api.api_authentication,
+    api.contact_email,
+    api.contact_phone,
+    api.contact_url,
+    api.description,
+    api.service_name,
+    api.organization_id,
+    org.name as organization_name,
+    org.contact as org_contact,
+    prod_env.specification_url as production_spec_url,
+    prod_env.documentation_url as production_doc_url
+FROM core_api api
+         LEFT JOIN core_organization org ON api.organization_id = org.id
+         LEFT JOIN (
+    SELECT api_id, specification_url, documentation_url
+    FROM core_environment
+    WHERE LOWER(name) LIKE '%production%' OR LOWER(name) LIKE '%productie%'
+) prod_env ON prod_env.api_id = api.api_id
+ORDER BY api.api_id;
+""")
+apis = cur.fetchall()
+api_columns = [desc[0] for desc in cur.description]
 
-                        def collect_spec_data(data):
-                            if isinstance(data, dict):
-                                for env in data.get("environments", []):
-                                    if "specification_url" in env:
-                                        entry = {
-                                            "oasUri": env["specification_url"],
-                                            "docsUri": env.get("documentation_url"),
-                                            "title": data.get("service_name"),
-                                            "description": data.get("description") if isinstance(data.get("description"), str) else None,
-                                            "auth": data.get("api_authentication"),
-                                            "type": data.get("api_type"),
-                                            "organisation": {
-                                                "label": data.get("organization", {}).get("name"),
-                                                "uri": f"https://organisatie.overheid.nl/{data.get('organization', {}).get('ooid')}"
-                                                if data.get("organization", {}).get("ooid") else None
-                                            }
-                                        }
-                                        spec_list.append(entry)
+# 3. Haal alle environments/servers op
+cur.execute("""
+SELECT
+    api_id,
+    name AS description,
+    api_url AS uri,
+    specification_url AS oasUri,
+    documentation_url AS docsUri
+FROM core_environment
+ORDER BY api_id
+""")
+env_rows = cur.fetchall()
+env_columns = [desc[0] for desc in cur.description]
 
-                        collect_spec_data(content)
+# 4. Maak mapping: api_id -> list of servers
+servers_per_api = defaultdict(list)
+for row in env_rows:
+    env = dict(zip(env_columns, row))
+    servers_per_api[env['api_id']].append({
+        "description": env['description'],
+        "uri": env['uri']
+    })
 
-                except Exception as e:
-                    print(f"❌ Fout bij verwerken van {full_path}: {e}")
+# 5. Combineer alle info per API
+api_list = []
+for row in apis:
+    record = dict(zip(api_columns, row))
+    api_id = record["api_id"]
 
-    return spec_list
+    org_uri = ""
+    contact_json = record.get("org_contact")
+    if contact_json:
+        # AL dict? (uit psycopg2 bij JSON/JSONB columns vaak het geval!)
+        if isinstance(contact_json, dict):
+            internetadressen = contact_json.get("internetadressen", [])
+            print(internetadressen)
 
-def post_and_patch_api_specs(spec_data_list: list[dict], endpointpost: str, endpointpatch: str):
-    headers = {"Content-Type": "application/json"}
+        else:
+            try:
+                contact_json = json.loads(contact_json)
+                internetadressen = contact_json.get("internetadressen", [])
+            except Exception as e:
+                print(f"[DEBUG] Failed to parse contact JSON for {record.get('organization_name')}: {e}")
+                internetadressen = []
+        if internetadressen and isinstance(internetadressen, list):
+            org_uri = internetadressen[0].get("url", "")
+    api_obj = {
+        "title": record["service_name"],
+        "description": record["description"],
+        "oasUri": record["production_spec_url"] or "",
+        "docsUri": record["production_doc_url"],
+        "auth": record["api_authentication"],
+        "contact_email": record["contact_email"],
+        "contact_url": record["contact_url"],
+        "organisation": {
+            "label": record["organization_name"],
+            "uri": org_uri or "",
+        },
+        "servers": servers_per_api.get(api_id, [])
+    }
+    api_list.append(api_obj)
 
-    for spec in spec_data_list:
-        try:
-            # 1. POST alleen de oasUri
-            post_resp = requests.post(endpointpost, headers=headers, json={"oasUrl": spec["oasUri"]})
-            if post_resp.status_code == 201:
-                try:
-                    created_api = post_resp.json()
-                    api_id = created_api.get("id") or created_api.get("Id")
-                except Exception as e:
-                    print(f"⚠️ JSON decode fout bij POST response: {e}")
-                    continue
-            elif post_resp.status_code == 409:
-                print(f"⚠️ Bestond al: {spec['oasUri']}")
-                continue
-            else:
-                print(f"❌ POST fout {spec['oasUri']}: {post_resp.status_code} {post_resp.text}")
-                continue
+print(f"Totaal te posten: {len(api_list)} API's")
 
-            # 2. PUT met gecombineerde data
-            if api_id:
-                patch_url = f"{endpointpatch}{api_id}"
+# 6. Post elk API-object naar je nieuwe API-register (Go app)
+endpoint = "http://localhost:1338/apis/v1/apis"  # Pas aan indien nodig
+headers = {"Content-Type": "application/json"}
 
-                combined = created_api.copy()
-                if spec.get("docsUri"):
-                    combined["docsUri"] = spec["docsUri"]
-                if spec.get("type"):
-                    combined["type"] = spec["type"]
-                put_resp = requests.put(patch_url, headers=headers, json=combined)
-                if put_resp.status_code != 200:
-                    print(f"PUT fout {patch_url}: {put_resp.status_code} {put_resp.text}")
-            else:
-                print(f"Geen ID gevonden in POST-response voor {spec['oasUri']}")
+for api in api_list:
+    resp = requests.post(endpoint, headers=headers, json=api)
+    # print(api.get("title"), resp.status_code, resp.text)
+    # if resp.status_code == 409:
+    #     print(f"⚠️ API bestaat al: {api.get('title')}")
+    # elif resp.status_code >= 400:
+    #     print(f"❌ Fout bij API: {api.get('title')}: {resp.text}")
 
-        except Exception as e:
-            print(f"Fout bij verwerken van {spec['oasUri']}: {e}")
-
-
-if __name__ == "__main__":
-    folder = "/Users/matthijshovestad/workspace/geonovum/don-content/content/api"
-    endpointPost = "http://localhost:1338/apis/v1/oas"
-    endpointPatch = "http://localhost:1338/apis/v1/api/"
-
-    specs = find_all_specification_metadata(folder)
-    print(f"{len(specs)} specificaties gevonden.")
-    post_and_patch_api_specs(specs, endpointPost, endpointPatch)
+# 7. Sluit connectie
+cur.close()
+conn.close()

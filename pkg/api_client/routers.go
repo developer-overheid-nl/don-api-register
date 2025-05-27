@@ -8,6 +8,22 @@ import (
 	"github.com/wI2L/fizz/openapi"
 )
 
+var (
+	apiVersionHeader = fizz.Header(
+		"API-Version",
+		"De API-versie van de response",
+		"", // lege string betekent: primitive string in de spec
+	)
+
+	notFoundResponse = fizz.Response(
+		"404",
+		"Not Found",
+		nil, // geen inline schema
+		nil, // geen content-media-type
+		nil, // geen extra headers
+	)
+)
+
 func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.Fizz {
 	// 0) Gin + Fizz init
 	g := gin.Default()
@@ -24,6 +40,13 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 
 	// 2) Definieer je API-Version header in de global components
 	gen := f.Generator()
+
+	gen.API().Components.Responses["404"] = &openapi.ResponseOrRef{
+		Reference: &openapi.Reference{
+			Ref: "https://static.developer.overheid.nl/adr/components.yaml#/responses/404",
+		},
+	}
+
 	gen.API().Components.Headers["API-Version"] = &openapi.HeaderOrRef{
 		Header: &openapi.Header{
 			Description: "De API-versie van de response",
@@ -34,13 +57,6 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 			},
 		},
 	}
-
-	// 3) Maak een herbruikbare OperationOption voor de header
-	apiVersionHeader := fizz.Header(
-		"API-Version",
-		"De API-versie van de response",
-		"", // lege string betekent: primitive string in de spec
-	)
 
 	// 4) Basis-info van je API
 	info := &openapi.Info{
@@ -61,6 +77,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		[]fizz.OperationOption{
 			fizz.Summary("Alle API's ophalen"),
 			apiVersionHeader,
+			notFoundResponse,
 		},
 		tonic.Handler(controller.ListApis, 200),
 	)
@@ -69,6 +86,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		[]fizz.OperationOption{
 			fizz.Summary("Specifieke API ophalen"),
 			apiVersionHeader,
+			notFoundResponse,
 		},
 		tonic.Handler(controller.RetrieveApi, 200),
 	)
@@ -77,6 +95,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		[]fizz.OperationOption{
 			fizz.Summary("Registreer een nieuwe API met een OpenAPI URL"),
 			apiVersionHeader,
+			notFoundResponse,
 		},
 		tonic.Handler(controller.CreateApiFromOas, 201),
 	)
@@ -85,6 +104,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		[]fizz.OperationOption{
 			fizz.Summary("Update een bestaande API"),
 			apiVersionHeader,
+			notFoundResponse,
 		},
 		tonic.Handler(controller.UpdateApi, 200),
 	)

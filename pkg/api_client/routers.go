@@ -82,7 +82,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.ListApis, 200),
 	)
 
-	rg.GET("/api/:id",
+	rg.GET("/api",
 		[]fizz.OperationOption{
 			fizz.Summary("Specifieke API ophalen"),
 			apiVersionHeader,
@@ -100,13 +100,13 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.CreateApiFromOas, 201),
 	)
 
-	rg.PUT("/api/:id",
+	rg.PUT("/apis",
 		[]fizz.OperationOption{
-			fizz.Summary("Update een bestaande API"),
+			fizz.Summary("Forceer de linter aan te roepen van een API"),
 			apiVersionHeader,
 			notFoundResponse,
 		},
-		tonic.Handler(controller.UpdateApi, 200),
+		tonic.Handler(controller.UpdateApi, 204),
 	)
 
 	// 6) Pas ná alle routes pas de OpenAPI endpoint toe

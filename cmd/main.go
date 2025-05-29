@@ -3,6 +3,8 @@ package main
 import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/handler"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers"
+	"github.com/gin-gonic/gin"
+	"github.com/loopfz/gadgeto/tonic"
 	"log"
 	"net/http"
 	"os"
@@ -15,6 +17,34 @@ import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 )
+
+func init() {
+	tonic.SetErrorHook(func(c *gin.Context, err error) (int, interface{}) {
+		// 1) tonic.BindError for JSON binding/validation failures
+		if _, ok := err.(tonic.BindError); ok {
+			apiErr := helpers.NewBadRequest(
+				"Invalid input voor update",
+				helpers.InvalidParam{
+					Name:   "oasUrl",
+					Reason: "Moet een geldige URL zijn (bijv. https://…)",
+				},
+			)
+			c.Header("Content-Type", "application/problem+json")
+			return apiErr.Status, apiErr
+		}
+
+		// 2) Your own APIError → pass through
+		if apiErr, ok := err.(helpers.APIError); ok {
+			c.Header("Content-Type", "application/problem+json")
+			return apiErr.Status, apiErr
+		}
+
+		// 3) Fallback 500
+		internal := helpers.NewInternalServerError(err.Error())
+		c.Header("Content-Type", "application/problem+json")
+		return internal.Status, internal
+	})
+}
 
 func main() {
 	_ = godotenv.Load()

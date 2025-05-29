@@ -2,15 +2,21 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
+)
+
+var ErrNeedsPost = errors.New(
+	"oasUri niet gevonden of aangepast; registreer een nieuwe API via POST en markeer de oude als deprecated",
 )
 
 // APIsAPIService implementeert APIsAPIServicer met de benodigde repository
@@ -23,6 +29,21 @@ func NewAPIsAPIService(repo repositories.ApiRepository) *APIsAPIService {
 	return &APIsAPIService{repo: repo}
 }
 
+func (s *APIsAPIService) UpdateOasUri(ctx context.Context, oasUri string) error {
+	api, err := s.repo.FindByOasUrl(ctx, oasUri)
+	if err != nil || api == nil {
+		if api == nil || errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("%w: %s", ErrNeedsPost, oasUri)
+		}
+		// ongeplande DB-fout
+		return fmt.Errorf("databasefout bij FindByOasUrl: %w", err)
+	}
+
+	// wél gevonden → roep de linter
+	//_ = s.linter.Lint(oasUri)
+	return nil
+}
+
 func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Api, error) {
 	api, err := s.repo.GetApiByID(ctx, id)
 	if err != nil || api == nil {
@@ -31,59 +52,42 @@ func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Ap
 	return api, nil
 }
 
-func (s *APIsAPIService) ListApis(ctx context.Context, page, perPage int) (models.PaginatedResponse, error) {
+func (s *APIsAPIService) ListApis(ctx context.Context, page, perPage int, baseURL string) (models.ApiListResponse, error) {
 	apis, pagination, err := s.repo.GetApis(ctx, page, perPage)
 	if err != nil {
-		return models.PaginatedResponse{}, err
+		return models.ApiListResponse{}, err
 	}
 
-	return models.PaginatedResponse{
-		Pagination: pagination,
-		Results:    apis,
+	// map domain-model → DTO
+	dtos := make([]models.ApiResponse, len(apis))
+	for i, api := range apis {
+		dtos[i] = models.ApiResponse{
+			Title:  api.Title,
+			OasUri: api.OasUri,
+			Contact: models.Contact{
+				Name:  api.ContactName,
+				URL:   api.ContactUrl,
+				Email: api.ContactEmail,
+			},
+		}
+	}
+
+	// links bouwen
+	buildURL := func(p int) *models.Link {
+		return &models.Link{Href: fmt.Sprintf("%s?page=%d&perPage=%d", baseURL, p, perPage)}
+	}
+	links := models.Links{Self: buildURL(page)}
+	if pagination.Next != nil {
+		links.Next = buildURL(*pagination.Next)
+	}
+	if pagination.Previous != nil {
+		links.Prev = buildURL(*pagination.Previous)
+	}
+
+	return models.ApiListResponse{
+		Links: links,
+		Apis:  dtos,
 	}, nil
-}
-
-func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.Api, []string, error) {
-	parsedUrl, err := url.Parse(requestBody.OasUri)
-	if err != nil {
-		return nil, nil, fmt.Errorf("ongeldige URL: %w", err)
-	}
-
-	client := &http.Client{}
-	resp, err := CorsGet(client, parsedUrl.String(), "https://developer.overheid.nl")
-	if err != nil {
-		return nil, nil, fmt.Errorf("fout bij ophalen OAS: %s, %s, %w", parsedUrl.String(), requestBody.Title, err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, nil, fmt.Errorf("OAS download faalt met status %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, nil, fmt.Errorf("kan response body niet lezen: %w", err)
-	}
-
-	loader := openapi3.NewLoader()
-	loader.IsExternalRefsAllowed = true
-	spec, err := loader.LoadFromData(body)
-	if err != nil {
-		log.Printf("[ERROR] Ongeldige OpenAPI: %s, Error: %v", parsedUrl.String(), err)
-		return nil, nil, fmt.Errorf("ongeldig OpenAPI-bestand: %w", err)
-	}
-
-	api, missing := s.BuildApiAndValidate(spec, requestBody)
-
-	if len(missing) > 0 {
-		return nil, missing, fmt.Errorf("validatie mislukt")
-	}
-
-	if err := s.repo.Save(api); err != nil {
-		return nil, nil, fmt.Errorf("kan API niet opslaan: %w", err)
-	}
-
-	return api, nil, nil
 }
 
 func (s *APIsAPIService) UpdateApi(ctx context.Context, api models.Api) error {
@@ -99,7 +103,65 @@ func CorsGet(c *http.Client, u string, corsurl string) (*http.Response, error) {
 	return c.Do(req)
 }
 
-func (s *APIsAPIService) BuildApiAndValidate(spec *openapi3.T, requestBody models.Api) (*models.Api, []string) {
+func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.Api, error) {
+	// 1) Parse en haal op
+	parsedUrl, err := url.Parse(requestBody.OasUri)
+	if err != nil {
+		return nil, helpers.NewBadRequest(
+			"Ongeldige URL",
+			helpers.InvalidParam{Name: "oasUri", Reason: "Moet een geldige URL zijn"},
+		)
+	}
+	resp, err := CorsGet(&http.Client{}, parsedUrl.String(), "https://developer.overheid.nl")
+	if err != nil {
+		return nil, helpers.NewInternalServerError(
+			fmt.Sprintf("fout bij ophalen OAS: %s", err),
+		)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, helpers.NewInternalServerError(
+			fmt.Sprintf("OAS download faalt met status %d", resp.StatusCode),
+		)
+	}
+
+	// 2) Parse OpenAPI
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, helpers.NewInternalServerError("kan response body niet lezen")
+	}
+	spec, err := openapi3.NewLoader().LoadFromData(data)
+	if err != nil {
+		return nil, helpers.NewBadRequest(
+			"Ongeldig OpenAPI-bestand",
+			helpers.InvalidParam{Name: "oasUri", Reason: err.Error()},
+		)
+	}
+
+	// 3) Build & validate
+	api := s.BuildApi(spec, requestBody)
+	invalids := ValidateApi(api, requestBody)
+	if len(invalids) > 0 {
+		return nil, helpers.NewBadRequest(
+			"Validatie mislukt: ontbrekende of ongeldige eigenschappen",
+			invalids...,
+		)
+	}
+
+	// 4) Sla op in DB
+	for _, server := range api.Servers {
+		if err := s.repo.SaveServer(server); err != nil {
+			return nil, helpers.NewInternalServerError("Probleem bij het opslaan van het server object: " + err.Error())
+		}
+	}
+	if err := s.repo.Save(api); err != nil {
+		return nil, helpers.NewInternalServerError("kan API niet opslaan: " + err.Error())
+	}
+
+	return api, nil
+}
+
+func (s *APIsAPIService) BuildApi(spec *openapi3.T, requestBody models.Api) *models.Api {
 	api := &models.Api{}
 	api.Id = uuid.New().String()
 	if spec.Info != nil {
@@ -135,97 +197,44 @@ func (s *APIsAPIService) BuildApiAndValidate(spec *openapi3.T, requestBody model
 		}
 	}
 	api.Servers = serversToSave
-	missing := ValidateApi(api, requestBody)
-	if len(missing) == 0 {
-		if len(serversToSave) == 0 {
-			print(api.Servers[0].Uri)
-			for _, s := range api.Servers {
-				if s.Uri != "" {
-					server := models.Server{
-						Id:          uuid.New().String(),
-						Uri:         s.Uri,
-						Description: s.Description,
-					}
-					serversToSave = append(serversToSave, server)
-				}
-			}
-			api.Servers = serversToSave
-		}
-		for _, server := range serversToSave {
-			if err := s.repo.SaveServer(server); err != nil {
-				missing = append(missing, fmt.Sprintf("kan server niet opslaan (%s): %v", server.Uri, err))
-			}
-		}
-	}
-	return api, missing
+
+	return api
 }
 
-func ValidateApi(api *models.Api, requestBody models.Api) []string {
-	var missing []string
-	if api.Title == "" {
-		if requestBody.Title != "" {
-			api.Title = requestBody.Title
-		} else {
-			missing = append(missing, "title")
-		}
-	}
-	if api.Description == "" {
-		if requestBody.Description != "" {
-			api.Description = requestBody.Description
-		} else {
-			missing = append(missing, "description")
-		}
-	}
-	if api.RepositoryUri == "" {
-		if requestBody.RepositoryUri != "" {
-			api.RepositoryUri = requestBody.RepositoryUri
-		} else {
-			missing = append(missing, "RepositoryUri")
-		}
-	}
+func ValidateApi(api *models.Api, requestBody models.Api) []helpers.InvalidParam {
+	var invalids []helpers.InvalidParam
 	if api.ContactUrl == "" {
 		if requestBody.ContactUrl != "" {
 			api.ContactUrl = requestBody.ContactUrl
 		} else {
-			missing = append(missing, "ContactUrl")
+			invalids = append(invalids, helpers.InvalidParam{
+				Name:   "contact.url",
+				Reason: "contact.url is verplicht",
+			})
 		}
 	}
 	if api.ContactName == "" {
 		if requestBody.ContactName != "" {
 			api.ContactName = requestBody.ContactName
 		} else {
-			missing = append(missing, "ContactName")
+			invalids = append(invalids, helpers.InvalidParam{
+				Name:   "contact.name",
+				Reason: "contact.name is verplicht",
+			})
 		}
 	}
 	if api.ContactEmail == "" {
 		if requestBody.ContactEmail != "" {
 			api.ContactEmail = requestBody.ContactEmail
 		} else {
-			missing = append(missing, "ContactEmail")
+			invalids = append(invalids, helpers.InvalidParam{
+				Name:   "contact.email",
+				Reason: "contact.email is verplicht",
+			})
 		}
 	}
-	//if api.Auth == "" {
-	//	if requestBody.Auth != "" {
-	//		api.Auth = requestBody.Auth
-	//	} else {
-	//		missing = append(missing, "Auth")
-	//	}
-	//}
-	if api.DocsUri == "" {
-		if requestBody.DocsUri != "" {
-			api.DocsUri = requestBody.DocsUri
-		} else {
-			missing = append(missing, "DocsUri")
-		}
-	}
-	if len(api.Servers) == 0 {
-		if len(requestBody.Servers) > 0 {
-			api.Servers = requestBody.Servers
-		} else {
-			missing = append(missing, "Servers")
-		}
-	}
-	return missing
+
+	return invalids
 }
 
 func deriveAuthType(spec *openapi3.T) string {

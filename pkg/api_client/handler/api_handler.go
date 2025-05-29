@@ -1,9 +1,8 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
-	"strings"
-
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
@@ -29,34 +28,25 @@ type listApisParams struct {
 }
 
 // ListApis handles GET /apis
-func (c *APIsAPIController) ListApis(ctx *gin.Context, params *listApisParams) (*models.PaginatedResponse, error) {
-	// standaardwaarden
+func (c *APIsAPIController) ListApis(ctx *gin.Context, params *listApisParams) (interface{}, error) {
 	if params.Page < 1 {
 		params.Page = 1
 	}
 	if params.PerPage < 1 {
 		params.PerPage = 10
 	}
+	baseURL := fmt.Sprintf("https://%s%s", ctx.Request.Host, ctx.FullPath())
 
-	paginated, err := c.service.ListApis(ctx.Request.Context(), params.Page, params.PerPage)
+	response, err := c.service.ListApis(ctx.Request.Context(), params.Page, params.PerPage, baseURL)
 	if err != nil {
 		return nil, err
 	}
-	return &paginated, nil
-}
-
-// retrieveApiParams defines path parameter for RetrieveApi
-type retrieveApiParams struct {
-	ID string `path:"id"`
+	return response, nil
 }
 
 // RetrieveApi handles GET /api/:id
-func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, params *retrieveApiParams) (*models.Api, error) {
-	if params.ID == "" {
-		return nil, fmt.Errorf("field 'id' is required")
-	}
-
-	api, err := c.service.RetrieveApi(ctx.Request.Context(), params.ID)
+func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, params *models.OasParams) (*models.Api, error) {
+	api, err := c.service.RetrieveApi(ctx.Request.Context(), params.OasUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -68,30 +58,22 @@ func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, params *retrieveApiPar
 
 // CreateApiFromOas handles POST /apis
 func (c *APIsAPIController) CreateApiFromOas(ctx *gin.Context, body *models.Api) (*models.Api, error) {
-	created, missing, err := c.service.CreateApiFromOas(*body)
+	created, err := c.service.CreateApiFromOas(*body)
 	if err != nil {
-		if len(missing) > 0 {
-			return nil, fmt.Errorf("missing properties: %s", strings.Join(missing, ", "))
-		}
 		return nil, err
 	}
 	return created, nil
 }
 
-// UpdateApi handles PUT /api/:id
-// updateApiParams defines the path parameter and request body for UpdateApi
-type updateApiParams struct {
-	ID         string `path:"id" json:"-"`
-	models.Api        // embedded: body fields are all JSON properties
-}
-
-// UpdateApi handles PUT /api/:id
-func (c *APIsAPIController) UpdateApi(ctx *gin.Context, params *updateApiParams) (*models.Api, error) {
-	// ensure that the API object's ID matches the path parameter
-	params.Api.Id = params.ID
-
-	if err := c.service.UpdateApi(ctx.Request.Context(), params.Api); err != nil {
+// UpdateApi handles PUT /api
+func (c *APIsAPIController) UpdateApi(ctx *gin.Context, params *models.OasParams) (interface{}, error) {
+	if err := c.service.UpdateOasUri(ctx.Request.Context(), params.OasUrl); err != nil {
+		if errors.Is(err, services.ErrNeedsPost) {
+			return nil, helpers.NewNotFound(fmt.Sprintf("'%s' moet als nieuwe API geregistreerd worden via POST en de oude API als deprecated worden gemarkeerd", params.OasUrl),
+				helpers.InvalidParam{Name: "oasUri", Reason: "Deze URI is nieuw of significant gewijzigd"},
+			)
+		}
 		return nil, err
 	}
-	return &params.Api, nil
+	return nil, nil
 }

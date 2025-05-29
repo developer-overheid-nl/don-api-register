@@ -29,7 +29,7 @@ type Api struct {
 type Organisation struct {
 	Id    string `gorm:"primarykey"`
 	Label string `json:"label,omitempty"`
-	Uri   string `json:"uri,omitempty"`
+	Uri   string `json:"uri,omitempty"` //dit moet primairy worden.
 }
 
 type Server struct {
@@ -38,9 +38,36 @@ type Server struct {
 	Uri         string `json:"uri,omitempty"`
 }
 
-type PaginatedResponse struct {
-	Pagination Pagination `json:"pagination"`
-	Results    []Api      `json:"results"`
+// Link representeert een hypermedia‐link
+type Link struct {
+	Href string `json:"href"`
+}
+
+// Links bevat self/next/prev links volgens HAL-stijl
+type Links struct {
+	Self *Link `json:"self"`
+	Next *Link `json:"next,omitempty"`
+	Prev *Link `json:"prev,omitempty"`
+}
+
+// Contact bundelt de contactgegevens
+type Contact struct {
+	Name  string `json:"name"`
+	URL   string `json:"url,omitempty"`
+	Email string `json:"email,omitempty"`
+}
+
+// ApiResponse is de externe view van een API
+type ApiResponse struct {
+	Title   string  `json:"title"`
+	OasUri  string  `json:"oasUri"`
+	Contact Contact `json:"contact"`
+}
+
+// ApiListResponse is het nieuwe root-object
+type ApiListResponse struct {
+	Links Links         `json:"_links"`
+	Apis  []ApiResponse `json:"apis"`
 }
 
 type Pagination struct {
@@ -50,4 +77,8 @@ type Pagination struct {
 	RecordsPerPage int  `json:"recordsPerPage"`
 	TotalPages     int  `json:"totalPages"`
 	TotalRecords   int  `json:"totalRecords"`
+}
+
+type OasParams struct {
+	OasUrl string `json:"oasUrl" binding:"required,url"`
 }

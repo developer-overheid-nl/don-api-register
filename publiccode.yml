@@ -1,0 +1,45 @@
+# This repository adheres to the publiccode.yml standard by including this
+# metadata file that makes public software easily discoverable.
+# More info at https://github.com/publiccodeyml/publiccode.yml
+
+publiccodeYmlVersion: "0.4"
+
+name: API van het API register
+url: "https://github.com/developer-overheid-nl/don-api-register"
+softwareType: standalone/web
+releaseDate: "1970-01-01"
+platforms:
+  - web
+
+categories:
+  - collaboration
+developmentStatus: beta
+
+description:
+  nl:
+    # Mand!
+    shortDescription: API van het API register (apis.developer.overheid.nl)
+
+legal:
+  license: EUPL-1.2
+  mainCopyrightOwner: Stichting Geonovum
+  repoOwner: Stichting Geonovum
+
+intendedAudience:
+  countries:
+    - nl
+  scope:
+    - government
+
+localisation:
+  availableLanguages:
+    - nl
+  localisationReady: false
+
+maintenance:
+  type: internal
+
+  contacts:
+    - name: Dimitri van Hees
+      email: d.vanhees@geonovum.nl
+      affiliation: Geonovum

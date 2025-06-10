@@ -17,7 +17,6 @@ type Api struct {
 	Title          string        `json:"title,omitempty"`
 	Description    string        `json:"description,omitempty"`
 	Auth           string        `json:"auth,omitempty"`
-	AdrScore       string        `json:"adrScore,omitempty"`
 	RepositoryUri  string        `json:"repositoryUri,omitempty"`
 	ContactName    string        `json:"contact_name,omitempty"`
 	ContactUrl     string        `json:"contact_url,omitempty"`

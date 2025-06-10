@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"io"
 	"net/http"
 	"os"
@@ -100,4 +101,17 @@ func LoadOASVersion(path string) (string, error) {
 	}
 
 	return oas.Info.Version, nil
+}
+
+func ToDTO(api *models.Api) *models.ApiResponse {
+	return &models.ApiResponse{
+		Id:     api.Id,
+		Title:  api.Title,
+		OasUri: api.OasUri,
+		Contact: models.Contact{
+			Name:  api.ContactName,
+			URL:   api.ContactUrl,
+			Email: api.ContactEmail,
+		},
+	}
 }

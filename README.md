@@ -25,3 +25,5 @@ To run the server, follow these simple steps:
 docker-compose up -d
 go run cmd/main.go
 ```
+
+### Linting OpenAPI URLs

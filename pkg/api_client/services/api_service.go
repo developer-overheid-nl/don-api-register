@@ -2,17 +2,22 @@ package services
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
+	"github.com/developer-overheid-nl/don-api-register/pkg/linter"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/google/uuid"
+	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 var ErrNeedsPost = errors.New(
@@ -35,13 +40,10 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, oasUri string) error 
 		if api == nil || errors.Is(err, gorm.ErrRecordNotFound) {
 			return fmt.Errorf("%w: %s", ErrNeedsPost, oasUri)
 		}
-		// ongeplande DB-fout
 		return fmt.Errorf("databasefout bij FindByOasUrl: %w", err)
 	}
 
-	// wél gevonden → roep de linter
-	//_ = s.linter.Lint(oasUri)
-	return nil
+	return s.lintAndPersist(ctx, api, oasUri)
 }
 
 func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Api, error) {
@@ -59,17 +61,9 @@ func (s *APIsAPIService) ListApis(ctx context.Context, page, perPage int, baseUR
 	}
 
 	// map domain-model → DTO
-	dtos := make([]models.ApiResponse, len(apis))
+	dtos := make([]*models.ApiResponse, len(apis))
 	for i, api := range apis {
-		dtos[i] = models.ApiResponse{
-			Title:  api.Title,
-			OasUri: api.OasUri,
-			Contact: models.Contact{
-				Name:  api.ContactName,
-				URL:   api.ContactUrl,
-				Email: api.ContactEmail,
-			},
-		}
+		dtos[i] = helpers.ToDTO(&api)
 	}
 
 	// links bouwen
@@ -103,7 +97,7 @@ func CorsGet(c *http.Client, u string, corsurl string) (*http.Response, error) {
 	return c.Do(req)
 }
 
-func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.Api, error) {
+func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiResponse, error) {
 	// 1) Parse en haal op
 	parsedUrl, err := url.Parse(requestBody.OasUri)
 	if err != nil {
@@ -130,7 +124,9 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.Api, 
 	if err != nil {
 		return nil, helpers.NewInternalServerError("kan response body niet lezen")
 	}
-	spec, err := openapi3.NewLoader().LoadFromData(data)
+	loader := openapi3.NewLoader()
+	loader.IsExternalRefsAllowed = true
+	spec, err := loader.LoadFromData(data)
 	if err != nil {
 		return nil, helpers.NewBadRequest(
 			"Ongeldig OpenAPI-bestand",
@@ -140,6 +136,8 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.Api, 
 
 	// 3) Build & validate
 	api := s.BuildApi(spec, requestBody)
+	sum := sha256.Sum256(data)
+	api.OasHash = hex.EncodeToString(sum[:])
 	invalids := ValidateApi(api, requestBody)
 	if len(invalids) > 0 {
 		return nil, helpers.NewBadRequest(
@@ -158,7 +156,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.Api, 
 		return nil, helpers.NewInternalServerError("kan API niet opslaan: " + err.Error())
 	}
 
-	return api, nil
+	return helpers.ToDTO(api), nil
 }
 
 func (s *APIsAPIService) BuildApi(spec *openapi3.T, requestBody models.Api) *models.Api {
@@ -197,7 +195,7 @@ func (s *APIsAPIService) BuildApi(spec *openapi3.T, requestBody models.Api) *mod
 		}
 	}
 	api.Servers = serversToSave
-
+	api.OrganisationID = nil
 	return api
 }
 
@@ -256,4 +254,73 @@ func deriveAuthType(spec *openapi3.T) string {
 		}
 	}
 	return "unknown"
+}
+
+func computeOASHash(oasURL string) (string, error) {
+	resp, err := http.Get(oasURL)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("OAS download failed with status %d", resp.StatusCode)
+	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:]), nil
+}
+
+// LintAllApis runs the linter for every registered API and stores
+// the output in the database
+func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
+	apis, err := s.repo.AllApis(ctx)
+	if err != nil {
+		return err
+	}
+
+	sem := make(chan struct{}, 5)
+	g, ctx := errgroup.WithContext(ctx)
+
+	for _, api := range apis {
+		api := api
+		g.Go(func() error {
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			return s.lintAndPersist(ctx, &api, api.OasUri)
+		})
+	}
+	return g.Wait()
+}
+
+// lintAndPersist runs the linter when the OAS has changed and stores
+// both the lint result and updated hash.
+func (s *APIsAPIService) lintAndPersist(ctx context.Context, api *models.Api, uri string) error {
+	newHash, err := computeOASHash(uri)
+	if err != nil {
+		return err
+	}
+	if newHash == api.OasHash {
+		return nil
+	}
+
+	output, lintErr := linter.LintURL(ctx, uri)
+	msgs := linter.ParseOutput(output)
+	res := &models.LintResult{
+		ID:        uuid.New().String(),
+		ApiID:     api.Id,
+		Result:    output,
+		Messages:  msgs,
+		CreatedAt: time.Now(),
+	}
+	if saveErr := s.repo.SaveLintResult(ctx, res); saveErr != nil {
+		return saveErr
+	}
+	api.OasHash = newHash
+	if err := s.repo.UpdateApi(ctx, *api); err != nil {
+		return err
+	}
+	return lintErr
 }

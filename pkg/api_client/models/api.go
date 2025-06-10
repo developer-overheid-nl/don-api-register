@@ -10,8 +10,9 @@
 package models
 
 type Api struct {
-	Id             string        `gorm:"primaryKey"`
-	OasUri         string        `json:"oasUri,omitempty"`
+	Id             string        `gorm:"column:id;primaryKey"`
+	OasUri         string        `json:"oasUrl,omitempty"`
+	OasHash        string        `json:"-" gorm:"column:oas_hash"`
 	DocsUri        string        `json:"docsUri,omitempty"`
 	Title          string        `json:"title,omitempty"`
 	Description    string        `json:"description,omitempty"`
@@ -21,15 +22,13 @@ type Api struct {
 	ContactName    string        `json:"contact_name,omitempty"`
 	ContactUrl     string        `json:"contact_url,omitempty"`
 	ContactEmail   string        `json:"contact_email,omitempty"`
-	Organisation   *Organisation `json:"organisation,omitempty" gorm:"foreignKey:OrganisationID"`
-	OrganisationID string        `json:"organisationId,omitempty"`
+	Organisation   *Organisation `json:"organisation,omitempty" gorm:"foreignKey:OrganisationID;references:Uri"`
+	OrganisationID *string       `json:"organisationId,omitempty" gorm:"column:organisation_id"`
 	Servers        []Server      `gorm:"many2many:api_servers;" json:"servers,omitempty"`
 }
 
 type Organisation struct {
-	Id    string `gorm:"primarykey"`
-	Label string `json:"label,omitempty"`
-	Uri   string `json:"uri,omitempty"` //dit moet primairy worden.
+	Uri string `gorm:"column:uri;primaryKey"`
 }
 
 type Server struct {
@@ -59,6 +58,7 @@ type Contact struct {
 
 // ApiResponse is de externe view van een API
 type ApiResponse struct {
+	Id      string  `json:"id"`
 	Title   string  `json:"title"`
 	OasUri  string  `json:"oasUri"`
 	Contact Contact `json:"contact"`
@@ -66,8 +66,8 @@ type ApiResponse struct {
 
 // ApiListResponse is het nieuwe root-object
 type ApiListResponse struct {
-	Links Links         `json:"_links"`
-	Apis  []ApiResponse `json:"apis"`
+	Links Links          `json:"_links"`
+	Apis  []*ApiResponse `json:"apis"`
 }
 
 type Pagination struct {

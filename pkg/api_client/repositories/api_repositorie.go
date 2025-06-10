@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"math"
 )
@@ -16,6 +17,8 @@ type ApiRepository interface {
 	FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api, error)
 	SaveServer(server models.Server) error
 	SaveOrganisatie(organisation *models.Organisation) error
+	AllApis(ctx context.Context) ([]models.Api, error)
+	SaveLintResult(ctx context.Context, result *models.LintResult) error
 }
 
 type apiRepository struct {
@@ -27,13 +30,14 @@ func NewApiRepository(db *gorm.DB) ApiRepository {
 }
 
 func (r *apiRepository) Save(api *models.Api) error {
-	oldApi, _ := r.FindByOasUrl(context.Background(), api.OasUri)
-	if oldApi == nil {
-		return r.db.Create(api).Error
-	} else {
-		api.Id = oldApi.Id
-		return r.db.Save(api).Error
+	oldApi, err := r.FindByOasUrl(context.Background(), api.OasUri)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
 	}
+	if oldApi != nil {
+		return errors.New("api bestaat al")
+	}
+	return r.db.Create(api).Error
 }
 
 func (r *apiRepository) GetApis(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
@@ -102,5 +106,27 @@ func (r *apiRepository) SaveServer(server models.Server) error {
 }
 func (r *apiRepository) SaveOrganisatie(organisation *models.Organisation) error {
 	return r.db.Save(&organisation).Error
+}
 
+func (r *apiRepository) AllApis(ctx context.Context) ([]models.Api, error) {
+	var apis []models.Api
+	if err := r.db.WithContext(ctx).Find(&apis).Error; err != nil {
+		return nil, err
+	}
+	return apis, nil
+}
+
+func (r *apiRepository) SaveLintResult(ctx context.Context, result *models.LintResult) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if len(result.Messages) > 0 {
+			for i := range result.Messages {
+				result.Messages[i].ID = uuid.New().String()
+				result.Messages[i].LintResultID = result.ID
+			}
+		}
+		if err := tx.Create(result).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }

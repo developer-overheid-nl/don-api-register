@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/handler"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers"
+	"github.com/developer-overheid-nl/don-api-register/pkg/jobs"
 	"github.com/gin-gonic/gin"
 	"github.com/loopfz/gadgeto/tonic"
 	"log"
@@ -68,6 +70,7 @@ func main() {
 	apiRepo := repositories.NewApiRepository(db)
 	APIsAPIService := services.NewAPIsAPIService(apiRepo)
 	APIsAPIController := handler.NewAPIsAPIController(APIsAPIService)
+	jobs.ScheduleDailyLint(context.Background(), APIsAPIService)
 
 	// Start server
 	router := api.NewRouter(version, APIsAPIController)

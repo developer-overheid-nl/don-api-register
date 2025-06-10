@@ -46,12 +46,20 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, oasUri string) error 
 	return s.lintAndPersist(ctx, api, oasUri)
 }
 
-func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Api, error) {
+func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.ApiWithLintResponse, error) {
 	api, err := s.repo.GetApiByID(ctx, id)
 	if err != nil || api == nil {
 		return nil, err
 	}
-	return api, nil
+	lintResults, err := s.repo.GetLintResults(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.ApiWithLintResponse{
+		Api:         api,
+		LintResults: lintResults,
+	}, nil
 }
 
 func (s *APIsAPIService) ListApis(ctx context.Context, page, perPage int, baseURL string) (models.ApiListResponse, error) {
@@ -311,7 +319,8 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, api *models.Api, ur
 	res := &models.LintResult{
 		ID:        uuid.New().String(),
 		ApiID:     api.Id,
-		Result:    output,
+		Successes: len(msgs) == 0,
+		Failures:  len(msgs),
 		Messages:  msgs,
 		CreatedAt: time.Now(),
 	}

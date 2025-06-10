@@ -82,3 +82,7 @@ type Pagination struct {
 type OasParams struct {
 	OasUrl string `json:"oasUrl" binding:"required,url"`
 }
+
+type RetrieveApiRequest struct {
+	Id string `path:"id"`
+}

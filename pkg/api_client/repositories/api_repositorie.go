@@ -11,7 +11,7 @@ import (
 
 type ApiRepository interface {
 	GetApis(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error)
-	GetApiByID(ctx context.Context, id string) (*models.Api, error)
+	GetApiByID(ctx context.Context, oasUrl string) (*models.Api, error)
 	Save(api *models.Api) error
 	UpdateApi(ctx context.Context, api models.Api) error
 	FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api, error)
@@ -19,6 +19,7 @@ type ApiRepository interface {
 	SaveOrganisatie(organisation *models.Organisation) error
 	AllApis(ctx context.Context) ([]models.Api, error)
 	SaveLintResult(ctx context.Context, result *models.LintResult) error
+	GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error)
 }
 
 type apiRepository struct {
@@ -129,4 +130,16 @@ func (r *apiRepository) SaveLintResult(ctx context.Context, result *models.LintR
 		}
 		return nil
 	})
+}
+
+func (r *apiRepository) GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error) {
+	var results []models.LintResult
+	err := r.db.WithContext(ctx).Preload("Messages").
+		Where("api_id = ?", apiID).
+		Order("created_at desc").
+		Find(&results).Error
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
 }

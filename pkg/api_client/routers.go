@@ -82,7 +82,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.ListApis, 200),
 	)
 
-	rg.GET("/api",
+	rg.GET("/apis/:id",
 		[]fizz.OperationOption{
 			fizz.Summary("Specifieke API ophalen"),
 			apiVersionHeader,

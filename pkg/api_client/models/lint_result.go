@@ -9,7 +9,8 @@ import (
 type LintResult struct {
 	ID        string        `gorm:"column:id;primaryKey"`
 	ApiID     string        `gorm:"column:api_id"`
-	Result    string        `gorm:"column:result"`
+	Successes bool          `json:"successes"`
+	Failures  int           `json:"failures"`
 	CreatedAt time.Time     `gorm:"column:created_at"`
 	Messages  []LintMessage `gorm:"foreignKey:LintResultID" json:"messages,omitempty"`
 }
@@ -23,4 +24,11 @@ type LintMessage struct {
 	Code         string `gorm:"column:code" json:"code"`
 	Message      string `gorm:"column:message" json:"message"`
 	Path         string `gorm:"column:path" json:"path"`
+}
+
+// ApiWithLintResponse represents a single API including its lint results
+// and a summary of passed/failed runs.
+type ApiWithLintResponse struct {
+	*Api        `json:"api"`
+	LintResults []LintResult `json:"lintResults"`
 }

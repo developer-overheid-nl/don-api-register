@@ -45,8 +45,8 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, params *listApisParams) (
 }
 
 // RetrieveApi handles GET /api/:id
-func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, params *models.OasParams) (*models.Api, error) {
-	api, err := c.service.RetrieveApi(ctx.Request.Context(), params.OasUrl)
+func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, req *models.RetrieveApiRequest) (*models.ApiWithLintResponse, error) {
+	api, err := c.service.RetrieveApi(ctx.Request.Context(), req.Id)
 	if err != nil {
 		return nil, err
 	}

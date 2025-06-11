@@ -44,6 +44,7 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, oasUri string) error 
 	tools.Dispatch(context.Background(), "lint", func(ctx context.Context) error {
 		return s.lintAndPersist(ctx, api, oasUri)
 	})
+	println("OAS URI updated and linted:", oasUri)
 	return nil
 }
 
@@ -150,7 +151,11 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiRe
 		)
 	}
 
-	_ = s.lintAndPersist(context.Background(), api, requestBody.OasUri)
+	tools.Dispatch(context.Background(), "lint", func(ctx context.Context) error {
+		return s.lintAndPersist(ctx, api, requestBody.OasUri)
+	})
+
+	println("OAS URI updated and linted:", requestBody.OasUri)
 	// 4) Sla op in DB
 	for _, server := range api.Servers {
 		if err := s.repo.SaveServer(server); err != nil {
@@ -189,6 +194,7 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 // lintAndPersist runs the linter when the OAS has changed and stores
 // both the lint result and updated hash.
 func (s *APIsAPIService) lintAndPersist(ctx context.Context, api *models.Api, uri string) error {
+	println("Linting API with OAS URI:", uri)
 	newHash, err := helpers.ComputeOASHash(uri)
 	if err != nil {
 		return err

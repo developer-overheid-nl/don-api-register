@@ -51,7 +51,7 @@ func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, req *models.RetrieveAp
 		return nil, err
 	}
 	if api == nil {
-		return nil, fmt.Errorf("API not found")
+		return nil, helpers.NewNotFound("Api not found")
 	}
 	return api, nil
 }

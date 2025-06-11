@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers"
@@ -116,13 +117,13 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiRe
 	}
 	resp, err := CorsGet(&http.Client{}, parsedUrl.String(), "https://developer.overheid.nl")
 	if err != nil {
-		return nil, helpers.NewInternalServerError(
+		return nil, helpers.NewBadRequest(
 			fmt.Sprintf("fout bij ophalen OAS: %s", err),
 		)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, helpers.NewInternalServerError(
+		return nil, helpers.NewBadRequest(
 			fmt.Sprintf("OAS download faalt met status %d", resp.StatusCode),
 		)
 	}
@@ -130,16 +131,22 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiRe
 	// 2) Parse OpenAPI
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, helpers.NewInternalServerError("kan response body niet lezen")
+		return nil, helpers.NewBadRequest("kan response body niet lezen")
 	}
 	loader := openapi3.NewLoader()
-	loader.IsExternalRefsAllowed = true //voor de hash is belangrijk dat deze plat geslagen wordt.
+	loader.IsExternalRefsAllowed = true
 	spec, err := loader.LoadFromData(data)
 	if err != nil {
 		return nil, helpers.NewBadRequest(
 			"Ongeldig OpenAPI-bestand",
 			helpers.InvalidParam{Name: "oasUri", Reason: err.Error()},
 		)
+	}
+	if err := loader.ResolveRefsIn(spec, nil); err != nil {
+		return nil, helpers.NewBadRequest("could not resolve refs", helpers.InvalidParam{Name: "External refs", Reason: err.Error()})
+	}
+	if err := spec.Validate(context.Background()); err != nil {
+		return nil, helpers.NewBadRequest("invalid OAS document", helpers.InvalidParam{Name: "Invalid OAS document", Reason: err.Error()})
 	}
 
 	// 3) Build & validate
@@ -276,7 +283,25 @@ func computeOASHash(oasURL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	sum := sha256.Sum256(data)
+	loader := openapi3.NewLoader()
+	loader.IsExternalRefsAllowed = true
+	spec, err := loader.LoadFromData(data)
+	if err != nil {
+		return "", fmt.Errorf("could not parse OAS: %w", err)
+	}
+
+	if err := loader.ResolveRefsIn(spec, nil); err != nil {
+		return "", fmt.Errorf("could not resolve refs: %w", err)
+	}
+	if err := spec.Validate(context.Background()); err != nil {
+		return "", fmt.Errorf("invalid OAS document: %w", err)
+	}
+
+	serialized, err := json.Marshal(spec)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(serialized)
 	return hex.EncodeToString(sum[:]), nil
 }
 

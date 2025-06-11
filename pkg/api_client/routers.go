@@ -110,7 +110,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	)
 
 	// 6) Pas ná alle routes pas de OpenAPI endpoint toe
-	f.GET("/openapi.json", []fizz.OperationOption{}, f.OpenAPI(info, "json"))
+	f.GET("/v1/openapi.json", []fizz.OperationOption{}, f.OpenAPI(info, "json"))
 
 	return f
 }

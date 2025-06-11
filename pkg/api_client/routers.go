@@ -115,11 +115,21 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	return f
 }
 
+type apiVersionWriter struct {
+	gin.ResponseWriter
+	version string
+}
+
+func (w *apiVersionWriter) WriteHeader(code int) {
+	if code >= 200 && code < 300 {
+		w.Header().Set("API-Version", w.version)
+	}
+	w.ResponseWriter.WriteHeader(code)
+}
+
 func APIVersionMiddleware(version string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		c.Writer = &apiVersionWriter{c.Writer, version}
 		c.Next()
-		if c.Writer.Status() >= 200 && c.Writer.Status() < 300 {
-			c.Writer.Header().Set("API-Version", version)
-		}
 	}
 }

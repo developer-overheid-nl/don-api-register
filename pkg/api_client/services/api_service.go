@@ -42,8 +42,8 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, oasUri string) error 
 		}
 		return fmt.Errorf("databasefout bij FindByOasUrl: %w", err)
 	}
-
-	return s.lintAndPersist(ctx, api, oasUri)
+	_ = s.lintAndPersist(ctx, api, oasUri)
+	return nil
 }
 
 func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.ApiWithLintResponse, error) {
@@ -152,10 +152,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiRe
 		)
 	}
 
-	err = s.lintAndPersist(context.Background(), api, requestBody.OasUri)
-	if err != nil {
-		return nil, err
-	}
+	_ = s.lintAndPersist(context.Background(), api, requestBody.OasUri)
 	// 4) Sla op in DB
 	for _, server := range api.Servers {
 		if err := s.repo.SaveServer(server); err != nil {

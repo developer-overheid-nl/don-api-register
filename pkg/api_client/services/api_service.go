@@ -2,15 +2,13 @@ package services
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
 	"github.com/developer-overheid-nl/don-api-register/pkg/linter"
+	"github.com/developer-overheid-nl/don-api-register/pkg/tools"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
@@ -43,7 +41,9 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, oasUri string) error 
 		}
 		return fmt.Errorf("databasefout bij FindByOasUrl: %w", err)
 	}
-	_ = s.lintAndPersist(ctx, api, oasUri)
+	tools.Dispatch(context.Background(), "lint", func(ctx context.Context) error {
+		return s.lintAndPersist(ctx, api, oasUri)
+	})
 	return nil
 }
 
@@ -97,15 +97,6 @@ func (s *APIsAPIService) UpdateApi(ctx context.Context, api models.Api) error {
 	return s.repo.UpdateApi(ctx, api)
 }
 
-func CorsGet(c *http.Client, u string, corsurl string) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodGet, u, http.NoBody)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Origin", corsurl)
-	return c.Do(req)
-}
-
 func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiResponse, error) {
 	// 1) Parse en haal op
 	parsedUrl, err := url.Parse(requestBody.OasUri)
@@ -115,7 +106,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiRe
 			helpers.InvalidParam{Name: "oasUri", Reason: "Moet een geldige URL zijn"},
 		)
 	}
-	resp, err := CorsGet(&http.Client{}, parsedUrl.String(), "https://developer.overheid.nl")
+	resp, err := helpers.CorsGet(&http.Client{}, parsedUrl.String(), "https://developer.overheid.nl")
 	if err != nil {
 		return nil, helpers.NewBadRequest(
 			fmt.Sprintf("fout bij ophalen OAS: %s", err),
@@ -150,8 +141,8 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiRe
 	}
 
 	// 3) Build & validate
-	api := s.BuildApi(spec, requestBody)
-	invalids := ValidateApi(api, requestBody)
+	api := helpers.BuildApi(spec, requestBody)
+	invalids := helpers.ValidateApi(api, requestBody)
 	if len(invalids) > 0 {
 		return nil, helpers.NewBadRequest(
 			"Validatie mislukt: ontbrekende of ongeldige eigenschappen",
@@ -171,138 +162,6 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiRe
 	}
 
 	return helpers.ToDTO(api), nil
-}
-
-func (s *APIsAPIService) BuildApi(spec *openapi3.T, requestBody models.Api) *models.Api {
-	api := &models.Api{}
-	api.Id = uuid.New().String()
-	if spec.Info != nil {
-		api.Title = spec.Info.Title
-		api.Description = spec.Info.Description
-		if spec.Info.Contact != nil {
-			api.ContactName = spec.Info.Contact.Name
-			api.ContactEmail = spec.Info.Contact.Email
-			api.ContactUrl = spec.Info.Contact.URL
-		}
-	}
-
-	api.OasUri = requestBody.OasUri
-	if spec.ExternalDocs != nil {
-		api.DocsUri = spec.ExternalDocs.URL
-	}
-
-	if len(spec.Security) > 0 {
-		api.Auth = deriveAuthType(spec)
-	} else if spec.Components != nil && len(spec.Components.SecuritySchemes) > 0 {
-		api.Auth = deriveAuthType(spec)
-	}
-
-	var serversToSave []models.Server
-	for _, s := range spec.Servers {
-		if s.URL != "" {
-			server := models.Server{
-				Id:          uuid.New().String(),
-				Uri:         s.URL,
-				Description: s.Description,
-			}
-			serversToSave = append(serversToSave, server)
-		}
-	}
-	api.Servers = serversToSave
-	api.OrganisationID = nil
-	return api
-}
-
-func ValidateApi(api *models.Api, requestBody models.Api) []helpers.InvalidParam {
-	var invalids []helpers.InvalidParam
-	if api.ContactUrl == "" {
-		if requestBody.ContactUrl != "" {
-			api.ContactUrl = requestBody.ContactUrl
-		} else {
-			invalids = append(invalids, helpers.InvalidParam{
-				Name:   "contact.url",
-				Reason: "contact.url is verplicht",
-			})
-		}
-	}
-	if api.ContactName == "" {
-		if requestBody.ContactName != "" {
-			api.ContactName = requestBody.ContactName
-		} else {
-			invalids = append(invalids, helpers.InvalidParam{
-				Name:   "contact.name",
-				Reason: "contact.name is verplicht",
-			})
-		}
-	}
-	if api.ContactEmail == "" {
-		if requestBody.ContactEmail != "" {
-			api.ContactEmail = requestBody.ContactEmail
-		} else {
-			invalids = append(invalids, helpers.InvalidParam{
-				Name:   "contact.email",
-				Reason: "contact.email is verplicht",
-			})
-		}
-	}
-
-	return invalids
-}
-
-func deriveAuthType(spec *openapi3.T) string {
-	for _, schemeRef := range spec.Components.SecuritySchemes {
-		scheme := schemeRef.Value
-		if scheme == nil {
-			continue
-		}
-
-		switch scheme.Type {
-		case "apiKey":
-			return "api_key"
-		case "http":
-			return scheme.Scheme
-		case "oauth2":
-			return "oauth2"
-		case "openIdConnect":
-			return "openid"
-		}
-	}
-	return "unknown"
-}
-
-func computeOASHash(oasURL string) (string, error) {
-	resp, err := http.Get(oasURL)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("OAS download failed with status %d", resp.StatusCode)
-	}
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	loader := openapi3.NewLoader()
-	loader.IsExternalRefsAllowed = true
-	spec, err := loader.LoadFromData(data)
-	if err != nil {
-		return "", fmt.Errorf("could not parse OAS: %w", err)
-	}
-
-	if err := loader.ResolveRefsIn(spec, nil); err != nil {
-		return "", fmt.Errorf("could not resolve refs: %w", err)
-	}
-	if err := spec.Validate(context.Background()); err != nil {
-		return "", fmt.Errorf("invalid OAS document: %w", err)
-	}
-
-	serialized, err := json.Marshal(spec)
-	if err != nil {
-		return "", err
-	}
-	sum := sha256.Sum256(serialized)
-	return hex.EncodeToString(sum[:]), nil
 }
 
 // LintAllApis runs the linter for every registered API and stores
@@ -330,7 +189,7 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 // lintAndPersist runs the linter when the OAS has changed and stores
 // both the lint result and updated hash.
 func (s *APIsAPIService) lintAndPersist(ctx context.Context, api *models.Api, uri string) error {
-	newHash, err := computeOASHash(uri)
+	newHash, err := helpers.ComputeOASHash(uri)
 	if err != nil {
 		return err
 	}

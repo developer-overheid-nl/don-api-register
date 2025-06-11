@@ -133,7 +133,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiRe
 		return nil, helpers.NewInternalServerError("kan response body niet lezen")
 	}
 	loader := openapi3.NewLoader()
-	loader.IsExternalRefsAllowed = true
+	loader.IsExternalRefsAllowed = true //voor de hash is belangrijk dat deze plat geslagen wordt.
 	spec, err := loader.LoadFromData(data)
 	if err != nil {
 		return nil, helpers.NewBadRequest(
@@ -144,8 +144,6 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiRe
 
 	// 3) Build & validate
 	api := s.BuildApi(spec, requestBody)
-	sum := sha256.Sum256(data)
-	api.OasHash = hex.EncodeToString(sum[:])
 	invalids := ValidateApi(api, requestBody)
 	if len(invalids) > 0 {
 		return nil, helpers.NewBadRequest(
@@ -154,6 +152,10 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiRe
 		)
 	}
 
+	err = s.lintAndPersist(context.Background(), api, requestBody.OasUri)
+	if err != nil {
+		return nil, err
+	}
 	// 4) Sla op in DB
 	for _, server := range api.Servers {
 		if err := s.repo.SaveServer(server); err != nil {
@@ -315,14 +317,25 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, api *models.Api, ur
 	}
 
 	output, lintErr := linter.LintURL(ctx, uri)
-	msgs := linter.ParseOutput(output)
+	timeNow := time.Now()
+	msgs := helpers.ParseOutput(output, timeNow)
+	var errorCount, warnCount int
+	for _, m := range msgs {
+		switch m.Severity {
+		case "error":
+			errorCount++
+		case "warning":
+			warnCount++
+		}
+	}
 	res := &models.LintResult{
 		ID:        uuid.New().String(),
 		ApiID:     api.Id,
-		Successes: len(msgs) == 0,
-		Failures:  len(msgs),
+		Successes: errorCount == 0,
+		Failures:  errorCount,
+		Warnings:  warnCount,
 		Messages:  msgs,
-		CreatedAt: time.Now(),
+		CreatedAt: timeNow,
 	}
 	if saveErr := s.repo.SaveLintResult(ctx, res); saveErr != nil {
 		return saveErr

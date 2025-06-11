@@ -63,11 +63,11 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		Title:       "API register API v1",
 		Description: "API van het API register (apis.developer.overheid.nl)",
 		Version:     apiVersion,
-		Contact: &openapi.Contact{
-			Name:  "Team developer.overheid.nl",
-			Email: "developer@overheid.nl",
-			URL:   "https://apis.developer.overheid.nl",
-		},
+		//Contact: &openapi.Contact{
+		//	Name:  "Team developer.overheid.nl",
+		//	Email: "developer@overheid.nl",
+		//	URL:   "https://apis.developer.overheid.nl",
+		//},
 	}
 
 	// 5) Registreer al je endpoints met tonic.Handler én de header-optie

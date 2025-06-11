@@ -3,8 +3,8 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"math"
 )
@@ -121,10 +121,10 @@ func (r *apiRepository) SaveLintResult(ctx context.Context, result *models.LintR
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if len(result.Messages) > 0 {
 			for i := range result.Messages {
-				result.Messages[i].ID = uuid.New().String()
 				result.Messages[i].LintResultID = result.ID
 			}
 		}
+		fmt.Printf("%+v\n", result)
 		if err := tx.Create(result).Error; err != nil {
 			return err
 		}
@@ -135,6 +135,7 @@ func (r *apiRepository) SaveLintResult(ctx context.Context, result *models.LintR
 func (r *apiRepository) GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error) {
 	var results []models.LintResult
 	err := r.db.WithContext(ctx).Preload("Messages").
+		Preload("Messages.Infos").
 		Where("api_id = ?", apiID).
 		Order("created_at desc").
 		Find(&results).Error

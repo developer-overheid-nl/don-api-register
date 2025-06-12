@@ -12,13 +12,13 @@ import (
 
 // APIsAPIController binds HTTP requests to the APIsAPIService
 type APIsAPIController struct {
-	service      *services.APIsAPIService
+	Service      *services.APIsAPIService
 	errorHandler helpers.ErrorHandler
 }
 
 // NewAPIsAPIController creates a new controller
 func NewAPIsAPIController(s *services.APIsAPIService) *APIsAPIController {
-	return &APIsAPIController{service: s, errorHandler: helpers.DefaultErrorHandler}
+	return &APIsAPIController{Service: s, errorHandler: helpers.DefaultErrorHandler}
 }
 
 // listApisParams defines query parameters for ListApis
@@ -36,8 +36,7 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, params *listApisParams) (
 		params.PerPage = 10
 	}
 	baseURL := fmt.Sprintf("https://%s%s", ctx.Request.Host, ctx.FullPath())
-
-	response, err := c.service.ListApis(ctx.Request.Context(), params.Page, params.PerPage, baseURL)
+	response, err := c.Service.ListApis(ctx.Request.Context(), params.Page, params.PerPage, baseURL)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +45,7 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, params *listApisParams) (
 
 // RetrieveApi handles GET /api/:id
 func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, req *models.RetrieveApiRequest) (*models.ApiWithLintResponse, error) {
-	api, err := c.service.RetrieveApi(ctx.Request.Context(), req.Id)
+	api, err := c.Service.RetrieveApi(ctx.Request.Context(), req.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +57,7 @@ func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, req *models.RetrieveAp
 
 // CreateApiFromOas handles POST /apis
 func (c *APIsAPIController) CreateApiFromOas(ctx *gin.Context, body *models.Api) (*models.ApiResponse, error) {
-	created, err := c.service.CreateApiFromOas(*body)
+	created, err := c.Service.CreateApiFromOas(*body)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +66,7 @@ func (c *APIsAPIController) CreateApiFromOas(ctx *gin.Context, body *models.Api)
 
 // UpdateApi handles PUT /api
 func (c *APIsAPIController) UpdateApi(ctx *gin.Context, params *models.OasParams) (interface{}, error) {
-	if err := c.service.UpdateOasUri(ctx.Request.Context(), params.OasUrl); err != nil {
+	if err := c.Service.UpdateOasUri(ctx.Request.Context(), params.OasUrl); err != nil {
 		if errors.Is(err, services.ErrNeedsPost) {
 			return nil, helpers.NewNotFound(fmt.Sprintf("'%s' moet als nieuwe API geregistreerd worden via POST en de oude API als deprecated worden gemarkeerd", params.OasUrl),
 				helpers.InvalidParam{Name: "oasUri", Reason: "Deze URI is nieuw of significant gewijzigd"},

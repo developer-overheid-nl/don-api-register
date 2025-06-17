@@ -96,7 +96,10 @@ func TestCreateApiFromOas_Success(t *testing.T) {
 	spec := `{"openapi":"3.0.0","info":{"title":"T","version":"1.0.0"},"paths":{}}`
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(spec))
+		_, err := w.Write([]byte(spec))
+		if err != nil {
+			return
+		}
 	}))
 	defer server.Close()
 

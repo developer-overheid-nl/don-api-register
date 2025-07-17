@@ -2,6 +2,7 @@ package api_client
 
 import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/handler"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/loopfz/gadgeto/tonic"
 	"github.com/wI2L/fizz"
@@ -70,10 +71,9 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		},
 	}
 
-	// 5) Registreer al je endpoints met tonic.Handler én de header-optie
-	rg := f.Group("/v1", "API's", "Beheer van API-register")
+	read := f.Group("/v1", "API's (lezen)", "Alleen lezen endpoints", middleware.KeycloakAuthMiddleware("apis:read"))
 
-	rg.GET("/apis",
+	read.GET("/apis",
 		[]fizz.OperationOption{
 			fizz.Summary("Alle API's ophalen"),
 			apiVersionHeader,
@@ -82,7 +82,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.ListApis, 200),
 	)
 
-	rg.GET("/apis/:id",
+	read.GET("/apis/:id",
 		[]fizz.OperationOption{
 			fizz.Summary("Specifieke API ophalen"),
 			apiVersionHeader,
@@ -91,7 +91,10 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.RetrieveApi, 200),
 	)
 
-	rg.POST("/apis",
+	// 5) Routegroep voor schrijven
+	write := f.Group("/v1", "API's (bewerken)", "Endpoints voor aanpassingen", middleware.KeycloakAuthMiddleware("apis:write"))
+
+	write.POST("/apis",
 		[]fizz.OperationOption{
 			fizz.Summary("Registreer een nieuwe API met een OpenAPI URL"),
 			apiVersionHeader,
@@ -100,7 +103,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.CreateApiFromOas, 201),
 	)
 
-	rg.PUT("/apis",
+	write.PUT("/apis",
 		[]fizz.OperationOption{
 			fizz.Summary("Forceer de linter aan te roepen van een API"),
 			apiVersionHeader,
@@ -109,7 +112,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.UpdateApi, 204),
 	)
 
-	// 6) Pas ná alle routes pas de OpenAPI endpoint toe
+	// 6) OpenAPI documentatie
 	f.GET("/v1/openapi.json", []fizz.OperationOption{}, f.OpenAPI(info, "json"))
 
 	return f

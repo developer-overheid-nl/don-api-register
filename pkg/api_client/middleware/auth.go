@@ -1,53 +1,65 @@
 package middleware
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 	"net/http"
 	"strings"
-
-	"context"
-	"github.com/coreos/go-oidc"
 )
 
-func KeycloakAuthMiddleware(requiredScope string) gin.HandlerFunc {
-	provider, err := oidc.NewProvider(context.Background(), "https://auth.don.apps.digilab.network/realms/don")
-	if err != nil {
-		panic(fmt.Sprintf("Fout bij ophalen OIDC provider: %v", err))
-	}
-	verifier := provider.Verifier(&oidc.Config{ClientID: "don-admin-client"})
-
+func RequireAccess(requiredScope string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header ontbreekt of is ongeldig"})
-			return
-		}
-
-		rawToken := strings.TrimPrefix(authHeader, "Bearer ")
-		idToken, err := verifier.Verify(c.Request.Context(), rawToken)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Ongeldig token"})
-			return
-		}
-
-		var claims map[string]interface{}
-		if err := idToken.Claims(&claims); err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Claims extractie mislukt"})
-			return
-		}
-
-		// Optioneel: controleer scopes als access_token scopes bevat
-		if requiredScope != "" {
-			scopeList, ok := claims["scope"].(string)
-			if !ok || !strings.Contains(scopeList, requiredScope) {
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Vereiste scope ontbreekt"})
+		// Als er een geldige x-api-key was (door APISIX gevalideerd)
+		if c.GetHeader("x-api-key") != "" {
+			if c.Request.Method != http.MethodGet {
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "x-api-key only grants read access"})
 				return
 			}
+
+			c.Set("auth_method", "api_key")
+			c.Next()
+			return
 		}
 
-		// Middleware passed
-		c.Set("user", claims)
+		// Anders: JWT token check
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing or invalid Authorization header"})
+			return
+		}
+
+		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+		if !hasScope(tokenStr, requiredScope) {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Access token missing required scope"})
+			return
+		}
+
+		c.Set("auth_method", "jwt_token")
 		c.Next()
 	}
+}
+
+func hasScope(tokenStr, requiredScope string) bool {
+	token, _, err := new(jwt.Parser).ParseUnverified(tokenStr, jwt.MapClaims{})
+	if err != nil {
+		return false
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return false
+	}
+
+	scopeStr, ok := claims["scope"].(string)
+	if !ok {
+		return false
+	}
+
+	for _, scope := range strings.Split(scopeStr, " ") {
+		if scope == requiredScope {
+			return true
+		}
+	}
+
+	return false
 }

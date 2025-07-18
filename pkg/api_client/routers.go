@@ -71,8 +71,10 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		},
 	}
 
-	read := f.Group("/v1", "API's (lezen)", "Alleen lezen endpoints", middleware.KeycloakAuthMiddleware("apis:read"))
+	root := f.Group("/v1", "API v1", "API Register V1 routes")
 
+	// 5a) Alleen-lezen endpoints
+	read := root.Group("", "Lezen", "Alleen lezen endpoints", middleware.RequireAccess("apis:read"))
 	read.GET("/apis",
 		[]fizz.OperationOption{
 			fizz.Summary("Alle API's ophalen"),
@@ -81,7 +83,6 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		},
 		tonic.Handler(controller.ListApis, 200),
 	)
-
 	read.GET("/apis/:id",
 		[]fizz.OperationOption{
 			fizz.Summary("Specifieke API ophalen"),
@@ -91,9 +92,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.RetrieveApi, 200),
 	)
 
-	// 5) Routegroep voor schrijven
-	write := f.Group("/v1", "API's (bewerken)", "Endpoints voor aanpassingen", middleware.KeycloakAuthMiddleware("apis:write"))
-
+	// 5b) Schrijf-endpoints
+	write := root.Group("", "Schrijven", "Bewerken van API's", middleware.RequireAccess("apis:write"))
 	write.POST("/apis",
 		[]fizz.OperationOption{
 			fizz.Summary("Registreer een nieuwe API met een OpenAPI URL"),
@@ -102,7 +102,6 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		},
 		tonic.Handler(controller.CreateApiFromOas, 201),
 	)
-
 	write.PUT("/apis",
 		[]fizz.OperationOption{
 			fizz.Summary("Forceer de linter aan te roepen van een API"),

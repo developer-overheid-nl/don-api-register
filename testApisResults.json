@@ -1,0 +1,401 @@
+[
+  {
+    "oasUrl": "https://internationaal.ondernemen.overheid.nl/api/iio/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/500",
+    "title": "Internal Server Error",
+    "status": 500,
+    "detail": "kan API niet opslaan: api bestaat al"
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/kadaster/3d-basisvoorziening/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/bzk/bro-gminsamenhang-karakteristieken/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/brt/top10nl/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/lv/bag/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"style-metadata\": invalid example: Error at \"/1/attributes\": value must be an object\nSchema:\n  {\n    \"properties\": {\n      \"queryables\": {\n        \"items\": {\n          \"oneOf\": [\n            {\n              \"$ref\": \"#/components/schemas/queryable-string\"\n            },\n            {\n              \"$ref\": \"#/components/schemas/queryable-enum\"\n            },\n            {\n              \"$ref\": \"#/components/schemas/queryable-number\"\n            },\n            {\n              \"$ref\": \"#/components/schemas/queryable-boolean\"\n            },\n            {\n              \"$ref\": \"#/components/schemas/queryable-date\"\n            },\n            {\n              \"$ref\": \"#/components/schemas/queryable-dateTime\"\n            }\n          ]\n        },\n        \"nullable\": true,\n        \"type\": \"array\"\n      }\n    },\n    \"required\": [\n      \"queryables\"\n    ],\n    \"type\": \"object\"\n  }\n\nValue:\n  [\n    {\n      \"id\": \"f_code\",\n      \"type\": \"string\"\n    }\n  ]\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/lv/bag/ogc/v1-demo/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/lv/bgt/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/rce/beschermde-gebieden-cultuurhistorie/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/kadaster/bestuurlijkegebieden/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/rws/digitaal-topografisch-bestand/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/rws/overstromingen-gebeurtenis/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/rws/overstromingen-risicogebied/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/rws/kwetsbaar-gebied-agglomeraties/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/rws/kwetsbaar-gebied/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/omgevingswet/omgevingsdocumenten/ogc/v2/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/kadaster/brk-kadastrale-kaart/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/rws/nationaal-wegenbestand-wegen/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/rws/rioolnetwerk-leidingelementen/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/rws/rioolnetwerk-milieumanagementvoorziening/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/rws/richtlijn-stedelijk-afvalwater/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/rws/scheepvaart-verkeersscheidingsstelsel-noordzee/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/hwh/waterschappen-hydrografie/ogc/v1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid components: schema \"bbox\": invalid example: Error at \"/0\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.01\n | Error at \"/1\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.63\n | Error at \"/2\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  7.22\n | Error at \"/3\": value must be an array\nSchema:\n  {\n    \"description\": \"West, south, east, north edges of the bounding box. Specified as coordinates separated by commas. The coordinates\\nare in the coordinate reference system specified in `crs`. By default\\nthis is WGS 84 longitude/latitude (CRS84).\",\n    \"items\": {\n      \"type\": \"number\"\n    },\n    \"maxItems\": 6,\n    \"minItems\": 4,\n    \"type\": \"array\"\n  }\n\nValue:\n  50.78\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/lv/bgt/download/v1_0/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid paths: invalid path /dataset: invalid operation GET: invalid example: value must be an object\nSchema:\n  {\n    \"properties\": {\n      \"timeliness\": {\n        \"description\": \"Lijst met actualiteit per featuretype. Het datum tijd formaat is ISO 8601 en altijd in UTC.\\n\",\n        \"items\": {\n          \"$ref\": \"#/components/schemas/timeliness\"\n        },\n        \"type\": \"array\"\n      }\n    },\n    \"required\": [\n      \"timeliness\"\n    ],\n    \"type\": \"object\"\n  }\n\nValue:\n  \"\\\"timeliness\\\": [\\n{\\n  \\\"featuretype\\\": \\\"bak\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"begroeidterreindeel\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"bord\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"buurt\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"functioneelgebied\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"gebouwinstallatie\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"installatie\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"kast\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"kunstwerkdeel\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"mast\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"onbegroeidterreindeel\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"ondersteunendwaterdeel\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"ondersteunendwegdeel\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"ongeclassificeerdobject\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"openbareruimte\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"openbareruimtelabel\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"overbruggingsdeel\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"overigbouwwerk\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"overigescheiding\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"paal\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"pand\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"plaatsbepalingspunt\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"put\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"scheiding\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"sensor\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"spoor\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"stadsdeel\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"straatmeubilair\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"tunneldeel\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"vegetatieobject\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"waterdeel\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"waterinrichtingselement\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"waterschap\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"wegdeel\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"weginrichtingselement\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n},\\n{\\n  \\\"featuretype\\\": \\\"wijk\\\",\\n  \\\"datetimeTo\\\": \\\"2019-01-01T00:00:00Z\\\"\\n}\\n]\\n\"\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/kadaster/kadastralekaart/download/v5_0/ui/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "OAS download faalt met status 404"
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/bzk/locatieserver/search/v3_1/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "Validatie mislukt: ontbrekende of ongeldige eigenschappen",
+    "invalidParams": [
+      {
+        "name": "contact.url",
+        "reason": "contact.url is verplicht"
+      },
+      {
+        "name": "contact.name",
+        "reason": "contact.name is verplicht"
+      },
+      {
+        "name": "contact.email",
+        "reason": "contact.email is verplicht"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/brt/top10nl/download/v1_0/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid paths: invalid path /full/predefined/top10nl-gml-nl-nohist.zip: invalid operation GET: header schema is invalid: parameter must contain exactly one of content and schema: \u0026{{map[type:string] \u003cnil\u003e   Absolute path waarop het bestand gedownload kan worden  \u003cnil\u003e false false false false \u003cnil\u003e \u003cnil\u003e map[] map[]}}"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/brt/top50nl/download/v1_0/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid paths: invalid path /full/predefined/top50nl-gml-nl-nohist.zip: invalid operation GET: header schema is invalid: parameter must contain exactly one of content and schema: \u0026{{map[type:string] \u003cnil\u003e   Absolute path waarop het bestand gedownload kan worden  \u003cnil\u003e false false false false \u003cnil\u003e \u003cnil\u003e map[] map[]}}"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/brt/top100nl/download/v1_0/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid paths: invalid path /full/custom: invalid operation POST: invalid example: Error at \"/featuretypes/1\": value is not one of the allowed values [\"functioneelgebied\",\"gebouw\",\"hoogte\",\"inrichtingselement\",\"registratiefgebied\",\"relief\",\"spoorbaandeel\",\"terrein\",\"waterdeel\",\"wegdeel\"]\nSchema:\n  {\n    \"enum\": [\n      \"functioneelgebied\",\n      \"gebouw\",\n      \"hoogte\",\n      \"inrichtingselement\",\n      \"registratiefgebied\",\n      \"relief\",\n      \"spoorbaandeel\",\n      \"terrein\",\n      \"waterdeel\",\n      \"wegdeel\"\n    ],\n    \"type\": \"string\"\n  }\n\nValue:\n  \"geografischgebied\"\n"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/brt/top250nl/download/v1_0/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid paths: invalid path /full/predefined/top250nl-gml-nl-nohist.zip: invalid operation GET: header schema is invalid: parameter must contain exactly one of content and schema: \u0026{{map[type:string] \u003cnil\u003e   Absolute path waarop het bestand gedownload kan worden  \u003cnil\u003e false false false false \u003cnil\u003e \u003cnil\u003e map[] map[]}}"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/brt/top500nl/download/v1_0/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid paths: invalid path /full/predefined/top500nl-gml-nl-nohist.zip: invalid operation GET: header schema is invalid: parameter must contain exactly one of content and schema: \u0026{{map[type:string] \u003cnil\u003e   Absolute path waarop het bestand gedownload kan worden  \u003cnil\u003e false false false false \u003cnil\u003e \u003cnil\u003e map[] map[]}}"
+      }
+    ]
+  },
+  {
+    "oasUrl": "https://api.pdok.nl/brt/top1000nl/download/v1_0/openapi.json",
+    "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "invalid OAS document",
+    "invalidParams": [
+      {
+        "name": "Invalid OAS document",
+        "reason": "invalid paths: invalid path /full/predefined/top1000nl-gml-nl-nohist.zip: invalid operation GET: header schema is invalid: parameter must contain exactly one of content and schema: \u0026{{map[type:string] \u003cnil\u003e   Absolute path waarop het bestand gedownload kan worden  \u003cnil\u003e false false false false \u003cnil\u003e \u003cnil\u003e map[] map[]}}"
+      }
+    ]
+  }
+]

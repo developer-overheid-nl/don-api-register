@@ -28,7 +28,6 @@ var (
 func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.Fizz {
 	// 0) Gin + Fizz init
 	g := gin.Default()
-	g.Use(middleware.CORSMiddleware())
 	g.Use(APIVersionMiddleware(apiVersion))
 	f := fizz.NewFromEngine(g)
 

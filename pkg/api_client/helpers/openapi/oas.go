@@ -1,7 +1,8 @@
-package helpers
+package openapi
 
 import (
 	"context"
+
 	"github.com/getkin/kin-openapi/openapi3"
 )
 

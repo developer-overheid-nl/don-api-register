@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/handler"
-	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers"
+	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
+	util "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/util"
 	"github.com/developer-overheid-nl/don-api-register/pkg/jobs"
 	"github.com/gin-gonic/gin"
 	"github.com/loopfz/gadgeto/tonic"
@@ -23,10 +24,10 @@ import (
 func init() {
 	tonic.SetErrorHook(func(c *gin.Context, err error) (int, interface{}) {
 		if _, ok := err.(tonic.BindError); ok {
-			apiErr := helpers.NewBadRequest(
+			apiErr := problem.NewBadRequest(
 				"",
 				"Invalid input voor update",
-				helpers.InvalidParam{
+				problem.InvalidParam{
 					Name:   "oasUrl",
 					Reason: "Moet een geldige URL zijn (bijv. https://…)",
 				},
@@ -36,12 +37,12 @@ func init() {
 		}
 
 		// 2) Your own APIError → pass through
-		if apiErr, ok := err.(helpers.APIError); ok {
+		if apiErr, ok := err.(problem.APIError); ok {
 			c.Header("Content-Type", "application/problem+json")
 			return apiErr.Status, apiErr
 		}
 
-		internal := helpers.NewInternalServerError(err.Error())
+		internal := problem.NewInternalServerError(err.Error())
 		c.Header("Content-Type", "application/problem+json")
 		return internal.Status, internal
 	})
@@ -50,7 +51,7 @@ func init() {
 func main() {
 	_ = godotenv.Load()
 
-	version, err := helpers.LoadOASVersion("./api/openapi.json")
+	version, err := util.LoadOASVersion("./api/openapi.json")
 	if err != nil {
 		log.Fatalf("failed to load OAS version: %v", err)
 	}

@@ -1,4 +1,4 @@
-package helpers
+package openapi
 
 import (
 	"github.com/google/uuid"

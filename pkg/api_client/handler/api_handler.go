@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers"
+	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 
@@ -14,12 +14,12 @@ import (
 // APIsAPIController binds HTTP requests to the APIsAPIService
 type APIsAPIController struct {
 	Service      *services.APIsAPIService
-	errorHandler helpers.ErrorHandler
+	errorHandler problem.ErrorHandler
 }
 
 // NewAPIsAPIController creates a new controller
 func NewAPIsAPIController(s *services.APIsAPIService) *APIsAPIController {
-	return &APIsAPIController{Service: s, errorHandler: helpers.DefaultErrorHandler}
+	return &APIsAPIController{Service: s, errorHandler: problem.DefaultErrorHandler}
 }
 
 // listApisParams defines query parameters for ListApis
@@ -51,7 +51,7 @@ func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, params *models.ApiPara
 		return nil, err
 	}
 	if api == nil {
-		return nil, helpers.NewNotFound(params.Id, "Api not found")
+		return nil, problem.NewNotFound(params.Id, "Api not found")
 	}
 	return api, nil
 }
@@ -69,8 +69,8 @@ func (c *APIsAPIController) CreateApiFromOas(ctx *gin.Context, body *models.ApiP
 func (c *APIsAPIController) UpdateApi(ctx *gin.Context, body *models.UpdateApiInput) (*models.ApiSummary, error) {
 	updated, err := c.Service.UpdateOasUri(ctx.Request.Context(), body)
 	if errors.Is(err, services.ErrNeedsPost) {
-		return nil, helpers.NewNotFound(body.OasUrl, fmt.Sprintf("'%s' moet als nieuwe API geregistreerd worden via POST en de oude API als deprecated worden gemarkeerd", body.OasUrl),
-			helpers.InvalidParam{Name: "oasUrl", Reason: "Deze URI is nieuw of significant gewijzigd"},
+		return nil, problem.NewNotFound(body.OasUrl, fmt.Sprintf("'%s' moet als nieuwe API geregistreerd worden via POST en de oude API als deprecated worden gemarkeerd", body.OasUrl),
+			problem.InvalidParam{Name: "oasUrl", Reason: "Deze URI is nieuw of significant gewijzigd"},
 		)
 	}
 	if err != nil {

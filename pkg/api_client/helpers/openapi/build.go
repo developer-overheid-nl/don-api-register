@@ -1,7 +1,6 @@
-package helpers
+package openapi
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -10,10 +9,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/google/uuid"
-
-	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 )
 
 // CorsGet performs a GET request including an Origin header.
@@ -52,6 +51,7 @@ func ComputeOASHash(oasURL string) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
+// DeriveAuthType determines authentication type from security schemes.
 func DeriveAuthType(spec *openapi3.T) string {
 	for _, schemeRef := range spec.Components.SecuritySchemes {
 		scheme := schemeRef.Value
@@ -72,8 +72,6 @@ func DeriveAuthType(spec *openapi3.T) string {
 	}
 	return "unknown"
 }
-
-var httpClient = &http.Client{}
 
 // BuildApi constructs a models.Api based on the OpenAPI spec and request body.
 func BuildApi(spec *openapi3.T, requestBody models.ApiPost, label string) *models.Api {
@@ -133,102 +131,38 @@ func BuildApi(spec *openapi3.T, requestBody models.ApiPost, label string) *model
 }
 
 // ValidateApi fills missing fields from the request body and collects missing errors.
-func ValidateApi(api *models.Api) []InvalidParam {
-	var invalids []InvalidParam
+func ValidateApi(api *models.Api) []problem.InvalidParam {
+	var invalids []problem.InvalidParam
 
 	if strings.TrimSpace(api.ContactName) == "" {
-		invalids = append(invalids, InvalidParam{
+		invalids = append(invalids, problem.InvalidParam{
 			Name:   "contact.name",
 			Reason: "contact.name is verplicht",
 		})
 	}
 	if strings.TrimSpace(api.ContactEmail) == "" {
-		invalids = append(invalids, InvalidParam{
+		invalids = append(invalids, problem.InvalidParam{
 			Name:   "contact.email",
 			Reason: "contact.email is verplicht",
 		})
 	}
 	if strings.TrimSpace(api.ContactUrl) == "" {
-		invalids = append(invalids, InvalidParam{
+		invalids = append(invalids, problem.InvalidParam{
 			Name:   "contact.url",
 			Reason: "contact.url is verplicht",
 		})
 	}
 	if strings.TrimSpace(api.OasUri) == "" {
-		invalids = append(invalids, InvalidParam{
+		invalids = append(invalids, problem.InvalidParam{
 			Name:   "oasUrl",
 			Reason: "oasUrl is verplicht",
 		})
 	}
 	if api.OrganisationID == nil || strings.TrimSpace(*api.OrganisationID) == "" {
-		invalids = append(invalids, InvalidParam{
+		invalids = append(invalids, problem.InvalidParam{
 			Name:   "organisationUri",
 			Reason: "organisationUri is verplicht",
 		})
 	}
 	return invalids
-}
-
-type TooIGraph struct {
-	Graph []TooIObject `json:"@graph"`
-}
-
-type TooIObject struct {
-	ID    string `json:"@id"`
-	Label []struct {
-		Value    string `json:"@value"`
-		Language string `json:"@language"`
-	} `json:"http://www.w3.org/2000/01/rdf-schema#label"`
-}
-
-func FetchOrganisationLabel(ctx context.Context, uriOrType string, optionalId ...string) (string, error) {
-	var uri string
-
-	// 1. Check of uriOrType al een volledige URI is
-	if strings.HasPrefix(uriOrType, "https://identifier.overheid.nl/tooi/id/") {
-		uri = uriOrType
-	} else if len(optionalId) > 0 {
-		// 2. Combineer type en id
-		uri = fmt.Sprintf("https://identifier.overheid.nl/tooi/id/%s/%s", uriOrType, optionalId[0])
-	} else {
-		return "", fmt.Errorf("ongeldig argument, geef een volledige URI of (type, id)")
-	}
-
-	// 3. Vraag JSON-LD op via content negotiation
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, uri, nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Accept", "application/ld+json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("organisation not found: %s", uri)
-	}
-
-	var arr []TooIGraph
-	if err := json.NewDecoder(resp.Body).Decode(&arr); err != nil {
-		return "", fmt.Errorf("decode error: %w", err)
-	}
-	if len(arr) == 0 || len(arr[0].Graph) == 0 {
-		return "", fmt.Errorf("geen organisatie gevonden in TOOI")
-	}
-	for _, obj := range arr[0].Graph {
-		if obj.ID == uri {
-			for _, lbl := range obj.Label {
-				if lbl.Language == "nl" {
-					return lbl.Value, nil
-				}
-			}
-			if len(obj.Label) > 0 {
-				return obj.Label[0].Value, nil
-			}
-			return "", fmt.Errorf("geen label gevonden voor %s", uri)
-		}
-	}
-	return "", fmt.Errorf("organisatie %s niet gevonden in response", uri)
 }

@@ -27,6 +27,7 @@ var (
 
 func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.Fizz {
 	// 0) Gin + Fizz init
+	//gin.SetMode(gin.ReleaseMode)
 	g := gin.Default()
 	g.Use(APIVersionMiddleware(apiVersion))
 	f := fizz.NewFromEngine(g)

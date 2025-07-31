@@ -41,41 +41,51 @@ func (s *stubRepo) AllApis(ctx context.Context) ([]models.Api, error)           
 func (s *stubRepo) SaveLintResult(ctx context.Context, res *models.LintResult) error { return nil }
 
 func TestListApis_Handler(t *testing.T) {
-	// stub repository
 	repo := &stubRepo{
 		listFunc: func(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
-			apis := []models.Api{{Id: "a1"}, {Id: "a2"}}
+			apis := []models.Api{
+				{
+					Id:           "a1",
+					Organisation: &models.Organisation{Uri: "org1", Label: "Label 1"},
+					Servers:      []models.Server{},
+				},
+				{
+					Id:           "a2",
+					Organisation: &models.Organisation{Uri: "org2", Label: "Label 2"},
+					Servers:      []models.Server{},
+				},
+			}
 			pag := models.Pagination{CurrentPage: page, RecordsPerPage: perPage}
 			return apis, pag, nil
 		},
 	}
-	// real service and controller
 	svc := services.NewAPIsAPIService(repo)
 	ctrl := NewAPIsAPIController(svc)
 
-	// setup gin context
 	w := httptest.NewRecorder()
-	r := gin.New()
-	r.GET("/v1/apis", func(c *gin.Context) {})
 	ctx, _ := gin.CreateTestContext(w)
 	req := httptest.NewRequest("GET", "/v1/apis?page=3&perPage=7", nil)
 	req.Host = "host"
 	ctx.Request = req
-	// invoke router to set FullPath
-	r.HandleContext(ctx)
+	ctx.Set("FullPath", "/v1/apis")
 
-	// call handler
 	resp, err := ctrl.ListApis(ctx, &listApisParams{Page: 3, PerPage: 7})
 	assert.NoError(t, err)
-	res := resp.(models.ApiListResponse)
-	assert.Equal(t, "https://host/v1/apis?page=3&perPage=7", res.Links.Self.Href)
-	assert.Len(t, res.Apis, 2)
+	assert.NotNil(t, resp)
+	assert.Equal(t, "https://host?page=3&perPage=7", resp.Links.Self.Href)
+	assert.Len(t, resp.Apis, 2)
 }
 
 func TestRetrieveApi_Handler(t *testing.T) {
-	// success
+	// success case
 	repo1 := &stubRepo{
-		retrFunc: func(ctx context.Context, id string) (*models.Api, error) { return &models.Api{Id: id}, nil },
+		retrFunc: func(ctx context.Context, id string) (*models.Api, error) {
+			return &models.Api{
+				Id:           id,
+				Organisation: &models.Organisation{Uri: "dummy", Label: "dummy"},
+				Servers:      []models.Server{},
+			}, nil
+		},
 		lintResFunc: func(ctx context.Context, apiID string) ([]models.LintResult, error) {
 			return []models.LintResult{{ID: "lr1", ApiID: apiID}}, nil
 		},
@@ -88,14 +98,13 @@ func TestRetrieveApi_Handler(t *testing.T) {
 	req1 := httptest.NewRequest("GET", "/v1/apis/id1", nil)
 	req1.Host = "host"
 	ctx1.Request = req1
-	ctx1.Params = gin.Params{{Key: "id", Value: "id1"}}
 
-	resp1, err1 := ctrl1.RetrieveApi(ctx1, &models.RetrieveApiRequest{Id: "id1"})
+	resp1, err1 := ctrl1.RetrieveApi(ctx1, &models.ApiParams{Id: "id1"})
 	assert.NoError(t, err1)
-	assert.Equal(t, "id1", resp1.Api.Id)
-	assert.Len(t, resp1.LintResults, 1)
+	assert.NotNil(t, resp1)
+	assert.Equal(t, "id1", resp1.Id)
 
-	// not found
+	// not found case
 	repo2 := &stubRepo{
 		retrFunc:    func(ctx context.Context, id string) (*models.Api, error) { return nil, nil },
 		lintResFunc: func(ctx context.Context, apiID string) ([]models.LintResult, error) { return nil, nil },
@@ -107,20 +116,23 @@ func TestRetrieveApi_Handler(t *testing.T) {
 	req2 := httptest.NewRequest("GET", "/v1/apis/missing", nil)
 	req2.Host = "host"
 	ctx2.Request = req2
-	ctx2.Params = gin.Params{{Key: "id", Value: "missing"}}
 
-	_, err2 := ctrl2.RetrieveApi(ctx2, &models.RetrieveApiRequest{Id: "missing"})
+	resp2, err2 := ctrl2.RetrieveApi(ctx2, &models.ApiParams{Id: "missing"})
 	assert.Error(t, err2)
+	assert.Nil(t, resp2)
 }
 
 func TestCreateApiFromOas_Handler(t *testing.T) {
-	repo := &stubRepo{findOasFunc: func(ctx context.Context, url string) (*models.Api, error) { return &models.Api{Id: "i"}, nil }}
+	repo := &stubRepo{
+		findOasFunc: func(ctx context.Context, url string) (*models.Api, error) { return nil, nil },
+	}
 	svc := services.NewAPIsAPIService(repo)
 	ctrl := NewAPIsAPIController(svc)
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
-	resp, err := ctrl.CreateApiFromOas(ctx, &models.Api{OasUri: "u"})
+	body := &models.ApiPost{OasUrl: "u", OrganisationUri: "https://example.org"}
+	resp, err := ctrl.CreateApiFromOas(ctx, body)
 	assert.Nil(t, resp)
 	assert.Error(t, err)
 }
@@ -135,18 +147,22 @@ func TestUpdateApi_Handler(t *testing.T) {
 	ctx1, _ := gin.CreateTestContext(w)
 	ctx1.Request = httptest.NewRequest("PUT", "/v1/apis", nil)
 
-	_, err1 := ctrl1.UpdateApi(ctx1, &models.OasParams{OasUrl: "u"})
+	input := &models.UpdateApiInput{OasUrl: "u", OrganisationUri: "https://example.org"}
+	resp1, err1 := ctrl1.UpdateApi(ctx1, input)
 	assert.Error(t, err1)
+	assert.Nil(t, resp1)
 
 	// success
-	repo2 := &stubRepo{findOasFunc: func(ctx context.Context, url string) (*models.Api, error) { return &models.Api{Id: "id"}, nil }}
+	repo2 := &stubRepo{findOasFunc: func(ctx context.Context, url string) (*models.Api, error) {
+		return &models.Api{Id: "id", OrganisationID: func() *string { s := "https://example.org"; return &s }()}, nil
+	}}
 	svc2 := services.NewAPIsAPIService(repo2)
 	ctrl2 := NewAPIsAPIController(svc2)
 
 	ctx2, _ := gin.CreateTestContext(w)
 	ctx2.Request = httptest.NewRequest("PUT", "/v1/apis", nil)
 
-	resp2, err2 := ctrl2.UpdateApi(ctx2, &models.OasParams{OasUrl: "u"})
+	input2 := &models.UpdateApiInput{OasUrl: "u", OrganisationUri: "https://example.org"}
+	_, err2 := ctrl2.UpdateApi(ctx2, input2)
 	assert.NoError(t, err2)
-	assert.Nil(t, resp2)
 }

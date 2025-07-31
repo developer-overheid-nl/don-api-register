@@ -50,33 +50,62 @@ func TestUpdateOasUri_NotFound(t *testing.T) {
 		},
 	}
 	service := services.NewAPIsAPIService(repo)
-	err := service.UpdateOasUri(context.Background(), "missing-url")
+
+	input := &models.UpdateApiInput{
+		Id:              "missing-id",
+		OasUrl:          "https://niet-bestaand.nl/openapi.json",
+		OrganisationUri: "https://identifier.overheid.nl/tooi/id/xxx",
+		Contact:         models.Contact{}, // vul verder aan als nodig
+	}
+
+	result, err := service.UpdateOasUri(context.Background(), input)
+
+	assert.Nil(t, result)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), services.ErrNeedsPost.Error())
 }
 
 func TestRetrieveApi_Success(t *testing.T) {
-	api := &models.Api{Id: "1234"}
+	api := &models.Api{
+		Id: "1234",
+		Organisation: &models.Organisation{
+			Label: "Test Org",
+			Uri:   "https://org.example.com",
+		},
+	}
 	repo := &stubRepo{
 		getByID: func(ctx context.Context, id string) (*models.Api, error) {
 			return api, nil
-		},
-		getLintRes: func(ctx context.Context, apiID string) ([]models.LintResult, error) {
-			return []models.LintResult{{ID: "lr1", ApiID: apiID}}, nil
 		},
 	}
 	service := services.NewAPIsAPIService(repo)
 	resp, err := service.RetrieveApi(context.Background(), "1234")
 	assert.NoError(t, err)
-	assert.Equal(t, api, resp.Api)
-	assert.Len(t, resp.LintResults, 1)
+	assert.Equal(t, api.Id, resp.Id)
 }
 
 func TestListApis_Pagination(t *testing.T) {
 	apis := []models.Api{
-		{Id: "a1", Title: "First", OasUri: "u1"},
-		{Id: "a2", Title: "Second", OasUri: "u2"},
+		{
+			Id:     "a1",
+			Title:  "First",
+			OasUri: "u1",
+			Organisation: &models.Organisation{
+				Uri:   "https://org1.test",
+				Label: "Org 1",
+			},
+		},
+		{
+			Id:     "a2",
+			Title:  "Second",
+			OasUri: "u2",
+			Organisation: &models.Organisation{
+				Uri:   "https://org2.test",
+				Label: "Org 2",
+			},
+		},
 	}
+
 	pagination := models.Pagination{CurrentPage: 1, RecordsPerPage: 2, TotalPages: 1, TotalRecords: 2}
 	repo := &stubRepo{
 		getApis: func(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
@@ -92,8 +121,19 @@ func TestListApis_Pagination(t *testing.T) {
 }
 
 func TestCreateApiFromOas_Success(t *testing.T) {
-	// minimal OpenAPI JSON
-	spec := `{"openapi":"3.0.0","info":{"title":"T","version":"1.0.0"},"paths":{}}`
+	spec := `{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "T",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Testpersoon",
+      "email": "test@example.com",
+      "url": "https://example.com"
+    }
+  },
+  "paths": {}
+}`
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, err := w.Write([]byte(spec))
@@ -111,11 +151,9 @@ func TestCreateApiFromOas_Success(t *testing.T) {
 	}
 
 	service := services.NewAPIsAPIService(repo)
-	apiReq := models.Api{
-		OasUri:       server.URL,
-		ContactName:  "Tester",
-		ContactUrl:   "https://example.com",
-		ContactEmail: "test@example.com",
+	apiReq := models.ApiPost{
+		OasUrl:          server.URL,
+		OrganisationUri: "https://example.com",
 	}
 	resp, err := service.CreateApiFromOas(apiReq)
 	assert.NoError(t, err)

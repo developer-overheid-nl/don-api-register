@@ -11,6 +11,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+ENV GIN_MODE=release
 RUN go build -o main ./cmd/main.go
 
 EXPOSE 1337

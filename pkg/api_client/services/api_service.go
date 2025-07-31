@@ -152,7 +152,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 	}
 
 	// 3) Build & validate
-	label, err := httpclient.FetchOrganisationLabel(context.Background(), requestBody.OrganisationUri)
+	label, _ := httpclient.FetchOrganisationLabel(context.Background(), requestBody.OrganisationUri)
 	api := openapi.BuildApi(spec, requestBody, label)
 	if api.OrganisationID != nil {
 		if err := s.repo.SaveOrganisatie(api.Organisation); err != nil {

@@ -17,9 +17,9 @@ type APIError struct {
 
 func (e APIError) Error() string { return e.Detail }
 
-// Constructor voor 400 Bad Request
-func NewBadRequest(detail string, params ...InvalidParam) APIError {
+func NewBadRequest(oasUri, detail string, params ...InvalidParam) APIError {
 	return APIError{
+		Instance:      oasUri,
 		Type:          "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
 		Title:         "Bad Request",
 		Status:        400,
@@ -28,9 +28,9 @@ func NewBadRequest(detail string, params ...InvalidParam) APIError {
 	}
 }
 
-// Constructor voor 404 Not Found
-func NewNotFound(detail string, params ...InvalidParam) APIError {
+func NewNotFound(oasUri, detail string, params ...InvalidParam) APIError {
 	return APIError{
+		Instance:      oasUri,
 		Type:          "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/404",
 		Title:         "Not Found",
 		Status:        404,
@@ -45,5 +45,15 @@ func NewInternalServerError(detail string) APIError {
 		Title:  "Internal Server Error",
 		Status: 500,
 		Detail: detail,
+	}
+}
+
+func NewForbidden(oasUri, detail string) APIError {
+	return APIError{
+		Instance: oasUri,
+		Type:     "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/403",
+		Title:    "Forbidden",
+		Status:   403,
+		Detail:   detail,
 	}
 }

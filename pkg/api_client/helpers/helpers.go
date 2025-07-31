@@ -103,15 +103,32 @@ func LoadOASVersion(path string) (string, error) {
 	return oas.Info.Version, nil
 }
 
-func ToDTO(api *models.Api) *models.ApiResponse {
-	return &models.ApiResponse{
-		Id:     api.Id,
-		Title:  api.Title,
-		OasUri: api.OasUri,
+func ToApiSummary(api *models.Api) models.ApiSummary {
+	return models.ApiSummary{
+		Id:          api.Id,
+		OasUrl:      api.OasUri,
+		Title:       api.Title,
+		Description: api.Description,
 		Contact: models.Contact{
 			Name:  api.ContactName,
 			URL:   api.ContactUrl,
 			Email: api.ContactEmail,
 		},
+		Organisation: models.Organisation{
+			Label: api.Organisation.Label,
+			Uri:   api.Organisation.Uri,
+		},
+		AdrScore: api.AdrScore,
+		Links: &models.Links{
+			Self: &models.Link{Href: fmt.Sprintf("/apis/%s", api.Id)},
+		},
+	}
+}
+
+func ToApiDetail(api *models.Api) *models.ApiDetail {
+	return &models.ApiDetail{
+		ApiSummary: ToApiSummary(api),
+		DocsUri:    api.DocsUri,
+		Servers:    api.Servers,
 	}
 }

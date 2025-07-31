@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
+
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
@@ -28,7 +29,7 @@ type listApisParams struct {
 }
 
 // ListApis handles GET /apis
-func (c *APIsAPIController) ListApis(ctx *gin.Context, params *listApisParams) (interface{}, error) {
+func (c *APIsAPIController) ListApis(ctx *gin.Context, params *listApisParams) (*models.ApiListResponse, error) {
 	if params.Page < 1 {
 		params.Page = 1
 	}
@@ -43,20 +44,20 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, params *listApisParams) (
 	return response, nil
 }
 
-// RetrieveApi handles GET /api/:id
-func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, req *models.RetrieveApiRequest) (*models.ApiWithLintResponse, error) {
-	api, err := c.Service.RetrieveApi(ctx.Request.Context(), req.Id)
+// RetrieveApi handles GET /apis/:id
+func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, params *models.ApiParams) (*models.ApiDetail, error) {
+	api, err := c.Service.RetrieveApi(ctx.Request.Context(), params.Id)
 	if err != nil {
 		return nil, err
 	}
 	if api == nil {
-		return nil, helpers.NewNotFound("Api not found")
+		return nil, helpers.NewNotFound(params.Id, "Api not found")
 	}
 	return api, nil
 }
 
 // CreateApiFromOas handles POST /apis
-func (c *APIsAPIController) CreateApiFromOas(ctx *gin.Context, body *models.Api) (*models.ApiResponse, error) {
+func (c *APIsAPIController) CreateApiFromOas(ctx *gin.Context, body *models.ApiPost) (*models.ApiSummary, error) {
 	created, err := c.Service.CreateApiFromOas(*body)
 	if err != nil {
 		return nil, err
@@ -64,15 +65,16 @@ func (c *APIsAPIController) CreateApiFromOas(ctx *gin.Context, body *models.Api)
 	return created, nil
 }
 
-// UpdateApi handles PUT /api
-func (c *APIsAPIController) UpdateApi(ctx *gin.Context, params *models.OasParams) (interface{}, error) {
-	if err := c.Service.UpdateOasUri(ctx.Request.Context(), params.OasUrl); err != nil {
-		if errors.Is(err, services.ErrNeedsPost) {
-			return nil, helpers.NewNotFound(fmt.Sprintf("'%s' moet als nieuwe API geregistreerd worden via POST en de oude API als deprecated worden gemarkeerd", params.OasUrl),
-				helpers.InvalidParam{Name: "oasUri", Reason: "Deze URI is nieuw of significant gewijzigd"},
-			)
-		}
+// UpdateApi handles PUT /apis/:id
+func (c *APIsAPIController) UpdateApi(ctx *gin.Context, body *models.UpdateApiInput) (*models.ApiSummary, error) {
+	updated, err := c.Service.UpdateOasUri(ctx.Request.Context(), body)
+	if errors.Is(err, services.ErrNeedsPost) {
+		return nil, helpers.NewNotFound(body.OasUrl, fmt.Sprintf("'%s' moet als nieuwe API geregistreerd worden via POST en de oude API als deprecated worden gemarkeerd", body.OasUrl),
+			helpers.InvalidParam{Name: "oasUrl", Reason: "Deze URI is nieuw of significant gewijzigd"},
+		)
+	}
+	if err != nil {
 		return nil, err
 	}
-	return nil, nil
+	return updated, nil
 }

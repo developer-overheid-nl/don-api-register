@@ -22,9 +22,9 @@ import (
 
 func init() {
 	tonic.SetErrorHook(func(c *gin.Context, err error) (int, interface{}) {
-		// 1) tonic.BindError for JSON binding/validation failures
 		if _, ok := err.(tonic.BindError); ok {
 			apiErr := helpers.NewBadRequest(
+				"",
 				"Invalid input voor update",
 				helpers.InvalidParam{
 					Name:   "oasUrl",
@@ -41,7 +41,6 @@ func init() {
 			return apiErr.Status, apiErr
 		}
 
-		// 3) Fallback 500
 		internal := helpers.NewInternalServerError(err.Error())
 		c.Header("Content-Type", "application/problem+json")
 		return internal.Status, internal
@@ -76,5 +75,5 @@ func main() {
 	router := api.NewRouter(version, APIsAPIController)
 
 	log.Println("Server is running on port 1337")
-	log.Fatal(http.ListenAndServe(":1337", router))
+	log.Fatal(http.ListenAndServe(":1338", router))
 }

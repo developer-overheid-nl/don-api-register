@@ -17,6 +17,7 @@ type Api struct {
 	Title          string        `json:"title,omitempty"`
 	Description    string        `json:"description,omitempty"`
 	Auth           string        `json:"auth,omitempty"`
+	AdrScore       *int          `gorm:"column:adr_score" json:"adrScore,omitempty"`
 	RepositoryUri  string        `json:"repositoryUri,omitempty"`
 	ContactName    string        `json:"contact_name,omitempty"`
 	ContactUrl     string        `json:"contact_url,omitempty"`
@@ -27,7 +28,8 @@ type Api struct {
 }
 
 type Organisation struct {
-	Uri string `gorm:"column:uri;primaryKey"`
+	Uri   string `gorm:"column:uri;primaryKey" json:"uri"`
+	Label string `gorm:"column:label" json:"label"`
 }
 
 type Server struct {
@@ -40,12 +42,12 @@ type Server struct {
 type Link struct {
 	Href string `json:"href"`
 }
-
-// Links bevat self/next/prev links volgens HAL-stijl
 type Links struct {
-	Self *Link `json:"self"`
-	Next *Link `json:"next,omitempty"`
-	Prev *Link `json:"prev,omitempty"`
+	First *Link `json:"first,omitempty"`
+	Prev  *Link `json:"prev,omitempty"`
+	Self  *Link `json:"self"`
+	Next  *Link `json:"next,omitempty"`
+	Last  *Link `json:"last,omitempty"`
 }
 
 // Contact bundelt de contactgegevens
@@ -65,8 +67,8 @@ type ApiResponse struct {
 
 // ApiListResponse is het nieuwe root-object
 type ApiListResponse struct {
-	Links Links          `json:"_links"`
-	Apis  []*ApiResponse `json:"apis"`
+	Apis  []ApiSummary `json:"apis"`
+	Links Links        `json:"_links"`
 }
 
 type Pagination struct {
@@ -77,11 +79,38 @@ type Pagination struct {
 	TotalPages     int  `json:"totalPages"`
 	TotalRecords   int  `json:"totalRecords"`
 }
-
-type OasParams struct {
-	OasUrl string `json:"oasUrl" binding:"required,url"`
+type ApiSummary struct {
+	Id           string       `json:"id"`
+	OasUrl       string       `json:"oasUrl"`
+	Title        string       `json:"title"`
+	Description  string       `json:"description,omitempty"`
+	Contact      Contact      `json:"contact"`
+	Organisation Organisation `json:"organisation"`
+	AdrScore     *int         `json:"adrScore,omitempty"`
+	Links        *Links       `json:"_links,omitempty"`
 }
 
-type RetrieveApiRequest struct {
+type ApiDetail struct {
+	ApiSummary          // embed alles van ApiSummary
+	Auth       []string `json:"auth,omitempty"`
+	DocsUri    string   `json:"docsUri,omitempty"`
+	Servers    []Server `json:"servers,omitempty"`
+}
+
+type ApiPost struct {
+	Id              string  `json:"id,omitempty"`
+	OasUrl          string  `json:"oasUrl" binding:"required,url"`
+	OrganisationUri string  `json:"organisationUri" binding:"required,url"`
+	Contact         Contact `json:"contact"`
+}
+
+type ApiParams struct {
 	Id string `path:"id"`
+}
+
+type UpdateApiInput struct {
+	Id              string  `path:"id"` // <-- uit path param
+	OasUrl          string  `json:"oasUrl" binding:"required,url"`
+	OrganisationUri string  `json:"organisationUri" binding:"required,url"`
+	Contact         Contact `json:"contact"`
 }

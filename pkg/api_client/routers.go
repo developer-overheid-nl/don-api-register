@@ -102,13 +102,13 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		},
 		tonic.Handler(controller.CreateApiFromOas, 201),
 	)
-	write.PUT("/apis",
+	write.PUT("/apis/:id",
 		[]fizz.OperationOption{
 			fizz.Summary("Forceer de linter aan te roepen van een API"),
 			apiVersionHeader,
 			notFoundResponse,
 		},
-		tonic.Handler(controller.UpdateApi, 204),
+		tonic.Handler(controller.UpdateApi, 201),
 	)
 
 	// 6) OpenAPI documentatie

@@ -16,6 +16,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -33,49 +34,48 @@ func NewAPIsAPIService(repo repositories.ApiRepository) *APIsAPIService {
 	return &APIsAPIService{repo: repo}
 }
 
-func (s *APIsAPIService) UpdateOasUri(ctx context.Context, oasUri string) error {
-	api, err := s.repo.FindByOasUrl(ctx, oasUri)
+func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateApiInput) (*models.ApiSummary, error) {
+	api, err := s.repo.FindByOasUrl(ctx, body.OasUrl)
 	if err != nil || api == nil {
 		if api == nil || errors.Is(err, gorm.ErrRecordNotFound) {
-			return fmt.Errorf("%w: %s", ErrNeedsPost, oasUri)
+			return nil, fmt.Errorf("%w: %s", ErrNeedsPost, body.OasUrl)
 		}
-		return fmt.Errorf("databasefout bij FindByOasUrl: %w", err)
+		return nil, fmt.Errorf("databasefout bij GetApiByID: %w", err)
+	}
+	organisation := *api.Organisation
+	if api.OrganisationID == nil || organisation.Uri != body.OrganisationUri {
+		forbidden := helpers.NewForbidden(body.OasUrl, "organisationUri komt niet overeen met eigenaar van deze API")
+		return nil, forbidden
 	}
 	tools.Dispatch(context.Background(), "lint", func(ctx context.Context) error {
-		return s.lintAndPersist(ctx, api, oasUri)
+		return s.lintAndPersist(ctx, api, body.OasUrl)
 	})
-	return nil
+	updated := helpers.ToApiSummary(api)
+	return &updated, nil
 }
 
-func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.ApiWithLintResponse, error) {
+func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.ApiDetail, error) {
 	api, err := s.repo.GetApiByID(ctx, id)
 	if err != nil || api == nil {
 		return nil, err
 	}
-	lintResults, err := s.repo.GetLintResults(ctx, id)
+	detail := helpers.ToApiDetail(api)
+	return detail, nil
+}
+
+func (s *APIsAPIService) ListApis(ctx context.Context, page, perPage int, baseURL string) (*models.ApiListResponse, error) {
+	apis, pagination, err := s.repo.GetApis(ctx, page, perPage)
 	if err != nil {
 		return nil, err
 	}
 
-	return &models.ApiWithLintResponse{
-		Api:         api,
-		LintResults: lintResults,
-	}, nil
-}
-
-func (s *APIsAPIService) ListApis(ctx context.Context, page, perPage int, baseURL string) (models.ApiListResponse, error) {
-	apis, pagination, err := s.repo.GetApis(ctx, page, perPage)
-	if err != nil {
-		return models.ApiListResponse{}, err
-	}
-
-	// map domain-model → DTO
-	dtos := make([]*models.ApiResponse, len(apis))
+	// map naar ApiSummary (ipv ApiResponse)
+	dtos := make([]models.ApiSummary, len(apis))
 	for i, api := range apis {
-		dtos[i] = helpers.ToDTO(&api)
+		dtos[i] = helpers.ToApiSummary(&api)
 	}
 
-	// links bouwen
+	// links bouwen (zelfde als je had)
 	buildURL := func(p int) *models.Link {
 		return &models.Link{Href: fmt.Sprintf("%s?page=%d&perPage=%d", baseURL, p, perPage)}
 	}
@@ -87,7 +87,7 @@ func (s *APIsAPIService) ListApis(ctx context.Context, page, perPage int, baseUR
 		links.Prev = buildURL(*pagination.Previous)
 	}
 
-	return models.ApiListResponse{
+	return &models.ApiListResponse{
 		Links: links,
 		Apis:  dtos,
 	}, nil
@@ -97,24 +97,25 @@ func (s *APIsAPIService) UpdateApi(ctx context.Context, api models.Api) error {
 	return s.repo.UpdateApi(ctx, api)
 }
 
-func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiResponse, error) {
+func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.ApiSummary, error) {
 	// 1) Parse en haal op
-	parsedUrl, err := url.Parse(requestBody.OasUri)
+	parsedUrl, err := url.Parse(requestBody.OasUrl)
 	if err != nil {
 		return nil, helpers.NewBadRequest(
+			requestBody.OasUrl,
 			"Ongeldige URL",
 			helpers.InvalidParam{Name: "oasUri", Reason: "Moet een geldige URL zijn"},
 		)
 	}
 	resp, err := helpers.CorsGet(&http.Client{}, parsedUrl.String(), "https://developer.overheid.nl")
 	if err != nil {
-		return nil, helpers.NewBadRequest(
+		return nil, helpers.NewBadRequest(requestBody.OasUrl,
 			fmt.Sprintf("fout bij ophalen OAS: %s", err),
 		)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, helpers.NewBadRequest(
+		return nil, helpers.NewBadRequest(requestBody.OasUrl,
 			fmt.Sprintf("OAS download faalt met status %d", resp.StatusCode),
 		)
 	}
@@ -122,29 +123,43 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiRe
 	// 2) Parse OpenAPI
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, helpers.NewBadRequest("kan response body niet lezen")
+		return nil, helpers.NewBadRequest(requestBody.OasUrl, "kan response body niet lezen")
 	}
 	loader := openapi3.NewLoader()
 	loader.IsExternalRefsAllowed = true
 	spec, err := loader.LoadFromData(data)
 	if err != nil {
 		return nil, helpers.NewBadRequest(
+			requestBody.OasUrl,
 			"Ongeldig OpenAPI-bestand",
 			helpers.InvalidParam{Name: "oasUri", Reason: err.Error()},
 		)
 	}
 	if err := loader.ResolveRefsIn(spec, nil); err != nil {
-		return nil, helpers.NewBadRequest("could not resolve refs", helpers.InvalidParam{Name: "External refs", Reason: err.Error()})
+		return nil, helpers.NewBadRequest(requestBody.OasUrl, "could not resolve refs", helpers.InvalidParam{Name: "External refs", Reason: err.Error()})
 	}
+
 	if err := spec.Validate(context.Background()); err != nil {
-		return nil, helpers.NewBadRequest("invalid OAS document", helpers.InvalidParam{Name: "Invalid OAS document", Reason: err.Error()})
+		if !strings.Contains(err.Error(), "invalid example") {
+			apiErr := helpers.NewBadRequest(requestBody.OasUrl, err.Error())
+			apiErr.Title = "Invalid OAS"
+			apiErr.Instance = requestBody.OasUrl
+			return nil, apiErr
+		}
 	}
 
 	// 3) Build & validate
-	api := helpers.BuildApi(spec, requestBody)
-	invalids := helpers.ValidateApi(api, requestBody)
+	label, err := helpers.FetchOrganisationLabel(context.Background(), requestBody.OrganisationUri)
+	api := helpers.BuildApi(spec, requestBody, label)
+	if api.OrganisationID != nil {
+		if err := s.repo.SaveOrganisatie(api.Organisation); err != nil {
+			return nil, helpers.NewInternalServerError("kan organisatie niet opslaan: " + err.Error())
+		}
+	}
+	invalids := helpers.ValidateApi(api)
 	if len(invalids) > 0 {
 		return nil, helpers.NewBadRequest(
+			requestBody.OasUrl,
 			"Validatie mislukt: ontbrekende of ongeldige eigenschappen",
 			invalids...,
 		)
@@ -157,14 +172,19 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.Api) (*models.ApiRe
 		}
 	}
 	if err := s.repo.Save(api); err != nil {
+		if strings.Contains(err.Error(), "api bestaat al") {
+			bad := helpers.NewBadRequest(requestBody.OasUrl, "kan API niet opslaan: "+err.Error())
+			return nil, bad
+		}
 		return nil, helpers.NewInternalServerError("kan API niet opslaan: " + err.Error())
 	}
 
 	tools.Dispatch(context.Background(), "lint", func(ctx context.Context) error {
-		return s.lintAndPersist(ctx, api, requestBody.OasUri)
+		return s.lintAndPersist(ctx, api, requestBody.OasUrl)
 	})
 
-	return helpers.ToDTO(api), nil
+	created := helpers.ToApiSummary(api)
+	return &created, nil
 }
 
 // LintAllApis runs the linter for every registered API and stores

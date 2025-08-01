@@ -138,8 +138,10 @@ func TestCreateApiFromOas_Handler(t *testing.T) {
 }
 
 func TestUpdateApi_Handler(t *testing.T) {
-	// needs post
-	repo1 := &stubRepo{findOasFunc: func(ctx context.Context, url string) (*models.Api, error) { return nil, nil }}
+	// needs post (geen bestaande API, moet fout geven)
+	repo1 := &stubRepo{
+		findOasFunc: func(ctx context.Context, url string) (*models.Api, error) { return nil, nil },
+	}
 	svc1 := services.NewAPIsAPIService(repo1)
 	ctrl1 := NewAPIsAPIController(svc1)
 
@@ -152,10 +154,18 @@ func TestUpdateApi_Handler(t *testing.T) {
 	assert.Error(t, err1)
 	assert.Nil(t, resp1)
 
-	// success
-	repo2 := &stubRepo{findOasFunc: func(ctx context.Context, url string) (*models.Api, error) {
-		return &models.Api{Id: "id", OrganisationID: func() *string { s := "https://example.org"; return &s }()}, nil
-	}}
+	// success pad
+	orgID := "https://example.org"
+	repo2 := &stubRepo{
+		findOasFunc: func(ctx context.Context, url string) (*models.Api, error) {
+			return &models.Api{
+				Id:             "id",
+				OrganisationID: &orgID,
+				Organisation:   &models.Organisation{Uri: orgID, Label: "ORG"},
+				Servers:        []models.Server{}, // altijd een lege slice, nooit nil
+			}, nil
+		},
+	}
 	svc2 := services.NewAPIsAPIService(repo2)
 	ctrl2 := NewAPIsAPIController(svc2)
 
@@ -163,6 +173,7 @@ func TestUpdateApi_Handler(t *testing.T) {
 	ctx2.Request = httptest.NewRequest("PUT", "/v1/apis", nil)
 
 	input2 := &models.UpdateApiInput{OasUrl: "u", OrganisationUri: "https://example.org"}
-	_, err2 := ctrl2.UpdateApi(ctx2, input2)
+	resp2, err2 := ctrl2.UpdateApi(ctx2, input2)
 	assert.NoError(t, err2)
+	assert.NotNil(t, resp2)
 }

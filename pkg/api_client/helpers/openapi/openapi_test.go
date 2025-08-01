@@ -13,12 +13,16 @@ import (
 func TestValidateApi(t *testing.T) {
 	api := &models.Api{}
 	invalids := openapi.ValidateApi(api)
-	assert.Len(t, invalids, 4)
-	names := []string{invalids[0].Name, invalids[1].Name, invalids[2].Name, invalids[3].Name}
-	assert.Contains(t, names, "contact.name")
-	assert.Contains(t, names, "contact.email")
-	assert.Contains(t, names, "contact.url")
-	assert.Contains(t, names, "organisationUri")
+	assert.Len(t, invalids, 5)
+
+	var names []string
+	for _, inv := range invalids {
+		names = append(names, inv.Name)
+	}
+	expected := []string{"contact.name", "contact.email", "contact.url", "oasUrl", "organisationUri"}
+	for _, n := range expected {
+		assert.Contains(t, names, n)
+	}
 }
 
 func TestParseOutput(t *testing.T) {

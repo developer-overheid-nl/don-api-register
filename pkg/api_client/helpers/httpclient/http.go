@@ -30,6 +30,8 @@ type TooIObject struct {
 	} `json:"http://www.w3.org/2000/01/rdf-schema#label"`
 }
 
+var HTTPClient = http.DefaultClient
+
 // FetchOrganisationLabel retrieves the organisation label from the TOOI service.
 func FetchOrganisationLabel(ctx context.Context, uriOrType string, optionalId ...string) (string, error) {
 	var uri string
@@ -47,7 +49,7 @@ func FetchOrganisationLabel(ctx context.Context, uriOrType string, optionalId ..
 	}
 	req.Header.Set("Accept", "application/ld+json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := HTTPClient.Do(req)
 	if err != nil {
 		return "", err
 	}

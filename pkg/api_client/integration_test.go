@@ -154,30 +154,30 @@ func TestIntegration_CreateApiFromOas(t *testing.T) {
 	assert.Equal(t, saved.Id, saved.Id) // saved should be set
 }
 
-//func TestIntegration_UpdateApi(t *testing.T) {
-//	repo := &stubRepo{findByOas: func(ctx context.Context, url string) (*models.Api, error) {
-//		org := "https://org.example.com"
-//		return &models.Api{Id: "a1", Organisation: &models.Organisation{Uri: org, Label: "l"}, OrganisationID: &org}, nil
-//	}}
-//	srv := newServer(repo)
-//	defer srv.Close()
-//
-//	body := `{"oasUrl":"http://example.com","organisationUri":"https://org.example.com"}`
-//	req, _ := http.NewRequest(http.MethodPut, srv.URL+"/v1/apis/a1", strings.NewReader(body))
-//	req.Header.Set("Authorization", "Bearer "+tokenWithScope("apis:write"))
-//	req.Header.Set("Content-Type", "application/json")
-//	resp, err := http.DefaultClient.Do(req)
-//	assert.NoError(t, err)
-//	assert.Equal(t, http.StatusCreated, resp.StatusCode)
-//	resp.Body.Close()
-//
-//	// FORBIDDEN (foute organisatie)
-//	badBody := `{"oasUrl":"http://example.com","organisationUri":"https://malafide.org"}`
-//	req2, _ := http.NewRequest(http.MethodPut, srv.URL+"/v1/apis/a1", strings.NewReader(badBody))
-//	req2.Header.Set("Authorization", "Bearer "+tokenWithScope("apis:write"))
-//	req2.Header.Set("Content-Type", "application/json")
-//	resp2, err := http.DefaultClient.Do(req2)
-//	assert.NoError(t, err)
-//	assert.Equal(t, http.StatusForbidden, resp2.StatusCode)
-//	resp2.Body.Close()
-//}
+func TestIntegration_UpdateApi(t *testing.T) {
+	repo := &stubRepo{findByOas: func(ctx context.Context, url string) (*models.Api, error) {
+		org := "https://org.example.com"
+		return &models.Api{Id: "a1", Organisation: &models.Organisation{Uri: org, Label: "l"}, OrganisationID: &org}, nil
+	}}
+	srv := newServer(repo)
+	defer srv.Close()
+
+	body := `{"oasUrl":"http://example.com","organisationUri":"https://org.example.com"}`
+	req, _ := http.NewRequest(http.MethodPut, srv.URL+"/v1/apis/a1", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+tokenWithScope("apis:write"))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+	resp.Body.Close()
+	//
+	//	// FORBIDDEN (foute organisatie)
+	//	badBody := `{"oasUrl":"http://example.com","organisationUri":"https://malafide.org"}`
+	//	req2, _ := http.NewRequest(http.MethodPut, srv.URL+"/v1/apis/a1", strings.NewReader(badBody))
+	//	req2.Header.Set("Authorization", "Bearer "+tokenWithScope("apis:write"))
+	//	req2.Header.Set("Content-Type", "application/json")
+	//	resp2, err := http.DefaultClient.Do(req2)
+	//	assert.NoError(t, err)
+	//	assert.Equal(t, http.StatusForbidden, resp2.StatusCode)
+	//	resp2.Body.Close()
+}

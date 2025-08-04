@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/util"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 )
 
@@ -36,21 +35,6 @@ func (e *RequiredError) Error() string {
 
 // ErrorHandler defines the required method for handling error.
 type ErrorHandler func(w http.ResponseWriter, r *http.Request, err error, result *models.ImplResponse)
-
-// DefaultErrorHandler defines the default logic on how to handle errors from the controller.
-func DefaultErrorHandler(w http.ResponseWriter, _ *http.Request, err error, result *models.ImplResponse) {
-	var parsingErr *ParsingError
-	if ok := errors.As(err, &parsingErr); ok {
-		_ = util.EncodeJSONResponse(err.Error(), func(i int) *int { return &i }(http.StatusBadRequest), w)
-		return
-	}
-	var requiredErr *RequiredError
-	if ok := errors.As(err, &requiredErr); ok {
-		_ = util.EncodeJSONResponse(err.Error(), func(i int) *int { return &i }(http.StatusUnprocessableEntity), w)
-		return
-	}
-	_ = util.EncodeJSONResponse(err.Error(), &result.Code, w)
-}
 
 type InvalidParam struct {
 	Name   string `json:"name"`

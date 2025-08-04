@@ -13,13 +13,12 @@ import (
 
 // APIsAPIController binds HTTP requests to the APIsAPIService
 type APIsAPIController struct {
-	Service      *services.APIsAPIService
-	errorHandler problem.ErrorHandler
+	Service *services.APIsAPIService
 }
 
 // NewAPIsAPIController creates a new controller
 func NewAPIsAPIController(s *services.APIsAPIService) *APIsAPIController {
-	return &APIsAPIController{Service: s, errorHandler: problem.DefaultErrorHandler}
+	return &APIsAPIController{Service: s}
 }
 
 // listApisParams defines query parameters for ListApis

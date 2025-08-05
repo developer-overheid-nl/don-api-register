@@ -76,5 +76,5 @@ func main() {
 	router := api.NewRouter(version, APIsAPIController)
 
 	log.Println("Server is running on port 1337")
-	log.Fatal(http.ListenAndServe(":1338", router))
+	log.Fatal(http.ListenAndServe(":1337", router))
 }

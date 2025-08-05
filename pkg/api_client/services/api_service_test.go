@@ -20,6 +20,7 @@ type stubRepo struct {
 	getApis    func(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error)
 	saveServer func(server models.Server) error
 	saveApi    func(api *models.Api) error
+	getOrgs    func(ctx context.Context) ([]models.Organisation, error)
 }
 
 func (s *stubRepo) FindByOasUrl(ctx context.Context, url string) (*models.Api, error) {
@@ -42,6 +43,9 @@ func (s *stubRepo) UpdateApi(ctx context.Context, api models.Api) error         
 func (s *stubRepo) SaveOrganisatie(org *models.Organisation) error                      { return nil }
 func (s *stubRepo) AllApis(ctx context.Context) ([]models.Api, error)                   { return nil, nil }
 func (s *stubRepo) SaveLintResult(ctx context.Context, result *models.LintResult) error { return nil }
+func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, error) {
+	return s.getOrgs(ctx)
+}
 
 func TestUpdateOasUri_NotFound(t *testing.T) {
 	repo := &stubRepo{
@@ -159,4 +163,22 @@ func TestCreateApiFromOas_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, saved.Id, resp.Id)
 	assert.Equal(t, "T", resp.Title)
+}
+
+func TestListOrganisations_Service(t *testing.T) {
+	repo := &stubRepo{
+		getOrgs: func(ctx context.Context) ([]models.Organisation, error) {
+			return []models.Organisation{
+				{Uri: "https://example.org/a", Label: "A"},
+				{Uri: "https://example.org/b", Label: "B"},
+			}, nil
+		},
+	}
+
+	service := services.NewAPIsAPIService(repo)
+	orgs, err := service.ListOrganisations(context.Background())
+
+	assert.NoError(t, err)
+	assert.Len(t, orgs, 2)
+	assert.Equal(t, "A", orgs[0].Label)
 }

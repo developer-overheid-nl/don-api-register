@@ -17,6 +17,7 @@ type stubRepo struct {
 	retrFunc    func(ctx context.Context, id string) (*models.Api, error)
 	lintResFunc func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	findOasFunc func(ctx context.Context, oasUrl string) (*models.Api, error)
+	getOrgs     func(ctx context.Context) ([]models.Organisation, error)
 }
 
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
@@ -30,6 +31,10 @@ func (s *stubRepo) GetLintResults(ctx context.Context, apiID string) ([]models.L
 }
 func (s *stubRepo) FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api, error) {
 	return s.findOasFunc(ctx, oasUrl)
+}
+
+func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, error) {
+	return s.getOrgs(ctx)
 }
 
 // unused
@@ -176,4 +181,26 @@ func TestUpdateApi_Handler(t *testing.T) {
 	resp2, err2 := ctrl2.UpdateApi(ctx2, input2)
 	assert.NoError(t, err2)
 	assert.NotNil(t, resp2)
+}
+
+func TestListOrganisations_Handler(t *testing.T) {
+	repo := &stubRepo{
+		getOrgs: func(ctx context.Context) ([]models.Organisation, error) {
+			return []models.Organisation{
+				{Uri: "https://example.org/1", Label: "Org 1"},
+				{Uri: "https://example.org/2", Label: "Org 2"},
+			}, nil
+		},
+	}
+	svc := services.NewAPIsAPIService(repo)
+	ctrl := NewAPIsAPIController(svc)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request = httptest.NewRequest("GET", "/v1/organisations", nil)
+
+	result, err := ctrl.ListOrganisations(ctx)
+	assert.NoError(t, err)
+	assert.Len(t, result.Organisations, 2)
+	assert.Equal(t, "Org 1", result.Organisations[0].Label)
 }

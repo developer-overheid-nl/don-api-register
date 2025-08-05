@@ -94,6 +94,15 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.RetrieveApi, 200),
 	)
 
+	read.GET("/organisations",
+		[]fizz.OperationOption{
+			fizz.Summary("Alle organisations's ophalen"),
+			apiVersionHeader,
+			notFoundResponse,
+		},
+		tonic.Handler(controller.ListOrganisations, 200),
+	)
+
 	// 5b) Schrijf-endpoints
 	write := root.Group("", "Schrijven", "Bewerken van API's", middleware.RequireAccess("apis:write"))
 	write.POST("/apis",
@@ -104,6 +113,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		},
 		tonic.Handler(controller.CreateApiFromOas, 201),
 	)
+
 	write.PUT("/apis/:id",
 		[]fizz.OperationOption{
 			fizz.Summary("Forceer de linter aan te roepen van een API"),
@@ -111,15 +121,6 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 			notFoundResponse,
 		},
 		tonic.Handler(controller.UpdateApi, 201),
-	)
-
-	read.GET("/organisations",
-		[]fizz.OperationOption{
-			fizz.Summary("Alle organisations's ophalen"),
-			apiVersionHeader,
-			notFoundResponse,
-		},
-		tonic.Handler(controller.ListOrganisations, 200),
 	)
 
 	// 6) OpenAPI documentatie

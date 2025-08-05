@@ -20,6 +20,7 @@ type ApiRepository interface {
 	AllApis(ctx context.Context) ([]models.Api, error)
 	SaveLintResult(ctx context.Context, result *models.LintResult) error
 	GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error)
+	GetOrganisations(ctx context.Context) ([]models.Organisation, error)
 }
 
 type apiRepository struct {
@@ -143,4 +144,12 @@ func (r *apiRepository) GetLintResults(ctx context.Context, apiID string) ([]mod
 		return nil, err
 	}
 	return results, nil
+}
+
+func (r *apiRepository) GetOrganisations(ctx context.Context) ([]models.Organisation, error) {
+	var organisations []models.Organisation
+	if err := r.db.WithContext(ctx).Order("label asc").Find(&organisations).Error; err != nil {
+		return nil, err
+	}
+	return organisations, nil
 }

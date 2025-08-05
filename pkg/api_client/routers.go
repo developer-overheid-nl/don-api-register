@@ -84,6 +84,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		},
 		tonic.Handler(controller.ListApis, 200),
 	)
+
 	read.GET("/apis/:id",
 		[]fizz.OperationOption{
 			fizz.Summary("Specifieke API ophalen"),
@@ -110,6 +111,15 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 			notFoundResponse,
 		},
 		tonic.Handler(controller.UpdateApi, 201),
+	)
+
+	read.GET("/organisations",
+		[]fizz.OperationOption{
+			fizz.Summary("Alle organisations's ophalen"),
+			apiVersionHeader,
+			notFoundResponse,
+		},
+		tonic.Handler(controller.ListOrganisations, 200),
 	)
 
 	// 6) OpenAPI documentatie

@@ -77,3 +77,14 @@ func (c *APIsAPIController) UpdateApi(ctx *gin.Context, body *models.UpdateApiIn
 	}
 	return updated, nil
 }
+
+// ListOrganisations handles GET /organisations
+func (c *APIsAPIController) ListOrganisations(ctx *gin.Context) (*models.OrganisationListResponse, error) {
+	orgs, err := c.Service.ListOrganisations(ctx.Request.Context())
+	if err != nil {
+		return nil, err
+	}
+	return &models.OrganisationListResponse{
+		Organisations: orgs,
+	}, nil
+}

@@ -253,3 +253,7 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, api *models.Api, ur
 	}
 	return lintErr
 }
+
+func (s *APIsAPIService) ListOrganisations(ctx context.Context) ([]models.Organisation, error) {
+	return s.repo.GetOrganisations(ctx)
+}

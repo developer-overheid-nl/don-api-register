@@ -114,3 +114,7 @@ type UpdateApiInput struct {
 	OrganisationUri string  `json:"organisationUri" binding:"required,url"`
 	Contact         Contact `json:"contact"`
 }
+
+type OrganisationListResponse struct {
+	Organisations []Organisation `json:"organisations"`
+}

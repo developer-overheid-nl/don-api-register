@@ -7,6 +7,11 @@ import (
 )
 
 func ToApiSummary(api *models.Api) models.ApiSummary {
+	var org models.Organisation
+	if api.Organisation != nil {
+		org = *api.Organisation
+	}
+
 	return models.ApiSummary{
 		Id:          api.Id,
 		OasUrl:      api.OasUri,
@@ -17,11 +22,8 @@ func ToApiSummary(api *models.Api) models.ApiSummary {
 			URL:   api.ContactUrl,
 			Email: api.ContactEmail,
 		},
-		Organisation: models.Organisation{
-			Label: api.Organisation.Label,
-			Uri:   api.Organisation.Uri,
-		},
-		AdrScore: api.AdrScore,
+		Organisation: org,
+		AdrScore:     api.AdrScore,
 		Links: &models.Links{
 			Self: &models.Link{Href: fmt.Sprintf("/apis/%s", api.Id)},
 		},

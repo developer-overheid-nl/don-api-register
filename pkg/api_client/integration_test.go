@@ -24,6 +24,7 @@ type stubRepo struct {
 	getApis   func(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error)
 	getByID   func(ctx context.Context, id string) (*models.Api, error)
 	findByOas func(ctx context.Context, url string) (*models.Api, error)
+	findOrg   func(ctx context.Context, uri string) (*models.Organisation, error)
 	saveApi   func(api *models.Api) error
 	saveSrv   func(server models.Server) error
 	saveOrg   func(org *models.Organisation) error
@@ -44,6 +45,12 @@ func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, erro
 func (s *stubRepo) FindByOasUrl(ctx context.Context, url string) (*models.Api, error) {
 	if s.findByOas != nil {
 		return s.findByOas(ctx, url)
+	}
+	return nil, nil
+}
+func (s *stubRepo) FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error) {
+	if s.findOrg != nil {
+		return s.findOrg(ctx, uri)
 	}
 	return nil, nil
 }
@@ -142,6 +149,9 @@ func TestIntegration_CreateApiFromOas(t *testing.T) {
 		saveApi:   func(api *models.Api) error { saved = *api; return nil },
 		saveSrv:   func(server models.Server) error { return nil },
 		saveOrg:   func(org *models.Organisation) error { return nil },
+		findOrg: func(ctx context.Context, uri string) (*models.Organisation, error) {
+			return &models.Organisation{Uri: uri, Label: "Org"}, nil
+		},
 	}
 	srv := newServer(repo)
 	defer srv.Close()
@@ -173,6 +183,23 @@ func TestIntegration_UpdateApi(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 	resp.Body.Close()
+}
+
+func TestIntegration_CreateOrganisation(t *testing.T) {
+	var saved models.Organisation
+	repo := &stubRepo{saveOrg: func(org *models.Organisation) error { saved = *org; return nil }}
+	srv := newServer(repo)
+	defer srv.Close()
+
+	body := `{"uri":"https://example.org","label":"Org"}`
+	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/organisations", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+tokenWithScope("organisations:write"))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+	resp.Body.Close()
+	assert.Equal(t, "https://example.org", saved.Uri)
 }
 
 //func TestIntegration_forbidden_UpdateApi(t *testing.T) {

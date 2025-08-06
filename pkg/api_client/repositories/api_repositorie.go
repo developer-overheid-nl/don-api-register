@@ -21,6 +21,7 @@ type ApiRepository interface {
 	SaveLintResult(ctx context.Context, result *models.LintResult) error
 	GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error)
 	GetOrganisations(ctx context.Context) ([]models.Organisation, error)
+	FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error)
 }
 
 type apiRepository struct {
@@ -152,4 +153,15 @@ func (r *apiRepository) GetOrganisations(ctx context.Context) ([]models.Organisa
 		return nil, err
 	}
 	return organisations, nil
+}
+
+func (r *apiRepository) FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error) {
+	var org models.Organisation
+	if err := r.db.WithContext(ctx).Where("uri = ?", uri).First(&org).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &org, nil
 }

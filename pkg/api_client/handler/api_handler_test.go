@@ -18,6 +18,8 @@ type stubRepo struct {
 	lintResFunc func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	findOasFunc func(ctx context.Context, oasUrl string) (*models.Api, error)
 	getOrgs     func(ctx context.Context) ([]models.Organisation, error)
+	findOrg     func(ctx context.Context, uri string) (*models.Organisation, error)
+	saveOrg     func(org *models.Organisation) error
 }
 
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
@@ -32,7 +34,15 @@ func (s *stubRepo) GetLintResults(ctx context.Context, apiID string) ([]models.L
 func (s *stubRepo) FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api, error) {
 	return s.findOasFunc(ctx, oasUrl)
 }
-
+func (s *stubRepo) FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error) {
+	return s.findOrg(ctx, uri)
+}
+func (s *stubRepo) SaveOrganisatie(org *models.Organisation) error {
+	if s.saveOrg != nil {
+		return s.saveOrg(org)
+	}
+	return nil
+}
 func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, error) {
 	return s.getOrgs(ctx)
 }
@@ -41,7 +51,6 @@ func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation,
 func (s *stubRepo) Save(api *models.Api) error                                       { return nil }
 func (s *stubRepo) UpdateApi(ctx context.Context, api models.Api) error              { return nil }
 func (s *stubRepo) SaveServer(server models.Server) error                            { return nil }
-func (s *stubRepo) SaveOrganisatie(org *models.Organisation) error                   { return nil }
 func (s *stubRepo) AllApis(ctx context.Context) ([]models.Api, error)                { return nil, nil }
 func (s *stubRepo) SaveLintResult(ctx context.Context, res *models.LintResult) error { return nil }
 
@@ -130,6 +139,7 @@ func TestRetrieveApi_Handler(t *testing.T) {
 func TestCreateApiFromOas_Handler(t *testing.T) {
 	repo := &stubRepo{
 		findOasFunc: func(ctx context.Context, url string) (*models.Api, error) { return nil, nil },
+		findOrg:     func(ctx context.Context, uri string) (*models.Organisation, error) { return nil, nil },
 	}
 	svc := services.NewAPIsAPIService(repo)
 	ctrl := NewAPIsAPIController(svc)
@@ -203,4 +213,19 @@ func TestListOrganisations_Handler(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, result.Organisations, 2)
 	assert.Equal(t, "Org 1", result.Organisations[0].Label)
+}
+
+func TestCreateOrganisation_Handler(t *testing.T) {
+	var saved models.Organisation
+	repo := &stubRepo{saveOrg: func(org *models.Organisation) error { saved = *org; return nil }}
+	svc := services.NewAPIsAPIService(repo)
+	ctrl := NewAPIsAPIController(svc)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request = httptest.NewRequest("POST", "/v1/organisations", nil)
+	body := &models.Organisation{Uri: "https://example.org", Label: "Org"}
+	res, err := ctrl.CreateOrganisation(ctx, body)
+	assert.NoError(t, err)
+	assert.Equal(t, saved.Uri, res.Uri)
 }

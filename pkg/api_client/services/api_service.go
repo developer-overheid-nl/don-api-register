@@ -152,9 +152,29 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 	}
 
 	// 3) Build & validate
-	label, _ := httpclient.FetchOrganisationLabel(context.Background(), requestBody.OrganisationUri)
+	var label string
+	var shouldSaveOrg bool
+	if org, err := s.repo.FindOrganisationByURI(context.Background(), requestBody.OrganisationUri); err != nil {
+		return nil, problem.NewInternalServerError("kan organisatie niet ophalen: " + err.Error())
+	} else if org != nil {
+		label = org.Label
+	} else {
+		if _, err := url.ParseRequestURI(requestBody.OrganisationUri); err != nil {
+			return nil, problem.NewBadRequest(
+				requestBody.OrganisationUri,
+				"Ongeldige URL",
+				problem.InvalidParam{Name: "organisationUri", Reason: "Moet een geldige URL zijn"},
+			)
+		}
+		lbl, err := httpclient.FetchOrganisationLabel(context.Background(), requestBody.OrganisationUri)
+		if err != nil {
+			return nil, problem.NewBadRequest(requestBody.OrganisationUri, fmt.Sprintf("fout bij ophalen organisatie: %s", err))
+		}
+		label = lbl
+		shouldSaveOrg = true
+	}
 	api := openapi.BuildApi(spec, requestBody, label)
-	if api.OrganisationID != nil {
+	if shouldSaveOrg && api.OrganisationID != nil {
 		if err := s.repo.SaveOrganisatie(api.Organisation); err != nil {
 			return nil, problem.NewInternalServerError("kan organisatie niet opslaan: " + err.Error())
 		}
@@ -256,4 +276,20 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, api *models.Api, ur
 
 func (s *APIsAPIService) ListOrganisations(ctx context.Context) ([]models.Organisation, error) {
 	return s.repo.GetOrganisations(ctx)
+}
+
+// CreateOrganisation validates and stores a new organisation
+func (s *APIsAPIService) CreateOrganisation(ctx context.Context, org *models.Organisation) (*models.Organisation, error) {
+	if _, err := url.ParseRequestURI(org.Uri); err != nil {
+		return nil, problem.NewBadRequest(org.Uri, fmt.Sprintf("foutieve uri: %v", err),
+			problem.InvalidParam{Name: "uri", Reason: "Moet een geldige URL zijn"})
+	}
+	if strings.TrimSpace(org.Label) == "" {
+		return nil, problem.NewBadRequest(org.Uri, "label is verplicht",
+			problem.InvalidParam{Name: "label", Reason: "label is verplicht"})
+	}
+	if err := s.repo.SaveOrganisatie(org); err != nil {
+		return nil, err
+	}
+	return org, nil
 }

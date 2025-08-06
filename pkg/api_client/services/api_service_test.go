@@ -15,16 +15,21 @@ import (
 // stubRepo implements repositories.ApiRepository for testing
 type stubRepo struct {
 	findByOas  func(ctx context.Context, oasUrl string) (*models.Api, error)
+	findOrg    func(ctx context.Context, uri string) (*models.Organisation, error)
 	getByID    func(ctx context.Context, id string) (*models.Api, error)
 	getLintRes func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	getApis    func(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error)
 	saveServer func(server models.Server) error
 	saveApi    func(api *models.Api) error
+	saveOrg    func(org *models.Organisation) error
 	getOrgs    func(ctx context.Context) ([]models.Organisation, error)
 }
 
 func (s *stubRepo) FindByOasUrl(ctx context.Context, url string) (*models.Api, error) {
 	return s.findByOas(ctx, url)
+}
+func (s *stubRepo) FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error) {
+	return s.findOrg(ctx, uri)
 }
 func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, error) {
 	return s.getByID(ctx, id)
@@ -37,10 +42,15 @@ func (s *stubRepo) GetApis(ctx context.Context, page, perPage int) ([]models.Api
 }
 
 // unused methods
-func (s *stubRepo) SaveServer(server models.Server) error                               { return s.saveServer(server) }
-func (s *stubRepo) Save(api *models.Api) error                                          { return s.saveApi(api) }
-func (s *stubRepo) UpdateApi(ctx context.Context, api models.Api) error                 { return nil }
-func (s *stubRepo) SaveOrganisatie(org *models.Organisation) error                      { return nil }
+func (s *stubRepo) SaveServer(server models.Server) error               { return s.saveServer(server) }
+func (s *stubRepo) Save(api *models.Api) error                          { return s.saveApi(api) }
+func (s *stubRepo) UpdateApi(ctx context.Context, api models.Api) error { return nil }
+func (s *stubRepo) SaveOrganisatie(org *models.Organisation) error {
+	if s.saveOrg != nil {
+		return s.saveOrg(org)
+	}
+	return nil
+}
 func (s *stubRepo) AllApis(ctx context.Context) ([]models.Api, error)                   { return nil, nil }
 func (s *stubRepo) SaveLintResult(ctx context.Context, result *models.LintResult) error { return nil }
 func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, error) {
@@ -152,6 +162,9 @@ func TestCreateApiFromOas_Success(t *testing.T) {
 	repo := &stubRepo{
 		saveServer: func(server models.Server) error { return nil },
 		saveApi:    func(api *models.Api) error { saved = *api; return nil },
+		findOrg: func(ctx context.Context, uri string) (*models.Organisation, error) {
+			return &models.Organisation{Uri: uri, Label: "Org"}, nil
+		},
 	}
 
 	service := services.NewAPIsAPIService(repo)
@@ -181,4 +194,17 @@ func TestListOrganisations_Service(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, orgs, 2)
 	assert.Equal(t, "A", orgs[0].Label)
+}
+
+func TestCreateOrganisation_Service(t *testing.T) {
+	var saved models.Organisation
+	repo := &stubRepo{
+		saveOrg: func(org *models.Organisation) error { saved = *org; return nil },
+	}
+	service := services.NewAPIsAPIService(repo)
+	org := &models.Organisation{Uri: "https://example.org", Label: "Org"}
+	res, err := service.CreateOrganisation(context.Background(), org)
+	assert.NoError(t, err)
+	assert.Equal(t, "Org", res.Label)
+	assert.Equal(t, saved.Uri, res.Uri)
 }

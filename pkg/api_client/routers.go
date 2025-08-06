@@ -101,7 +101,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.RetrieveApi, 200),
 	)
 
-	readOrg := root.Group("", "Publieke endpoints", "Alleen lezen endpoints", middleware.RequireAccess("organisations:read"))
+	readOrg := root.Group("", "Private endpoints", "Alleen lezen endpoints", middleware.RequireAccess("organisations:read"))
 	readOrg.GET("/organisations",
 		[]fizz.OperationOption{
 			fizz.ID("listOrganisations"),
@@ -111,6 +111,17 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 			notFoundResponse,
 		},
 		tonic.Handler(controller.ListOrganisations, 200),
+	)
+	writeOrg := root.Group("", "Private endpoints", "Alleen lezen endpoints", middleware.RequireAccess("organisations:write"))
+	writeOrg.POST("/organisations",
+		[]fizz.OperationOption{
+			fizz.ID("createOrganisation"),
+			fizz.Summary("Voeg een nieuwe organisatie toe"),
+			fizz.Description("Voeg een organisatie toe op basis van URI en label."),
+			apiVersionHeader,
+			notFoundResponse,
+		},
+		tonic.Handler(controller.CreateOrganisation, 201),
 	)
 
 	write := root.Group("", "Private endpoints", "Bewerken van API's", middleware.RequireAccess("apis:write"))

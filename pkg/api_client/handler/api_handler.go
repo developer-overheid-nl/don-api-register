@@ -88,3 +88,12 @@ func (c *APIsAPIController) ListOrganisations(ctx *gin.Context) (*models.Organis
 		Organisations: orgs,
 	}, nil
 }
+
+// CreateOrganisation handles POST /organisations
+func (c *APIsAPIController) CreateOrganisation(ctx *gin.Context, body *models.Organisation) (*models.Organisation, error) {
+	created, err := c.Service.CreateOrganisation(ctx.Request.Context(), body)
+	if err != nil {
+		return nil, err
+	}
+	return created, nil
+}

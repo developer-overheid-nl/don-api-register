@@ -71,6 +71,9 @@ func (s *stubRepo) SaveLintResult(ctx context.Context, result *models.LintResult
 func (s *stubRepo) GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error) {
 	return nil, nil
 }
+func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, error) {
+	return nil, nil
+}
 
 func newServer(repo repositories.ApiRepository) *httptest.Server {
 	svc := services.NewAPIsAPIService(repo)
@@ -170,14 +173,21 @@ func TestIntegration_UpdateApi(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 	resp.Body.Close()
-	//
-	//	// FORBIDDEN (foute organisatie)
-	//	badBody := `{"oasUrl":"http://example.com","organisationUri":"https://malafide.org"}`
-	//	req2, _ := http.NewRequest(http.MethodPut, srv.URL+"/v1/apis/a1", strings.NewReader(badBody))
-	//	req2.Header.Set("Authorization", "Bearer "+tokenWithScope("apis:write"))
-	//	req2.Header.Set("Content-Type", "application/json")
-	//	resp2, err := http.DefaultClient.Do(req2)
-	//	assert.NoError(t, err)
-	//	assert.Equal(t, http.StatusForbidden, resp2.StatusCode)
-	//	resp2.Body.Close()
 }
+
+//func TestIntegration_forbidden_UpdateApi(t *testing.T) {
+//	repo := &stubRepo{findByOas: func(ctx context.Context, url string) (*models.Api, error) {
+//		org := "https://org.example.com"
+//		return &models.Api{Id: "a1", Organisation: &models.Organisation{Uri: org, Label: "l"}, OrganisationID: &org}, nil
+//	}}
+//	srv := newServer(repo)
+//	defer srv.Close()
+//	badBody := `{"oasUrl":"http://example2.com","organisationUri":"https://malafide.org"}`
+//	req2, _ := http.NewRequest(http.MethodPut, srv.URL+"/v1/apis/a1", strings.NewReader(badBody))
+//	req2.Header.Set("Authorization", "Bearer "+tokenWithScope("apis:write"))
+//	req2.Header.Set("Content-Type", "application/json")
+//	resp2, err := http.DefaultClient.Do(req2)
+//	assert.NoError(t, err)
+//	assert.Equal(t, http.StatusForbidden, resp2.StatusCode)
+//	resp2.Body.Close()
+//}

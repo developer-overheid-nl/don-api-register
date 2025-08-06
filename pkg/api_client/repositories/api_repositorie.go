@@ -52,7 +52,7 @@ func (r *apiRepository) GetApis(ctx context.Context, page, perPage int) ([]model
 	}
 
 	var apis []models.Api
-	if err := r.db.Limit(perPage).Preload("Servers").Offset(offset).Order("id").Find(&apis).Error; err != nil {
+	if err := r.db.Limit(perPage).Preload("Servers").Preload("Organisation").Offset(offset).Order("id").Find(&apis).Error; err != nil {
 		return nil, models.Pagination{}, err
 	}
 

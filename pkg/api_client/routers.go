@@ -2,7 +2,6 @@ package api_client
 
 import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/handler"
-	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/loopfz/gadgeto/tonic"
 	"github.com/wI2L/fizz"
@@ -74,7 +73,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 
 	root := f.Group("/v1", "API v1", "API Register V1 routes")
 
-	read := root.Group("", "Publieke endpoints", "Alleen lezen endpoints", middleware.RequireAccess("apis:read"))
+	read := root.Group("", "Publieke endpoints", "Alleen lezen endpoints")
 	read.GET("/apis",
 		[]fizz.OperationOption{
 			fizz.ID("listApis"),
@@ -105,7 +104,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.RetrieveApi, 200),
 	)
 
-	readOrg := root.Group("", "Private endpoints", "Alleen lezen endpoints", middleware.RequireAccess("organisations:read"))
+	readOrg := root.Group("", "Private endpoints", "Alleen lezen endpoints")
 	readOrg.GET("/organisations",
 		[]fizz.OperationOption{
 			fizz.ID("listOrganisations"),
@@ -120,7 +119,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		},
 		tonic.Handler(controller.ListOrganisations, 200),
 	)
-	writeOrg := root.Group("", "Private endpoints", "Alleen lezen endpoints", middleware.RequireAccess("organisations:write"))
+	writeOrg := root.Group("", "Private endpoints", "Alleen lezen endpoints")
 	writeOrg.POST("/organisations",
 		[]fizz.OperationOption{
 			fizz.ID("createOrganisation"),
@@ -136,7 +135,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.CreateOrganisation, 201),
 	)
 
-	write := root.Group("", "Private endpoints", "Bewerken van API's", middleware.RequireAccess("apis:write"))
+	write := root.Group("", "Private endpoints", "Bewerken van API's")
 	write.POST("/apis",
 		[]fizz.OperationOption{
 			fizz.ID("createApi"),

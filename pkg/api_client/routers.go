@@ -2,6 +2,7 @@ package api_client
 
 import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/handler"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/loopfz/gadgeto/tonic"
 	"github.com/wI2L/fizz"
@@ -27,6 +28,15 @@ var (
 func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.Fizz {
 	//gin.SetMode(gin.ReleaseMode)
 	g := gin.Default()
+
+	// Configure CORS to allow access from everywhere
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization", "API-Version"}
+	config.ExposeHeaders = []string{"API-Version"}
+	g.Use(cors.New(config))
+
 	g.Use(APIVersionMiddleware(apiVersion))
 	f := fizz.NewFromEngine(g)
 

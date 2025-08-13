@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
+
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"gorm.io/gorm"
-	"math"
 )
 
 type ApiRepository interface {
@@ -52,7 +53,7 @@ func (r *apiRepository) GetApis(ctx context.Context, page, perPage int) ([]model
 	}
 
 	var apis []models.Api
-	if err := r.db.Limit(perPage).Preload("Servers").Preload("Organisation").Offset(offset).Order("id").Find(&apis).Error; err != nil {
+	if err := r.db.Limit(perPage).Preload("Servers").Preload("Organisation").Offset(offset).Order("title").Find(&apis).Error; err != nil {
 		return nil, models.Pagination{}, err
 	}
 
@@ -78,7 +79,7 @@ func (r *apiRepository) GetApis(ctx context.Context, page, perPage int) ([]model
 
 func (r *apiRepository) GetApiByID(ctx context.Context, id string) (*models.Api, error) {
 	var api models.Api
-	if err := r.db.First(&api, "id = ?", id).Error; err != nil {
+	if err := r.db.Preload("Servers").Preload("Organisation").First(&api, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}

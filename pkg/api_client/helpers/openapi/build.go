@@ -87,6 +87,15 @@ func BuildApi(spec *openapi3.T, requestBody models.ApiPost, label string) *model
 			api.ContactEmail = spec.Info.Contact.Email
 			api.ContactUrl = spec.Info.Contact.URL
 		}
+		if spec.Info.Version != "" {
+			api.Version = spec.Info.Version
+		}
+		if v, ok := spec.Info.Extensions["x-sunset"].(string); ok && v != "" {
+			api.Sunset = v
+		}
+		if v, ok := spec.Info.Extensions["x-deprecated"].(string); ok && v != "" {
+			api.Deprecated = v
+		}
 	}
 
 	api.OasUri = requestBody.OasUrl

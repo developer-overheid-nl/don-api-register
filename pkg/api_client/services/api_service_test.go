@@ -124,7 +124,7 @@ func TestListApis_Pagination(t *testing.T) {
 	pagination := models.Pagination{CurrentPage: 1, RecordsPerPage: 2, TotalPages: 1, TotalRecords: 2}
 	repo := &stubRepo{
 		getApis: func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
-			return apis, pagination, nil, nil
+			return apis, pagination, nil
 		},
 	}
 	service := services.NewAPIsAPIService(repo)

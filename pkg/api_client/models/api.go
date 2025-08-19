@@ -25,6 +25,9 @@ type Api struct {
 	Organisation   *Organisation `json:"organisation,omitempty" gorm:"foreignKey:OrganisationID;references:Uri"`
 	OrganisationID *string       `json:"organisationId,omitempty" gorm:"column:organisation_id"`
 	Servers        []Server      `gorm:"many2many:api_servers;" json:"servers,omitempty"`
+	Version        string        `json:"version,omitempty"`
+	Sunset         string        `json:"sunset,omitempty"`
+	Deprecated     string        `json:"deprecated,omitempty"`
 }
 
 type Organisation struct {
@@ -57,12 +60,19 @@ type Contact struct {
 	Email string `json:"email,omitempty"`
 }
 
+type Lifecycle struct {
+	Version    string `json:"version"`
+	Sunset     string `json:"sunset,omitempty"`
+	Deprecated string `json:"deprecated,omitempty"`
+}
+
 // ApiResponse is de externe view van een API
 type ApiResponse struct {
-	Id      string  `json:"id"`
-	Title   string  `json:"title"`
-	OasUri  string  `json:"oasUri"`
-	Contact Contact `json:"contact"`
+	Id        string    `json:"id"`
+	Title     string    `json:"title"`
+	OasUri    string    `json:"oasUri"`
+	Contact   Contact   `json:"contact"`
+	Lifecycle Lifecycle `json:"lifecycle"`
 }
 
 // ApiListResponse is het nieuwe root-object
@@ -88,13 +98,19 @@ type ApiSummary struct {
 	Organisation Organisation `json:"organisation"`
 	AdrScore     *int         `json:"adrScore,omitempty"`
 	Links        *Links       `json:"_links,omitempty"`
+	Lifecycle    Lifecycle    `json:"lifecycle"`
+}
+
+type ServerInfo struct {
+	Url         string `json:"url,omitempty"`
+	Description string `json:"description,omitempty"`
 }
 
 type ApiDetail struct {
-	ApiSummary          // embed alles van ApiSummary
-	Auth       []string `json:"auth,omitempty"`
-	DocsUri    string   `json:"docsUri,omitempty"`
-	Servers    []Server `json:"servers,omitempty"`
+	ApiSummary              // embed alles van ApiSummary
+	Auth       []string     `json:"auth,omitempty"`
+	DocsUri    string       `json:"docsUrl,omitempty"`
+	Servers    []ServerInfo `json:"servers,omitempty"`
 }
 
 type ApiPost struct {

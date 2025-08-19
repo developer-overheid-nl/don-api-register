@@ -22,6 +22,11 @@ func ToApiSummary(api *models.Api) models.ApiSummary {
 			URL:   api.ContactUrl,
 			Email: api.ContactEmail,
 		},
+		Lifecycle: models.Lifecycle{
+			Version:    api.Version,
+			Sunset:     api.Sunset,
+			Deprecated: api.Deprecated,
+		},
 		Organisation: org,
 		AdrScore:     api.AdrScore,
 		Links: &models.Links{
@@ -31,9 +36,21 @@ func ToApiSummary(api *models.Api) models.ApiSummary {
 }
 
 func ToApiDetail(api *models.Api) *models.ApiDetail {
+	// Map servers to only url and description
+	type ServerInfo struct {
+		Url         string `json:"uri,omitempty"`
+		Description string `json:"description,omitempty"`
+	}
+	servers := make([]models.ServerInfo, 0, len(api.Servers))
+	for _, srv := range api.Servers {
+		servers = append(servers, models.ServerInfo{
+			Url:         srv.Uri,
+			Description: srv.Description,
+		})
+	}
 	return &models.ApiDetail{
 		ApiSummary: ToApiSummary(api),
 		DocsUri:    api.DocsUri,
-		Servers:    api.Servers,
+		Servers:    servers,
 	}
 }

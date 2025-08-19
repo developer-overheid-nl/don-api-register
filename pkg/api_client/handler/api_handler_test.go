@@ -70,7 +70,7 @@ func TestListApis_Handler(t *testing.T) {
 				},
 			}
 			pag := models.Pagination{CurrentPage: page, RecordsPerPage: perPage}
-			return apis, pag, nil, nil
+			return apis, pag, nil
 		},
 	}
 	svc := services.NewAPIsAPIService(repo)

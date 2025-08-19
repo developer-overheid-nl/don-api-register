@@ -23,8 +23,10 @@ func NewAPIsAPIController(s *services.APIsAPIService) *APIsAPIController {
 
 // listApisParams defines query parameters for ListApis
 type listApisParams struct {
-	Page    int `query:"page"`
-	PerPage int `query:"perPage"`
+	Page         int     `query:"page"`
+	PerPage      int     `query:"perPage"`
+	Organisation *string `query:"organisation"`
+	Ids          *string `query:"ids"`
 }
 
 // ListApis handles GET /apis
@@ -36,7 +38,7 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, params *listApisParams) (
 		params.PerPage = 10
 	}
 	baseURL := fmt.Sprintf("https://%s%s", ctx.Request.Host, ctx.FullPath())
-	response, err := c.Service.ListApis(ctx.Request.Context(), params.Page, params.PerPage, baseURL)
+	response, err := c.Service.ListApis(ctx.Request.Context(), params.Page, params.PerPage, params.Organisation, params.Ids, baseURL)
 	if err != nil {
 		return nil, err
 	}

@@ -21,7 +21,7 @@ import (
 // stubRepo implements repositories.ApiRepository for integration tests
 // Each function can be optional; unused functions return zero values.
 type stubRepo struct {
-	getApis   func(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error)
+	getApis   func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
 	getByID   func(ctx context.Context, id string) (*models.Api, error)
 	findByOas func(ctx context.Context, url string) (*models.Api, error)
 	findOrg   func(ctx context.Context, uri string) (*models.Organisation, error)
@@ -30,9 +30,9 @@ type stubRepo struct {
 	saveOrg   func(org *models.Organisation) error
 }
 
-func (s *stubRepo) GetApis(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
+func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
 	if s.getApis != nil {
-		return s.getApis(ctx, page, perPage)
+		return s.getApis(ctx, page, perPage, organisation, ids)
 	}
 	return nil, models.Pagination{}, nil
 }
@@ -96,7 +96,7 @@ func tokenWithScope(scope string) string {
 }
 
 func TestIntegration_ListApis(t *testing.T) {
-	repo := &stubRepo{getApis: func(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
+	repo := &stubRepo{getApis: func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
 		apis := []models.Api{
 			{Id: "a1", Organisation: &models.Organisation{Uri: "org", Label: "l"}},
 			{Id: "a2", Organisation: &models.Organisation{Uri: "org", Label: "l"}},

@@ -3,13 +3,14 @@ package services_test
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 // stubRepo implements repositories.ApiRepository for testing
@@ -18,7 +19,7 @@ type stubRepo struct {
 	findOrg    func(ctx context.Context, uri string) (*models.Organisation, error)
 	getByID    func(ctx context.Context, id string) (*models.Api, error)
 	getLintRes func(ctx context.Context, apiID string) ([]models.LintResult, error)
-	getApis    func(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error)
+	getApis    func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
 	saveServer func(server models.Server) error
 	saveApi    func(api *models.Api) error
 	saveOrg    func(org *models.Organisation) error
@@ -37,8 +38,8 @@ func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, erro
 func (s *stubRepo) GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error) {
 	return s.getLintRes(ctx, apiID)
 }
-func (s *stubRepo) GetApis(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
-	return s.getApis(ctx, page, perPage)
+func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
+	return s.getApis(ctx, page, perPage, organisation, ids)
 }
 
 // unused methods
@@ -122,13 +123,13 @@ func TestListApis_Pagination(t *testing.T) {
 
 	pagination := models.Pagination{CurrentPage: 1, RecordsPerPage: 2, TotalPages: 1, TotalRecords: 2}
 	repo := &stubRepo{
-		getApis: func(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
-			return apis, pagination, nil
+		getApis: func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
+			return apis, pagination, nil, nil
 		},
 	}
 	service := services.NewAPIsAPIService(repo)
 	baseURL := "http://example.com/apIs"
-	res, err := service.ListApis(context.Background(), 1, 2, baseURL)
+	res, err := service.ListApis(context.Background(), 1, 2, nil, nil, baseURL)
 	assert.NoError(t, err)
 	assert.Len(t, res.Apis, 2)
 	assert.Equal(t, fmt.Sprintf("%s?page=1&perPage=2", baseURL), res.Links.Self.Href)

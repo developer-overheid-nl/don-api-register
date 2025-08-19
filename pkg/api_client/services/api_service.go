@@ -4,6 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+
 	httpclient "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
 	openapi "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/openapi"
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
@@ -16,11 +22,6 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
-	"io"
-	"net/http"
-	"net/url"
-	"strings"
-	"time"
 )
 
 var ErrNeedsPost = errors.New(
@@ -66,8 +67,8 @@ func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Ap
 	return detail, nil
 }
 
-func (s *APIsAPIService) ListApis(ctx context.Context, page, perPage int, baseURL string) (*models.ApiListResponse, error) {
-	apis, pagination, err := s.repo.GetApis(ctx, page, perPage)
+func (s *APIsAPIService) ListApis(ctx context.Context, page, perPage int, organisation *string, ids *string, baseURL string) (*models.ApiListResponse, error) {
+	apis, pagination, err := s.repo.GetApis(ctx, page, perPage, organisation, ids)
 	if err != nil {
 		return nil, err
 	}

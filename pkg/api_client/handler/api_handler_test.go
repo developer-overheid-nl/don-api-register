@@ -13,7 +13,7 @@ import (
 
 // stubRepo mocks ApiRepository for controller tests
 type stubRepo struct {
-	listFunc    func(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error)
+	listFunc    func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
 	retrFunc    func(ctx context.Context, id string) (*models.Api, error)
 	lintResFunc func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	findOasFunc func(ctx context.Context, oasUrl string) (*models.Api, error)
@@ -22,8 +22,8 @@ type stubRepo struct {
 	saveOrg     func(org *models.Organisation) error
 }
 
-func (s *stubRepo) GetApis(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
-	return s.listFunc(ctx, page, perPage)
+func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
+	return s.listFunc(ctx, page, perPage, organisation, ids)
 }
 func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, error) {
 	return s.retrFunc(ctx, id)
@@ -56,7 +56,7 @@ func (s *stubRepo) SaveLintResult(ctx context.Context, res *models.LintResult) e
 
 func TestListApis_Handler(t *testing.T) {
 	repo := &stubRepo{
-		listFunc: func(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
+		listFunc: func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
 			apis := []models.Api{
 				{
 					Id:           "a1",
@@ -70,7 +70,7 @@ func TestListApis_Handler(t *testing.T) {
 				},
 			}
 			pag := models.Pagination{CurrentPage: page, RecordsPerPage: perPage}
-			return apis, pag, nil
+			return apis, pag, nil, nil
 		},
 	}
 	svc := services.NewAPIsAPIService(repo)

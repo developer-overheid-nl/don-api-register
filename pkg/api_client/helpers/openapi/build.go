@@ -13,6 +13,7 @@ import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/google/uuid"
+	"github.com/teris-io/shortid"
 )
 
 // CorsGet performs a GET request including an Origin header.
@@ -76,7 +77,7 @@ func DeriveAuthType(spec *openapi3.T) string {
 // BuildApi constructs a models.Api based on the OpenAPI spec and request body.
 func BuildApi(spec *openapi3.T, requestBody models.ApiPost, label string) *models.Api {
 	api := &models.Api{
-		Id: uuid.New().String(),
+		Id: shortid.MustGenerate(),
 	}
 
 	if spec.Info != nil {

@@ -50,6 +50,10 @@ type Links struct {
 	Last  *Link `json:"last,omitempty"`
 }
 
+type Meta struct {
+	Pagination Pagination `json:"pagination"`
+}
+
 // Contact bundelt de contactgegevens
 type Contact struct {
 	Name  string `json:"name"`
@@ -69,16 +73,18 @@ type ApiResponse struct {
 type ApiListResponse struct {
 	Apis  []ApiSummary `json:"apis"`
 	Links Links        `json:"_links"`
+	Meta Meta					 `json:"_meta"`
 }
 
 type Pagination struct {
 	Next           *int `json:"next,omitempty"`
-	Previous       *int `json:"previous,omitempty"`
+	Previous       *int `json:"prev,omitempty"`
 	CurrentPage    int  `json:"currentPage"`
 	RecordsPerPage int  `json:"recordsPerPage"`
 	TotalPages     int  `json:"totalPages"`
 	TotalRecords   int  `json:"totalRecords"`
 }
+
 type ApiSummary struct {
 	Id           string       `json:"id"`
 	OasUrl       string       `json:"oasUrl"`

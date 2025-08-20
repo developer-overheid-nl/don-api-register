@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/params"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -13,7 +14,7 @@ import (
 
 // stubRepo mocks ApiRepository for controller tests
 type stubRepo struct {
-	listFunc    func(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error)
+	listFunc    func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
 	retrFunc    func(ctx context.Context, id string) (*models.Api, error)
 	lintResFunc func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	findOasFunc func(ctx context.Context, oasUrl string) (*models.Api, error)
@@ -22,8 +23,8 @@ type stubRepo struct {
 	saveOrg     func(org *models.Organisation) error
 }
 
-func (s *stubRepo) GetApis(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
-	return s.listFunc(ctx, page, perPage)
+func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
+	return s.listFunc(ctx, page, perPage, organisation, ids)
 }
 func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, error) {
 	return s.retrFunc(ctx, id)
@@ -56,7 +57,7 @@ func (s *stubRepo) SaveLintResult(ctx context.Context, res *models.LintResult) e
 
 func TestListApis_Handler(t *testing.T) {
 	repo := &stubRepo{
-		listFunc: func(ctx context.Context, page, perPage int) ([]models.Api, models.Pagination, error) {
+		listFunc: func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
 			apis := []models.Api{
 				{
 					Id:           "a1",
@@ -83,7 +84,7 @@ func TestListApis_Handler(t *testing.T) {
 	ctx.Request = req
 	ctx.Set("FullPath", "/v1/apis")
 
-	resp, err := ctrl.ListApis(ctx, &listApisParams{Page: 3, PerPage: 7})
+	resp, err := ctrl.ListApis(ctx, &params.ListApisParams{Page: 3, PerPage: 7})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, "https://host?page=3&perPage=7", resp.Links.Self.Href)

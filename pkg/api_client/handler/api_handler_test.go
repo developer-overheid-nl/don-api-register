@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/params"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -83,7 +84,7 @@ func TestListApis_Handler(t *testing.T) {
 	ctx.Request = req
 	ctx.Set("FullPath", "/v1/apis")
 
-	resp, err := ctrl.ListApis(ctx, &listApisParams{Page: 3, PerPage: 7})
+	resp, err := ctrl.ListApis(ctx, &params.ListApisParams{Page: 3, PerPage: 7})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, "https://host?page=3&perPage=7", resp.Links.Self.Href)

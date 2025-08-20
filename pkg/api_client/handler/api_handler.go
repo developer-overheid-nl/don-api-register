@@ -6,8 +6,8 @@ import (
 
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/params"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,24 +21,16 @@ func NewAPIsAPIController(s *services.APIsAPIService) *APIsAPIController {
 	return &APIsAPIController{Service: s}
 }
 
-// listApisParams defines query parameters for ListApis
-type listApisParams struct {
-	Page         int     `query:"page"`
-	PerPage      int     `query:"perPage"`
-	Organisation *string `query:"organisation"`
-	Ids          *string `query:"ids"`
-}
-
 // ListApis handles GET /apis
-func (c *APIsAPIController) ListApis(ctx *gin.Context, params *listApisParams) (*models.ApiListResponse, error) {
-	if params.Page < 1 {
-		params.Page = 1
+func (c *APIsAPIController) ListApis(ctx *gin.Context, p *params.ListApisParams) (*models.ApiListResponse, error) {
+	if p.Page < 1 {
+		p.Page = 1
 	}
-	if params.PerPage < 1 {
-		params.PerPage = 10
+	if p.PerPage < 1 {
+		p.PerPage = 10
 	}
-	baseURL := fmt.Sprintf("https://%s%s", ctx.Request.Host, ctx.FullPath())
-	response, err := c.Service.ListApis(ctx.Request.Context(), params.Page, params.PerPage, params.Organisation, params.Ids, baseURL)
+	p.BaseURL = fmt.Sprintf("https://%s%s", ctx.Request.Host, ctx.FullPath())
+	response, err := c.Service.ListApis(ctx.Request.Context(), p)
 	if err != nil {
 		return nil, err
 	}

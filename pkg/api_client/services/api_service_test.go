@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/params"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -129,7 +130,8 @@ func TestListApis_Pagination(t *testing.T) {
 	}
 	service := services.NewAPIsAPIService(repo)
 	baseURL := "http://example.com/apIs"
-	res, err := service.ListApis(context.Background(), 1, 2, nil, nil, baseURL)
+	p := &params.ListApisParams{Page: 1, PerPage: 2, BaseURL: baseURL}
+	res, err := service.ListApis(context.Background(), p)
 	assert.NoError(t, err)
 	assert.Len(t, res.Apis, 2)
 	assert.Equal(t, fmt.Sprintf("%s?page=1&perPage=2", baseURL), res.Links.Self.Href)

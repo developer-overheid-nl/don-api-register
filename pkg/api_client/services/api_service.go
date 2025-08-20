@@ -15,6 +15,7 @@ import (
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	util "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/util"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/params"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
 	"github.com/developer-overheid-nl/don-api-register/pkg/linter"
 	"github.com/developer-overheid-nl/don-api-register/pkg/tools"
@@ -67,8 +68,8 @@ func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Ap
 	return detail, nil
 }
 
-func (s *APIsAPIService) ListApis(ctx context.Context, page, perPage int, organisation *string, ids *string, baseURL string) (*models.ApiListResponse, error) {
-	apis, pagination, err := s.repo.GetApis(ctx, page, perPage, organisation, ids)
+func (s *APIsAPIService) ListApis(ctx context.Context, p *params.ListApisParams) (*models.ApiListResponse, error) {
+	apis, pagination, err := s.repo.GetApis(ctx, p.Page, p.PerPage, p.Organisation, p.Ids)
 	if err != nil {
 		return nil, err
 	}
@@ -80,10 +81,10 @@ func (s *APIsAPIService) ListApis(ctx context.Context, page, perPage int, organi
 	}
 
 	// links bouwen (zelfde als je had)
-	buildURL := func(p int) *models.Link {
-		return &models.Link{Href: fmt.Sprintf("%s?page=%d&perPage=%d", baseURL, p, perPage)}
+	buildURL := func(page int) *models.Link {
+		return &models.Link{Href: fmt.Sprintf("%s?page=%d&perPage=%d", p.BaseURL, page, p.PerPage)}
 	}
-	links := models.Links{Self: buildURL(page)}
+	links := models.Links{Self: buildURL(p.Page)}
 	if pagination.Next != nil {
 		links.Next = buildURL(*pagination.Next)
 	}

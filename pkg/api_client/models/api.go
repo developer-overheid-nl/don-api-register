@@ -76,14 +76,9 @@ type ApiResponse struct {
 	Lifecycle Lifecycle `json:"lifecycle"`
 }
 
-// ApiListResponse is het nieuwe root-object
-type EmbeddedApis struct {
-	Apis []ApiSummary `json:"apis"`
-}
-
 type ApiListResponse struct {
-	Embedded EmbeddedApis `json:"_embedded"`
-	Links    Links        `json:"_links"`
+	Apis  []ApiSummary `json:"apis"`
+	Links Links        `json:"_links"`
 }
 
 type Pagination struct {

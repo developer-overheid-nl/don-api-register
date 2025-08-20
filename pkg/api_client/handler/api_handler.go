@@ -30,10 +30,11 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, p *params.ListApisParams)
 		p.PerPage = 10
 	}
 	p.BaseURL = ctx.FullPath()
-	response, err := c.Service.ListApis(ctx.Request.Context(), p)
+	response, totalCount, err := c.Service.ListApis(ctx.Request.Context(), p)
 	if err != nil {
 		return nil, err
 	}
+	ctx.Header("Total-Count", fmt.Sprintf("%d", totalCount))
 	return response, nil
 }
 
@@ -74,10 +75,11 @@ func (c *APIsAPIController) UpdateApi(ctx *gin.Context, body *models.UpdateApiIn
 
 // ListOrganisations handles GET /organisations
 func (c *APIsAPIController) ListOrganisations(ctx *gin.Context) (*models.OrganisationListResponse, error) {
-	orgs, err := c.Service.ListOrganisations(ctx.Request.Context())
+	orgs, total, err := c.Service.ListOrganisations(ctx.Request.Context())
 	if err != nil {
 		return nil, err
 	}
+	ctx.Header("Total-Count", fmt.Sprintf("%d", total))
 	return &models.OrganisationListResponse{
 		Organisations: orgs,
 	}, nil

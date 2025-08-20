@@ -24,7 +24,7 @@ type stubRepo struct {
 	saveServer func(server models.Server) error
 	saveApi    func(api *models.Api) error
 	saveOrg    func(org *models.Organisation) error
-	getOrgs    func(ctx context.Context) ([]models.Organisation, error)
+	getOrgs    func(ctx context.Context) ([]models.Organisation, int, error)
 }
 
 func (s *stubRepo) FindByOasUrl(ctx context.Context, url string) (*models.Api, error) {
@@ -55,7 +55,7 @@ func (s *stubRepo) SaveOrganisatie(org *models.Organisation) error {
 }
 func (s *stubRepo) AllApis(ctx context.Context) ([]models.Api, error)                   { return nil, nil }
 func (s *stubRepo) SaveLintResult(ctx context.Context, result *models.LintResult) error { return nil }
-func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, error) {
+func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, int, error) {
 	return s.getOrgs(ctx)
 }
 
@@ -131,10 +131,11 @@ func TestListApis_Pagination(t *testing.T) {
 	service := services.NewAPIsAPIService(repo)
 	baseURL := "/apis"
 	p := &params.ListApisParams{Page: 1, PerPage: 2, BaseURL: baseURL}
-	res, err := service.ListApis(context.Background(), p)
+	res, total, err := service.ListApis(context.Background(), p)
 	assert.NoError(t, err)
-	assert.Len(t, res.Embedded.Apis, 2)
+	assert.Len(t, res.Apis, 2)
 	assert.Equal(t, fmt.Sprintf("%s?page=1&perPage=2", baseURL), res.Links.Self.Href)
+	assert.Equal(t, 2, total)
 }
 
 func TestCreateApiFromOas_Success(t *testing.T) {
@@ -183,16 +184,17 @@ func TestCreateApiFromOas_Success(t *testing.T) {
 
 func TestListOrganisations_Service(t *testing.T) {
 	repo := &stubRepo{
-		getOrgs: func(ctx context.Context) ([]models.Organisation, error) {
-			return []models.Organisation{
+		getOrgs: func(ctx context.Context) ([]models.Organisation, int, error) {
+			orgs := []models.Organisation{
 				{Uri: "https://example.org/a", Label: "A"},
 				{Uri: "https://example.org/b", Label: "B"},
-			}, nil
+			}
+			return orgs, len(orgs), nil
 		},
 	}
 
 	service := services.NewAPIsAPIService(repo)
-	orgs, err := service.ListOrganisations(context.Background())
+	orgs, _, err := service.ListOrganisations(context.Background())
 
 	assert.NoError(t, err)
 	assert.Len(t, orgs, 2)

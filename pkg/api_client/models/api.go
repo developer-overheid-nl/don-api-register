@@ -62,6 +62,7 @@ type Contact struct {
 }
 
 type Lifecycle struct {
+	Status     string `json:"status"`
 	Version    string `json:"version"`
 	Sunset     string `json:"sunset,omitempty"`
 	Deprecated string `json:"deprecated,omitempty"`

@@ -114,7 +114,7 @@ func TestIntegration_ListApis(t *testing.T) {
 	var body models.ApiListResponse
 	_ = json.NewDecoder(resp.Body).Decode(&body)
 	resp.Body.Close()
-	assert.Len(t, body.Embedded, 2)
+	assert.Len(t, body.Embedded.Apis, 2)
 }
 
 func TestIntegration_RetrieveApi(t *testing.T) {

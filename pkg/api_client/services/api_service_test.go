@@ -133,7 +133,7 @@ func TestListApis_Pagination(t *testing.T) {
 	p := &params.ListApisParams{Page: 1, PerPage: 2, BaseURL: baseURL}
 	res, err := service.ListApis(context.Background(), p)
 	assert.NoError(t, err)
-	assert.Len(t, res.Embedded, 2)
+	assert.Len(t, res.Embedded.Apis, 2)
 	assert.Equal(t, fmt.Sprintf("%s?page=1&perPage=2", baseURL), res.Links.Self.Href)
 }
 

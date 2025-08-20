@@ -92,9 +92,13 @@ func (s *APIsAPIService) ListApis(ctx context.Context, p *params.ListApisParams)
 		links.Prev = buildURL(*pagination.Previous)
 	}
 
+	// Meta data
+	meta := models.Meta{Pagination: pagination}
+
 	return &models.ApiListResponse{
 		Apis:  dtos,
 		Links: links,
+		Meta: meta,
 	}, pagination.TotalRecords, nil
 }
 

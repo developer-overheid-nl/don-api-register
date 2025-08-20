@@ -129,13 +129,13 @@ func TestListApis_Pagination(t *testing.T) {
 		},
 	}
 	service := services.NewAPIsAPIService(repo)
-	baseURL := "/apis"
+	baseURL := "/v1/apis"
 	p := &params.ListApisParams{Page: 1, PerPage: 2, BaseURL: baseURL}
-	res, total, err := service.ListApis(context.Background(), p)
+	res, _, err := service.ListApis(context.Background(), p)
 	assert.NoError(t, err)
 	assert.Len(t, res.Apis, 2)
 	assert.Equal(t, fmt.Sprintf("%s?page=1&perPage=2", baseURL), res.Links.Self.Href)
-	assert.Equal(t, 2, total)
+	assert.Equal(t, 2, pagination.TotalRecords)
 }
 
 func TestCreateApiFromOas_Success(t *testing.T) {

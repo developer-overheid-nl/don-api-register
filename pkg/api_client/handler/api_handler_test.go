@@ -18,7 +18,7 @@ type stubRepo struct {
 	retrFunc    func(ctx context.Context, id string) (*models.Api, error)
 	lintResFunc func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	findOasFunc func(ctx context.Context, oasUrl string) (*models.Api, error)
-	getOrgs     func(ctx context.Context) ([]models.Organisation, error)
+	getOrgs     func(ctx context.Context) ([]models.Organisation, int, error)
 	findOrg     func(ctx context.Context, uri string) (*models.Organisation, error)
 	saveOrg     func(org *models.Organisation) error
 }
@@ -44,7 +44,7 @@ func (s *stubRepo) SaveOrganisatie(org *models.Organisation) error {
 	}
 	return nil
 }
-func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, error) {
+func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, int, error) {
 	return s.getOrgs(ctx)
 }
 
@@ -70,7 +70,7 @@ func TestListApis_Handler(t *testing.T) {
 					Servers:      []models.Server{},
 				},
 			}
-			pag := models.Pagination{CurrentPage: page, RecordsPerPage: perPage}
+			pag := models.Pagination{CurrentPage: page, RecordsPerPage: perPage, TotalRecords: 2}
 			return apis, pag, nil
 		},
 	}
@@ -87,8 +87,9 @@ func TestListApis_Handler(t *testing.T) {
 	resp, err := ctrl.ListApis(ctx, &params.ListApisParams{Page: 3, PerPage: 7})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
-	assert.Equal(t, "https://host?page=3&perPage=7", resp.Links.Self.Href)
-	assert.Len(t, resp.Embedded, 2)
+	assert.Equal(t, "?page=3&perPage=7", resp.Links.Self.Href)
+	assert.Len(t, resp.Apis, 2)
+	assert.Equal(t, "2", w.Header().Get("Total-Count"))
 }
 
 func TestRetrieveApi_Handler(t *testing.T) {
@@ -196,11 +197,11 @@ func TestUpdateApi_Handler(t *testing.T) {
 
 func TestListOrganisations_Handler(t *testing.T) {
 	repo := &stubRepo{
-		getOrgs: func(ctx context.Context) ([]models.Organisation, error) {
+		getOrgs: func(ctx context.Context) ([]models.Organisation, int, error) {
 			return []models.Organisation{
 				{Uri: "https://example.org/1", Label: "Org 1"},
 				{Uri: "https://example.org/2", Label: "Org 2"},
-			}, nil
+			}, 2, nil
 		},
 	}
 	svc := services.NewAPIsAPIService(repo)
@@ -214,6 +215,7 @@ func TestListOrganisations_Handler(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, result.Organisations, 2)
 	assert.Equal(t, "Org 1", result.Organisations[0].Label)
+	assert.Equal(t, "2", w.Header().Get("Total-Count"))
 }
 
 func TestCreateOrganisation_Handler(t *testing.T) {

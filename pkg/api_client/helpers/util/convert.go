@@ -2,9 +2,19 @@ package util
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 )
+
+func parseTime(value string) time.Time {
+	t, err := time.Parse(time.DateOnly, value)
+	fmt.Printf("Parsed time: %v\n", t)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
 
 func ToApiSummary(api *models.Api) models.ApiSummary {
 	return models.ApiSummary{
@@ -21,6 +31,18 @@ func ToApiSummary(api *models.Api) models.ApiSummary {
 			Version:    api.Version,
 			Sunset:     api.Sunset,
 			Deprecated: api.Deprecated,
+			Status: func() string {
+				switch {
+				case api.Sunset != "" && parseTime(api.Sunset).After(time.Now()):
+					return "sunset"
+				case api.Sunset != "" && parseTime(api.Sunset).Before(time.Now()):
+					return "retired"
+				case api.Deprecated != "" && parseTime(api.Deprecated).Before(time.Now()):
+					return "deprecated"
+				default:
+					return "active"
+				}
+			}(),
 		},
 		Organisation: models.OrganisationSummary{
 			Uri:   api.Organisation.Uri,

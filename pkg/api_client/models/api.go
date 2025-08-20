@@ -66,6 +66,7 @@ type Contact struct {
 }
 
 type Lifecycle struct {
+	Status     string `json:"status"`
 	Version    string `json:"version"`
 	Sunset     string `json:"sunset,omitempty"`
 	Deprecated string `json:"deprecated,omitempty"`
@@ -80,14 +81,9 @@ type ApiResponse struct {
 	Lifecycle Lifecycle `json:"lifecycle"`
 }
 
-// ApiListResponse is het nieuwe root-object
-type EmbeddedApis struct {
-	Apis []ApiSummary `json:"apis"`
-}
-
 type ApiListResponse struct {
-	Embedded EmbeddedApis `json:"_embedded"`
-	Links    Links        `json:"_links"`
+	Apis  []ApiSummary `json:"apis"`
+	Links Links        `json:"_links"`
 	Meta     Meta					`json:"_meta"`
 }
 

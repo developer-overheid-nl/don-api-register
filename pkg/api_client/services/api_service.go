@@ -68,10 +68,10 @@ func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Ap
 	return detail, nil
 }
 
-func (s *APIsAPIService) ListApis(ctx context.Context, p *params.ListApisParams) (*models.ApiListResponse, error) {
+func (s *APIsAPIService) ListApis(ctx context.Context, p *params.ListApisParams) (*models.ApiListResponse, int, error) {
 	apis, pagination, err := s.repo.GetApis(ctx, p.Page, p.PerPage, p.Organisation, p.Ids)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// map naar ApiSummary (ipv ApiResponse)
@@ -96,12 +96,10 @@ func (s *APIsAPIService) ListApis(ctx context.Context, p *params.ListApisParams)
 	meta := models.Meta{Pagination: pagination}
 
 	return &models.ApiListResponse{
-		Embedded: models.EmbeddedApis{
-			Apis: dtos,
-		},
+		Apis:  dtos,
 		Links: links,
 		Meta: meta,
-	}, nil
+	}, pagination.TotalRecords, nil
 }
 
 func (s *APIsAPIService) UpdateApi(ctx context.Context, api models.Api) error {
@@ -282,7 +280,7 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, api *models.Api, ur
 	return lintErr
 }
 
-func (s *APIsAPIService) ListOrganisations(ctx context.Context) ([]models.Organisation, error) {
+func (s *APIsAPIService) ListOrganisations(ctx context.Context) ([]models.Organisation, int, error) {
 	return s.repo.GetOrganisations(ctx)
 }
 

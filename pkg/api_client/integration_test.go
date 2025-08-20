@@ -78,8 +78,8 @@ func (s *stubRepo) SaveLintResult(ctx context.Context, result *models.LintResult
 func (s *stubRepo) GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error) {
 	return nil, nil
 }
-func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, error) {
-	return nil, nil
+func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, int, error) {
+	return nil, 0, nil
 }
 
 func newServer(repo repositories.ApiRepository) *httptest.Server {
@@ -114,7 +114,7 @@ func TestIntegration_ListApis(t *testing.T) {
 	var body models.ApiListResponse
 	_ = json.NewDecoder(resp.Body).Decode(&body)
 	resp.Body.Close()
-	assert.Len(t, body.Embedded.Apis, 2)
+	assert.Len(t, body.Apis, 2)
 }
 
 func TestIntegration_RetrieveApi(t *testing.T) {

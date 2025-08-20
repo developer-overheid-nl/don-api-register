@@ -39,28 +39,23 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, p *params.ListApisParams)
 	ctx.Header("X-Total-Pages", fmt.Sprintf("%d", pagination.TotalPages))
 	ctx.Header("X-Per-Page", fmt.Sprintf("%d", pagination.RecordsPerPage))
 	ctx.Header("X-Current-Page", fmt.Sprintf("%d", pagination.CurrentPage))
-	// Add RFC 5988 Link header
-	if response != nil {
-		var links []string
-		if response.Links.Self != nil {
-			links = append(links, fmt.Sprintf("<%s>; rel=\"self\"", response.Links.Self.Href))
-		}
-		if response.Links.Next != nil {
-			links = append(links, fmt.Sprintf("<%s>; rel=\"next\"", response.Links.Next.Href))
-		}
-		if response.Links.Prev != nil {
-			links = append(links, fmt.Sprintf("<%s>; rel=\"prev\"", response.Links.Prev.Href))
-		}
-		if response.Links.First != nil {
-			links = append(links, fmt.Sprintf("<%s>; rel=\"first\"", response.Links.First.Href))
-		}
-		if response.Links.Last != nil {
-			links = append(links, fmt.Sprintf("<%s>; rel=\"last\"", response.Links.Last.Href))
-		}
-		if len(links) > 0 {
-			ctx.Header("Link", strings.Join(links, ", "))
-		}
+
+	var links []string
+
+	links = append(links, fmt.Sprintf("</v1/apis?page=1&perPage=%d>; rel=\"first\"", pagination.RecordsPerPage))
+	if pagination.Previous != nil {
+		links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"prev\"", pagination.Previous, pagination.RecordsPerPage))
 	}
+	links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"self\"", pagination.CurrentPage, pagination.RecordsPerPage))
+	if pagination.Next != nil {
+		links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"next\"", pagination.Next, pagination.RecordsPerPage))
+	}
+	links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"last\"", pagination.TotalPages, pagination.RecordsPerPage))
+
+	if len(links) > 0 {
+		ctx.Header("Link", strings.Join(links, ", "))
+	}
+
 	return response, nil
 }
 

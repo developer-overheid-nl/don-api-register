@@ -78,17 +78,16 @@ type ApiResponse struct {
 }
 
 type ApiListResponse struct {
-	Apis  []ApiSummary `json:"apis"`
-	Links Links        `json:"_links"`
+	Apis []ApiSummary `json:"apis"`
 }
 
 type Pagination struct {
-	Next           *int `json:"next,omitempty"`
-	Previous       *int `json:"previous,omitempty"`
-	CurrentPage    int  `json:"currentPage"`
-	RecordsPerPage int  `json:"recordsPerPage"`
-	TotalPages     int  `json:"totalPages"`
-	TotalRecords   int  `json:"totalRecords"`
+	Next           *int
+	Previous       *int
+	CurrentPage    int
+	RecordsPerPage int
+	TotalPages     int
+	TotalRecords   int
 }
 type ApiSummary struct {
 	Id           string              `json:"id"`

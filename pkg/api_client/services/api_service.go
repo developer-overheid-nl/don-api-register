@@ -80,21 +80,9 @@ func (s *APIsAPIService) ListApis(ctx context.Context, p *params.ListApisParams)
 		dtos[i] = util.ToApiSummary(&api)
 	}
 
-	// links bouwen (zelfde als je had)
-	buildURL := func(page int) *models.Link {
-		return &models.Link{Href: fmt.Sprintf("%s?page=%d&perPage=%d", p.BaseURL, page, p.PerPage)}
-	}
-	links := models.Links{Self: buildURL(p.Page)}
-	if pagination.Next != nil {
-		links.Next = buildURL(*pagination.Next)
-	}
-	if pagination.Previous != nil {
-		links.Prev = buildURL(*pagination.Previous)
-	}
-
 	return &models.ApiListResponse{
-		Apis:  dtos,
-		Links: links,
+		Apis: dtos,
+		// Links: links,
 	}, pagination, nil
 }
 

@@ -2,7 +2,6 @@ package services_test
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -134,7 +133,6 @@ func TestListApis_Pagination(t *testing.T) {
 	res, _, err := service.ListApis(context.Background(), p)
 	assert.NoError(t, err)
 	assert.Len(t, res.Apis, 2)
-	assert.Equal(t, fmt.Sprintf("%s?page=1&perPage=2", baseURL), res.Links.Self.Href)
 	assert.Equal(t, 2, pagination.TotalRecords)
 }
 

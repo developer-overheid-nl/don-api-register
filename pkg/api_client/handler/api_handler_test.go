@@ -87,7 +87,6 @@ func TestListApis_Handler(t *testing.T) {
 	resp, err := ctrl.ListApis(ctx, &params.ListApisParams{Page: 3, PerPage: 7})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
-	assert.Equal(t, "?page=3&perPage=7", resp.Links.Self.Href)
 	assert.Len(t, resp.Apis, 2)
 	assert.Equal(t, "2", w.Header().Get("X-Total-Count"))
 }

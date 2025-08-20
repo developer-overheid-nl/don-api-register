@@ -122,5 +122,25 @@
   {
     "href": "https://api.pdok.nl/brt/top1000nl/download/v1_0/openapi.json",
     "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+  },
+  {
+    "href": "https://gist.githubusercontent.com/dvh/77df71d0a8d23cefc471348a1495a997/raw",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+  },
+  {
+    "href": "https://gist.github.com/dvh/233b6a5cb891a09c6ab6a593bd65b373/raw",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+  },
+  {
+    "href": "https://gist.github.com/dvh/63cc3ea6d944600219db1cdb7fbc1d65/raw",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+  },
+  {
+    "href": "https://gist.github.com/dvh/78822d11c4cebc68ecfd561efb6ee6ed/raw",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+  },
+  {
+    "href": "https://gist.github.com/dvh/839c636a1a61ecdb7e1dc8ec37b130b7/raw",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
   }
 ]

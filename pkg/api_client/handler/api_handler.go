@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
@@ -38,6 +39,28 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, p *params.ListApisParams)
 	ctx.Header("X-Total-Pages", fmt.Sprintf("%d", pagination.TotalPages))
 	ctx.Header("X-Per-Page", fmt.Sprintf("%d", pagination.RecordsPerPage))
 	ctx.Header("X-Current-Page", fmt.Sprintf("%d", pagination.CurrentPage))
+	// Add RFC 5988 Link header
+	if response != nil {
+		var links []string
+		if response.Links.Self != nil {
+			links = append(links, fmt.Sprintf("<%s>; rel=\"self\"", response.Links.Self.Href))
+		}
+		if response.Links.Next != nil {
+			links = append(links, fmt.Sprintf("<%s>; rel=\"next\"", response.Links.Next.Href))
+		}
+		if response.Links.Prev != nil {
+			links = append(links, fmt.Sprintf("<%s>; rel=\"prev\"", response.Links.Prev.Href))
+		}
+		if response.Links.First != nil {
+			links = append(links, fmt.Sprintf("<%s>; rel=\"first\"", response.Links.First.Href))
+		}
+		if response.Links.Last != nil {
+			links = append(links, fmt.Sprintf("<%s>; rel=\"last\"", response.Links.Last.Href))
+		}
+		if len(links) > 0 {
+			ctx.Header("Link", strings.Join(links, ", "))
+		}
+	}
 	return response, nil
 }
 

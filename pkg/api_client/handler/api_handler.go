@@ -23,7 +23,7 @@ func NewAPIsAPIController(s *services.APIsAPIService) *APIsAPIController {
 }
 
 // ListApis handles GET /apis
-func (c *APIsAPIController) ListApis(ctx *gin.Context, p *params.ListApisParams) (*models.ApiListResponse, error) {
+func (c *APIsAPIController) ListApis(ctx *gin.Context, p *params.ListApisParams) ([]models.ApiSummary, error) {
 	if p.Page < 1 {
 		p.Page = 1
 	}
@@ -31,7 +31,7 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, p *params.ListApisParams)
 		p.PerPage = 10
 	}
 	p.BaseURL = ctx.FullPath()
-	response, pagination, err := c.Service.ListApis(ctx.Request.Context(), p)
+	apis, pagination, err := c.Service.ListApis(ctx.Request.Context(), p)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, p *params.ListApisParams)
 
 	links = append(links, fmt.Sprintf("</v1/apis?page=1&perPage=%d>; rel=\"first\"", pagination.RecordsPerPage))
 	if pagination.Previous != nil {
-		links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"prev\"", pagination.Previous, pagination.RecordsPerPage))
+		links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"prev\"", *pagination.Previous, pagination.RecordsPerPage))
 	}
 	links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"self\"", pagination.CurrentPage, pagination.RecordsPerPage))
 	if pagination.Next != nil {
@@ -56,7 +56,7 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, p *params.ListApisParams)
 		ctx.Header("Link", strings.Join(links, ", "))
 	}
 
-	return response, nil
+	return apis, nil
 }
 
 // RetrieveApi handles GET /apis/:id

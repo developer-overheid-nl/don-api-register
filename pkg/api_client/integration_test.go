@@ -111,10 +111,10 @@ func TestIntegration_ListApis(t *testing.T) {
 	resp, err := http.DefaultClient.Do(req)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	var body models.ApiListResponse
+	var body []models.ApiSummary
 	_ = json.NewDecoder(resp.Body).Decode(&body)
 	resp.Body.Close()
-	assert.Len(t, body.Apis, 2)
+	assert.Len(t, body, 2)
 }
 
 func TestIntegration_RetrieveApi(t *testing.T) {

@@ -77,10 +77,6 @@ type ApiResponse struct {
 	Lifecycle Lifecycle `json:"lifecycle"`
 }
 
-type ApiListResponse struct {
-	Apis []ApiSummary `json:"apis"`
-}
-
 type Pagination struct {
 	Next           *int
 	Previous       *int

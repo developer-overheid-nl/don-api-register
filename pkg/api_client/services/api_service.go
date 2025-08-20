@@ -68,22 +68,18 @@ func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Ap
 	return detail, nil
 }
 
-func (s *APIsAPIService) ListApis(ctx context.Context, p *params.ListApisParams) (*models.ApiListResponse, models.Pagination, error) {
+func (s *APIsAPIService) ListApis(ctx context.Context, p *params.ListApisParams) ([]models.ApiSummary, models.Pagination, error) {
 	apis, pagination, err := s.repo.GetApis(ctx, p.Page, p.PerPage, p.Organisation, p.Ids)
 	if err != nil {
 		return nil, models.Pagination{}, err
 	}
 
-	// map naar ApiSummary (ipv ApiResponse)
 	dtos := make([]models.ApiSummary, len(apis))
 	for i, api := range apis {
 		dtos[i] = util.ToApiSummary(&api)
 	}
 
-	return &models.ApiListResponse{
-		Apis: dtos,
-		// Links: links,
-	}, pagination, nil
+	return dtos, pagination, nil
 }
 
 func (s *APIsAPIService) UpdateApi(ctx context.Context, api models.Api) error {

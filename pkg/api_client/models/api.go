@@ -48,9 +48,10 @@ type Link struct {
 type Links struct {
 	First *Link `json:"first,omitempty"`
 	Prev  *Link `json:"prev,omitempty"`
-	Self  *Link `json:"self"`
+	Self  *Link `json:"self,omitempty"`
 	Next  *Link `json:"next,omitempty"`
 	Last  *Link `json:"last,omitempty"`
+	Apis  *Link `json:"apis,omitempty"` // link naar de lijst van APIs
 }
 
 // Contact bundelt de contactgegevens
@@ -90,15 +91,15 @@ type Pagination struct {
 	TotalRecords   int  `json:"totalRecords"`
 }
 type ApiSummary struct {
-	Id           string       `json:"id"`
-	OasUrl       string       `json:"oasUrl"`
-	Title        string       `json:"title"`
-	Description  string       `json:"description,omitempty"`
-	Contact      Contact      `json:"contact"`
-	Organisation Organisation `json:"organisation"`
-	AdrScore     *int         `json:"adrScore,omitempty"`
-	Links        *Links       `json:"_links,omitempty"`
-	Lifecycle    Lifecycle    `json:"lifecycle"`
+	Id           string              `json:"id"`
+	OasUrl       string              `json:"oasUrl"`
+	Title        string              `json:"title"`
+	Description  string              `json:"description,omitempty"`
+	Contact      Contact             `json:"contact"`
+	Organisation OrganisationSummary `json:"organisation"`
+	AdrScore     *int                `json:"adrScore,omitempty"`
+	Links        *Links              `json:"_links,omitempty"`
+	Lifecycle    Lifecycle           `json:"lifecycle"`
 }
 
 type ServerInfo struct {
@@ -133,4 +134,9 @@ type UpdateApiInput struct {
 
 type OrganisationListResponse struct {
 	Organisations []Organisation `json:"organisations"`
+}
+type OrganisationSummary struct {
+	Uri   string `json:"uri"`
+	Label string `json:"label"`
+	Links *Links `json:"_links,omitempty"`
 }

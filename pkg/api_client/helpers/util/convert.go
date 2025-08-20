@@ -7,11 +7,6 @@ import (
 )
 
 func ToApiSummary(api *models.Api) models.ApiSummary {
-	var org models.Organisation
-	if api.Organisation != nil {
-		org = *api.Organisation
-	}
-
 	return models.ApiSummary{
 		Id:          api.Id,
 		OasUrl:      api.OasUri,
@@ -27,10 +22,16 @@ func ToApiSummary(api *models.Api) models.ApiSummary {
 			Sunset:     api.Sunset,
 			Deprecated: api.Deprecated,
 		},
-		Organisation: org,
-		AdrScore:     api.AdrScore,
+		Organisation: models.OrganisationSummary{
+			Uri:   api.Organisation.Uri,
+			Label: api.Organisation.Label,
+			Links: &models.Links{
+				Apis: &models.Link{Href: fmt.Sprintf("/v1/apis?organisation=%s", api.Organisation.Uri)},
+			},
+		},
+		AdrScore: api.AdrScore,
 		Links: &models.Links{
-			Self: &models.Link{Href: fmt.Sprintf("/apis/%s", api.Id)},
+			Self: &models.Link{Href: fmt.Sprintf("/v1/apis/%s", api.Id)},
 		},
 	}
 }

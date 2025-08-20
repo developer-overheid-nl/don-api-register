@@ -129,7 +129,7 @@ func TestListApis_Pagination(t *testing.T) {
 		},
 	}
 	service := services.NewAPIsAPIService(repo)
-	baseURL := "http://example.com/apIs"
+	baseURL := "/apis"
 	p := &params.ListApisParams{Page: 1, PerPage: 2, BaseURL: baseURL}
 	res, err := service.ListApis(context.Background(), p)
 	assert.NoError(t, err)

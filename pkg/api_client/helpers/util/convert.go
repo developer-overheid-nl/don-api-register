@@ -67,9 +67,13 @@ func ToApiDetail(api *models.Api) *models.ApiDetail {
 			Description: srv.Description,
 		})
 	}
-	return &models.ApiDetail{
+
+	detail := &models.ApiDetail{
 		ApiSummary: ToApiSummary(api),
 		DocsUri:    api.DocsUri,
 		Servers:    servers,
 	}
+	// Remove Links from detail
+	detail.Links = nil
+	return detail
 }

@@ -87,7 +87,7 @@ func TestListApis_Handler(t *testing.T) {
 	resp, err := ctrl.ListApis(ctx, &params.ListApisParams{Page: 3, PerPage: 7})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
-	assert.Len(t, resp.Apis, 2)
+	assert.Len(t, resp, 2)
 	assert.Equal(t, "2", w.Header().Get("X-Total-Count"))
 }
 

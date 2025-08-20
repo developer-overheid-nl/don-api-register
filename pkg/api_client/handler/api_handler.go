@@ -30,11 +30,14 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, p *params.ListApisParams)
 		p.PerPage = 10
 	}
 	p.BaseURL = ctx.FullPath()
-	response, totalCount, err := c.Service.ListApis(ctx.Request.Context(), p)
+	response, pagination, err := c.Service.ListApis(ctx.Request.Context(), p)
 	if err != nil {
 		return nil, err
 	}
-	ctx.Header("Total-Count", fmt.Sprintf("%d", totalCount))
+	ctx.Header("X-Total-Count", fmt.Sprintf("%d", pagination.TotalRecords))
+	ctx.Header("X-Total-Pages", fmt.Sprintf("%d", pagination.TotalPages))
+	ctx.Header("X-Per-Page", fmt.Sprintf("%d", pagination.RecordsPerPage))
+	ctx.Header("X-Current-Page", fmt.Sprintf("%d", pagination.CurrentPage))
 	return response, nil
 }
 
@@ -79,9 +82,22 @@ func (c *APIsAPIController) ListOrganisations(ctx *gin.Context) (*models.Organis
 	if err != nil {
 		return nil, err
 	}
-	ctx.Header("Total-Count", fmt.Sprintf("%d", total))
+	ctx.Header("X-Total-Count", fmt.Sprintf("%d", total))
+	// Convert []models.Organisation to []models.OrganisationSummary
+	orgSummaries := make([]models.OrganisationSummary, len(orgs))
+	for i, org := range orgs {
+		orgSummaries[i] = models.OrganisationSummary{
+			Uri:   org.Uri,
+			Label: org.Label,
+			Links: &models.Links{
+				Apis: &models.Link{
+					Href: fmt.Sprintf("/v1/apis?organisation=%s", org.Uri),
+				},
+			},
+		}
+	}
 	return &models.OrganisationListResponse{
-		Organisations: orgs,
+		Organisations: orgSummaries,
 	}, nil
 }
 

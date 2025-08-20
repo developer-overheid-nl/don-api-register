@@ -89,7 +89,7 @@ func TestListApis_Handler(t *testing.T) {
 	assert.NotNil(t, resp)
 	assert.Equal(t, "?page=3&perPage=7", resp.Links.Self.Href)
 	assert.Len(t, resp.Apis, 2)
-	assert.Equal(t, "2", w.Header().Get("Total-Count"))
+	assert.Equal(t, "2", w.Header().Get("X-Total-Count"))
 }
 
 func TestRetrieveApi_Handler(t *testing.T) {
@@ -215,7 +215,7 @@ func TestListOrganisations_Handler(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, result.Organisations, 2)
 	assert.Equal(t, "Org 1", result.Organisations[0].Label)
-	assert.Equal(t, "2", w.Header().Get("Total-Count"))
+	assert.Equal(t, "2", w.Header().Get("X-Total-Count"))
 }
 
 func TestCreateOrganisation_Handler(t *testing.T) {

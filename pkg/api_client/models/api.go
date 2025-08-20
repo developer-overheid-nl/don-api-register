@@ -133,8 +133,9 @@ type UpdateApiInput struct {
 }
 
 type OrganisationListResponse struct {
-	Organisations []Organisation `json:"organisations"`
+	Organisations []OrganisationSummary `json:"organisations"`
 }
+
 type OrganisationSummary struct {
 	Uri   string `json:"uri"`
 	Label string `json:"label"`

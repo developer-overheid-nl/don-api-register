@@ -48,9 +48,10 @@ type Link struct {
 type Links struct {
 	First *Link `json:"first,omitempty"`
 	Prev  *Link `json:"prev,omitempty"`
-	Self  *Link `json:"self"`
+	Self  *Link `json:"self,omitempty"`
 	Next  *Link `json:"next,omitempty"`
 	Last  *Link `json:"last,omitempty"`
+	Apis  *Link `json:"apis,omitempty"` // link naar de lijst van APIs
 }
 
 type Meta struct {
@@ -80,10 +81,14 @@ type ApiResponse struct {
 }
 
 // ApiListResponse is het nieuwe root-object
+type EmbeddedApis struct {
+	Apis []ApiSummary `json:"apis"`
+}
+
 type ApiListResponse struct {
-	Apis  []ApiSummary `json:"apis"`
-	Links Links        `json:"_links"`
-	Meta Meta					 `json:"_meta"`
+	Embedded EmbeddedApis `json:"_embedded"`
+	Links    Links        `json:"_links"`
+	Meta     Meta					`json:"_meta"`
 }
 
 type Pagination struct {
@@ -96,15 +101,15 @@ type Pagination struct {
 }
 
 type ApiSummary struct {
-	Id           string       `json:"id"`
-	OasUrl       string       `json:"oasUrl"`
-	Title        string       `json:"title"`
-	Description  string       `json:"description,omitempty"`
-	Contact      Contact      `json:"contact"`
-	Organisation Organisation `json:"organisation"`
-	AdrScore     *int         `json:"adrScore,omitempty"`
-	Links        *Links       `json:"_links,omitempty"`
-	Lifecycle    Lifecycle    `json:"lifecycle"`
+	Id           string              `json:"id"`
+	OasUrl       string              `json:"oasUrl"`
+	Title        string              `json:"title"`
+	Description  string              `json:"description,omitempty"`
+	Contact      Contact             `json:"contact"`
+	Organisation OrganisationSummary `json:"organisation"`
+	AdrScore     *int                `json:"adrScore,omitempty"`
+	Links        *Links              `json:"_links,omitempty"`
+	Lifecycle    Lifecycle           `json:"lifecycle"`
 }
 
 type ServerInfo struct {
@@ -139,4 +144,9 @@ type UpdateApiInput struct {
 
 type OrganisationListResponse struct {
 	Organisations []Organisation `json:"organisations"`
+}
+type OrganisationSummary struct {
+	Uri   string `json:"uri"`
+	Label string `json:"label"`
+	Links *Links `json:"_links,omitempty"`
 }

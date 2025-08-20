@@ -29,7 +29,7 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, p *params.ListApisParams)
 	if p.PerPage < 1 {
 		p.PerPage = 10
 	}
-	p.BaseURL = fmt.Sprintf("https://%s%s", ctx.Request.Host, ctx.FullPath())
+	p.BaseURL = ctx.FullPath()
 	response, err := c.Service.ListApis(ctx.Request.Context(), p)
 	if err != nil {
 		return nil, err

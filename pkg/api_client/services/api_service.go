@@ -96,9 +96,11 @@ func (s *APIsAPIService) ListApis(ctx context.Context, p *params.ListApisParams)
 	meta := models.Meta{Pagination: pagination}
 
 	return &models.ApiListResponse{
+		Embedded: models.EmbeddedApis{
+			Apis: dtos,
+		},
 		Links: links,
 		Meta: meta,
-		Apis:  dtos,
 	}, nil
 }
 

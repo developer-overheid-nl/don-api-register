@@ -88,7 +88,7 @@ func TestListApis_Handler(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, "https://host?page=3&perPage=7", resp.Links.Self.Href)
-	assert.Len(t, resp.Apis, 2)
+	assert.Len(t, resp.Embedded, 2)
 }
 
 func TestRetrieveApi_Handler(t *testing.T) {

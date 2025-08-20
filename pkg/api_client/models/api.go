@@ -77,9 +77,13 @@ type ApiResponse struct {
 }
 
 // ApiListResponse is het nieuwe root-object
+type EmbeddedApis struct {
+	Apis []ApiSummary `json:"apis"`
+}
+
 type ApiListResponse struct {
-	Apis  []ApiSummary `json:"apis"`
-	Links Links        `json:"_links"`
+	Embedded EmbeddedApis `json:"_embedded"`
+	Links    Links        `json:"_links"`
 }
 
 type Pagination struct {

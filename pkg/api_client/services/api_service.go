@@ -93,8 +93,10 @@ func (s *APIsAPIService) ListApis(ctx context.Context, p *params.ListApisParams)
 	}
 
 	return &models.ApiListResponse{
+		Embedded: models.EmbeddedApis{
+			Apis: dtos,
+		},
 		Links: links,
-		Apis:  dtos,
 	}, nil
 }
 

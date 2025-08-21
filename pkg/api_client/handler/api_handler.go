@@ -48,7 +48,7 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, p *params.ListApisParams)
 	}
 	links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"self\"", pagination.CurrentPage, pagination.RecordsPerPage))
 	if pagination.Next != nil {
-		links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"next\"", pagination.Next, pagination.RecordsPerPage))
+		links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"next\"", *pagination.Next, pagination.RecordsPerPage))
 	}
 	links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"last\"", pagination.TotalPages, pagination.RecordsPerPage))
 

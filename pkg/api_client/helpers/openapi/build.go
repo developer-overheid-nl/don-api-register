@@ -109,7 +109,7 @@ func BuildApi(spec *openapi3.T, requestBody models.ApiPost, label string) *model
 		api.OrganisationID = &requestBody.OrganisationUri
 	}
 	if spec.ExternalDocs != nil {
-		api.DocsUri = spec.ExternalDocs.URL
+		api.DocsUrl = spec.ExternalDocs.URL
 	}
 
 	if len(spec.Security) > 0 || (spec.Components != nil && len(spec.Components.SecuritySchemes) > 0) {

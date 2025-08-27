@@ -13,7 +13,7 @@ type Api struct {
 	Id             string        `gorm:"column:id;primaryKey"`
 	OasUri         string        `json:"oasUrl,omitempty"`
 	OasHash        string        `json:"-" gorm:"column:oas_hash"`
-	DocsUri        string        `json:"docsUri,omitempty"`
+	DocsUrl        string        `json:"docsUrl,omitempty"`
 	Title          string        `json:"title,omitempty"`
 	Description    string        `json:"description,omitempty"`
 	Auth           string        `json:"auth,omitempty"`
@@ -105,7 +105,7 @@ type ServerInfo struct {
 type ApiDetail struct {
 	ApiSummary              // embed alles van ApiSummary
 	Auth       []string     `json:"auth,omitempty"`
-	DocsUri    string       `json:"docsUrl,omitempty"`
+	DocsUrl    string       `json:"docsUrl,omitempty"`
 	Servers    []ServerInfo `json:"servers,omitempty"`
 }
 

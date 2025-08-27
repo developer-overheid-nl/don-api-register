@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
@@ -51,7 +52,16 @@ func ToApiSummary(api *models.Api) models.ApiSummary {
 				Apis: &models.Link{Href: fmt.Sprintf("/v1/apis?organisation=%s", api.Organisation.Uri)},
 			},
 		},
-		AdrScore: api.AdrScore,
+		// mock adrscore
+		AdrScore: func() *int {
+			r := rand.Intn(9) // 0-8
+			if r > 7 {
+				return nil
+			}
+			v := r
+			return &v
+		}(),
+		// AdrScore: api.AdrScore,
 		Links: &models.Links{
 			Self: &models.Link{Href: fmt.Sprintf("/v1/apis/%s", api.Id)},
 		},

@@ -95,7 +95,7 @@ func (c *APIsAPIController) UpdateApi(ctx *gin.Context, body *models.UpdateApiIn
 }
 
 // ListOrganisations handles GET /organisations
-func (c *APIsAPIController) ListOrganisations(ctx *gin.Context) (*models.OrganisationListResponse, error) {
+func (c *APIsAPIController) ListOrganisations(ctx *gin.Context) ([]models.OrganisationSummary, error) {
 	orgs, total, err := c.Service.ListOrganisations(ctx.Request.Context())
 	if err != nil {
 		return nil, err
@@ -114,9 +114,7 @@ func (c *APIsAPIController) ListOrganisations(ctx *gin.Context) (*models.Organis
 			},
 		}
 	}
-	return &models.OrganisationListResponse{
-		Organisations: orgSummaries,
-	}, nil
+	return orgSummaries, nil
 }
 
 // CreateOrganisation handles POST /organisations

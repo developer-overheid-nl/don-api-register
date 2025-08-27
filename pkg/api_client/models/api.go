@@ -92,7 +92,7 @@ type ApiSummary struct {
 	Description  string              `json:"description,omitempty"`
 	Contact      Contact             `json:"contact"`
 	Organisation OrganisationSummary `json:"organisation"`
-	AdrScore     *int                `json:"adrScore,omitempty"`
+	AdrScore     *int                `json:"adrScore"`
 	Links        *Links              `json:"_links,omitempty"`
 	Lifecycle    Lifecycle           `json:"lifecycle"`
 }
@@ -125,10 +125,6 @@ type UpdateApiInput struct {
 	OasUrl          string  `json:"oasUrl" binding:"required,url"`
 	OrganisationUri string  `json:"organisationUri" binding:"required,url"`
 	Contact         Contact `json:"contact"`
-}
-
-type OrganisationListResponse struct {
-	Organisations []OrganisationSummary `json:"organisations"`
 }
 
 type OrganisationSummary struct {

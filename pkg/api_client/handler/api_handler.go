@@ -3,9 +3,9 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/util"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/params"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
@@ -35,26 +35,7 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, p *params.ListApisParams)
 	if err != nil {
 		return nil, err
 	}
-	ctx.Header("X-Total-Count", fmt.Sprintf("%d", pagination.TotalRecords))
-	ctx.Header("X-Total-Pages", fmt.Sprintf("%d", pagination.TotalPages))
-	ctx.Header("X-Per-Page", fmt.Sprintf("%d", pagination.RecordsPerPage))
-	ctx.Header("X-Current-Page", fmt.Sprintf("%d", pagination.CurrentPage))
-
-	var links []string
-
-	links = append(links, fmt.Sprintf("</v1/apis?page=1&perPage=%d>; rel=\"first\"", pagination.RecordsPerPage))
-	if pagination.Previous != nil {
-		links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"prev\"", *pagination.Previous, pagination.RecordsPerPage))
-	}
-	links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"self\"", pagination.CurrentPage, pagination.RecordsPerPage))
-	if pagination.Next != nil {
-		links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"next\"", *pagination.Next, pagination.RecordsPerPage))
-	}
-	links = append(links, fmt.Sprintf("</v1/apis?page=%d&perPage=%d>; rel=\"last\"", pagination.TotalPages, pagination.RecordsPerPage))
-
-	if len(links) > 0 {
-		ctx.Header("Link", strings.Join(links, ", "))
-	}
+	util.SetPaginationHeaders(ctx.Request, ctx.Header, pagination)
 
 	return apis, nil
 }

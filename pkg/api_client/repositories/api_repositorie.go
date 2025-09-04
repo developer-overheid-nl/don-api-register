@@ -49,8 +49,8 @@ func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, organisa
 	offset := (page - 1) * perPage
 
 	db := r.db
-	if organisation != nil {
-		db = db.Where("organisation_id = ?", organisation)
+	if organisation != nil && strings.TrimSpace(*organisation) != "" {
+		db = db.Where("organisation_id = ?", strings.TrimSpace(*organisation))
 	}
 	if ids != nil {
 		idsSlice := strings.Split(*ids, ",")
@@ -109,7 +109,7 @@ func (r *apiRepository) UpdateApi(ctx context.Context, api models.Api) error {
 
 func (r *apiRepository) FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api, error) {
 	var api models.Api
-	if err := r.db.WithContext(ctx).Where("oas_uri = ?", oasUrl).First(&api).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Organisation").Preload("Servers").Where("oas_uri = ?", oasUrl).First(&api).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}

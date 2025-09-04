@@ -103,10 +103,11 @@ type ServerInfo struct {
 }
 
 type ApiDetail struct {
-	ApiSummary              // embed alles van ApiSummary
-	Auth       []string     `json:"auth,omitempty"`
-	DocsUrl    string       `json:"docsUrl,omitempty"`
-	Servers    []ServerInfo `json:"servers,omitempty"`
+	ApiSummary               // embed alles van ApiSummary
+	Auth        []string     `json:"auth,omitempty"`
+	DocsUrl     string       `json:"docsUrl,omitempty"`
+	Servers     []ServerInfo `json:"servers,omitempty"`
+	LintResults []LintResult `json:"lintResults,omitempty"`
 }
 
 type ApiPost struct {

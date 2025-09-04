@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
+	"math"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -19,7 +19,6 @@ import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
 	"github.com/developer-overheid-nl/don-api-register/pkg/linter"
 	"github.com/developer-overheid-nl/don-api-register/pkg/tools"
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
@@ -40,21 +39,41 @@ func NewAPIsAPIService(repo repositories.ApiRepository) *APIsAPIService {
 }
 
 func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateApiInput) (*models.ApiSummary, error) {
-	api, err := s.repo.FindByOasUrl(ctx, body.OasUrl)
+	api, err := s.repo.GetApiByID(ctx, body.Id)
 	if err != nil || api == nil {
 		if api == nil || errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("%w: %s", ErrNeedsPost, body.OasUrl)
 		}
-		return nil, fmt.Errorf("databasefout bij GetApiByID: %w", err)
+		return nil, fmt.Errorf("databasefout: %w", err)
 	}
-	organisation := *api.Organisation
-	if api.OrganisationID == nil || organisation.Uri != body.OrganisationUri {
-		forbidden := problem.NewForbidden(body.OasUrl, "organisationUri komt niet overeen met eigenaar van deze API")
-		return nil, forbidden
+	if api.OrganisationID == nil || (*api.Organisation).Uri != body.OrganisationUri {
+		return nil, problem.NewForbidden(body.OasUrl, "organisationUri komt niet overeen met eigenaar van deze API")
 	}
-	tools.Dispatch(context.Background(), "lint", func(ctx context.Context) error {
-		return s.lintAndPersist(ctx, api, body.OasUrl)
+
+	// → nieuwe OAS strict valideren + hash
+	res, err := openapi.FetchParseValidateAndHash(ctx, body.OasUrl, openapi.FetchOpts{
+		Origin: "https://developer.overheid.nl",
 	})
+	if err != nil {
+		return nil, problem.NewBadRequest(body.OasUrl, err.Error())
+	}
+
+	// Niks veranderd? Klaar.
+	if res.Hash == api.OasHash {
+		updated := util.ToApiSummary(api)
+		return &updated, nil
+	}
+
+	// Hash gewijzigd → opslaan en linten
+	api.OasHash = res.Hash
+	if err := s.repo.UpdateApi(ctx, *api); err != nil {
+		return nil, err
+	}
+
+	tools.Dispatch(context.Background(), "lint", func(ctx context.Context) error {
+		return s.lintAndPersist(ctx, api.Id, body.OasUrl, res.Hash)
+	})
+
 	updated := util.ToApiSummary(api)
 	return &updated, nil
 }
@@ -65,6 +84,13 @@ func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Ap
 		return nil, err
 	}
 	detail := util.ToApiDetail(api)
+
+	lintResults, err := s.repo.GetLintResults(ctx, api.Id)
+	if err != nil {
+		return nil, err
+	}
+	detail.LintResults = lintResults
+
 	return detail, nil
 }
 
@@ -87,54 +113,14 @@ func (s *APIsAPIService) UpdateApi(ctx context.Context, api models.Api) error {
 }
 
 func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.ApiSummary, error) {
-	// 1) Parse en haal op
-	parsedUrl, err := url.Parse(requestBody.OasUrl)
-	if err != nil {
-		return nil, problem.NewBadRequest(
-			requestBody.OasUrl,
-			"Ongeldige URL",
-			problem.InvalidParam{Name: "oasUri", Reason: "Moet een geldige URL zijn"},
-		)
-	}
-	resp, err := httpclient.CorsGet(&http.Client{}, parsedUrl.String(), "https://developer.overheid.nl")
-	if err != nil {
-		return nil, problem.NewBadRequest(requestBody.OasUrl,
-			fmt.Sprintf("fout bij ophalen OAS: %s", err),
-		)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, problem.NewBadRequest(requestBody.OasUrl,
-			fmt.Sprintf("OAS download faalt met status %d", resp.StatusCode),
-		)
-	}
+	ctx := context.Background()
 
-	// 2) Parse OpenAPI
-	data, err := io.ReadAll(resp.Body)
+	// 1) Strict validate + hash
+	resp, err := openapi.FetchParseValidateAndHash(ctx, requestBody.OasUrl, openapi.FetchOpts{
+		Origin: "https://developer.overheid.nl",
+	})
 	if err != nil {
-		return nil, problem.NewBadRequest(requestBody.OasUrl, "kan response body niet lezen")
-	}
-	loader := openapi3.NewLoader()
-	loader.IsExternalRefsAllowed = true
-	spec, err := loader.LoadFromData(data)
-	if err != nil {
-		return nil, problem.NewBadRequest(
-			requestBody.OasUrl,
-			"Ongeldig OpenAPI-bestand",
-			problem.InvalidParam{Name: "oasUri", Reason: err.Error()},
-		)
-	}
-	if err := loader.ResolveRefsIn(spec, nil); err != nil {
-		return nil, problem.NewBadRequest(requestBody.OasUrl, "could not resolve refs", problem.InvalidParam{Name: "External refs", Reason: err.Error()})
-	}
-
-	if err := spec.Validate(context.Background()); err != nil {
-		if !strings.Contains(err.Error(), "invalid example") {
-			apiErr := problem.NewBadRequest(requestBody.OasUrl, err.Error())
-			apiErr.Title = "Invalid OAS"
-			apiErr.Instance = requestBody.OasUrl
-			return nil, apiErr
-		}
+		return nil, problem.NewBadRequest(requestBody.OasUrl, err.Error())
 	}
 
 	// 3) Build & validate
@@ -159,7 +145,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 		label = lbl
 		shouldSaveOrg = true
 	}
-	api := openapi.BuildApi(spec, requestBody, label)
+	api := openapi.BuildApi(resp.Spec, requestBody, label)
 	if shouldSaveOrg && api.OrganisationID != nil {
 		if err := s.repo.SaveOrganisatie(api.Organisation); err != nil {
 			return nil, problem.NewInternalServerError("kan organisatie niet opslaan: " + err.Error())
@@ -188,8 +174,13 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 		return nil, problem.NewInternalServerError("kan API niet opslaan: " + err.Error())
 	}
 
+	api.OasHash = resp.Hash
+	if err := s.repo.UpdateApi(ctx, *api); err != nil {
+		return nil, problem.NewInternalServerError("kan API hash niet opslaan: " + err.Error())
+	}
+
 	tools.Dispatch(context.Background(), "lint", func(ctx context.Context) error {
-		return s.lintAndPersist(ctx, api, requestBody.OasUrl)
+		return s.lintAndPersist(ctx, api.Id, requestBody.OasUrl, resp.Hash)
 	})
 
 	created := util.ToApiSummary(api)
@@ -208,56 +199,97 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	for _, api := range apis {
-		api := api
 		g.Go(func() error {
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			return s.lintAndPersist(ctx, &api, api.OasUri)
+			return s.lintAndPersist(ctx, api.Id, api.OasUri, api.OasHash)
 		})
 	}
 	return g.Wait()
 }
 
+var measuredRules = map[string]struct{}{
+	"openapi3":                     {},
+	"openapi-root-exists":          {},
+	"missing-version-header":       {},
+	"missing-header":               {},
+	"include-major-version-in-uri": {},
+	"paths-no-trailing-slash":      {},
+	"info-contact-fields-exist":    {},
+	"http-methods":                 {},
+	"semver":                       {},
+}
+
+func computeAdrScore(msgs []models.LintMessage) (score int, failed []string) {
+	failedSet := map[string]struct{}{}
+	for _, m := range msgs {
+		if strings.ToLower(m.Severity) != "error" {
+			continue
+		}
+		if _, ok := measuredRules[m.Code]; ok {
+			failedSet[m.Code] = struct{}{}
+		}
+	}
+	for k := range failedSet {
+		failed = append(failed, k)
+	}
+	sort.Strings(failed)
+
+	total := len(measuredRules)
+	if total == 0 {
+		return 100, failed
+	}
+	score = int(math.Round((1 - float64(len(failed))/float64(total)) * 100))
+	return score, failed
+}
+
 // lintAndPersist runs the linter when the OAS has changed and stores
 // both the lint result and updated hash.
-func (s *APIsAPIService) lintAndPersist(ctx context.Context, api *models.Api, uri string) error {
-	newHash, err := openapi.ComputeOASHash(uri)
-	if err != nil {
+func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expectedHash string) error {
+	// Re-read uit DB om races met andere updates te voorkomen
+	current, err := s.repo.GetApiByID(ctx, apiID)
+	if err != nil || current == nil {
 		return err
 	}
-	if newHash == api.OasHash {
+	// Hash veranderd sinds we deze lint planden? Skip.
+	if current.OasHash != expectedHash {
 		return nil
 	}
 
-	output, lintErr := linter.LintURL(ctx, uri)
-	timeNow := time.Now()
-	msgs := openapi.ParseOutput(output, timeNow)
-	var errorCount, warnCount int
+	// Run linter
+	output, _ := linter.LintURL(ctx, oasURL)
+	now := time.Now()
+
+	msgs := openapi.ParseOutput(output, now)
+
+	var errCount, warnCount int
 	for _, m := range msgs {
-		switch m.Severity {
+		switch strings.ToLower(m.Severity) {
 		case "error":
-			errorCount++
+			errCount++
 		case "warning":
 			warnCount++
 		}
 	}
+	score, _ := computeAdrScore(msgs)
+
 	res := &models.LintResult{
 		ID:        uuid.New().String(),
-		ApiID:     api.Id,
-		Successes: errorCount == 0,
-		Failures:  errorCount,
+		ApiID:     apiID,
+		Successes: score == 100,
+		Failures:  errCount, // occurrences
 		Warnings:  warnCount,
 		Messages:  msgs,
-		CreatedAt: timeNow,
+		CreatedAt: now,
 	}
 	if saveErr := s.repo.SaveLintResult(ctx, res); saveErr != nil {
 		return saveErr
 	}
-	api.OasHash = newHash
-	if err := s.repo.UpdateApi(ctx, *api); err != nil {
-		return err
-	}
-	return lintErr
+
+	// Belangrijk: géén OasHash aanpassen hier.
+	// (AdrScore updaten mág hier wel; dat is geen inhoudelijke wijziging van de OAS)
+	current.AdrScore = &score
+	return s.repo.UpdateApi(ctx, *current)
 }
 
 func (s *APIsAPIService) ListOrganisations(ctx context.Context) ([]models.Organisation, int, error) {

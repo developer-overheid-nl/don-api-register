@@ -1,11 +1,6 @@
 package openapi
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
@@ -24,32 +19,6 @@ func CorsGet(c *http.Client, u string, corsurl string) (*http.Response, error) {
 	}
 	req.Header.Add("Origin", corsurl)
 	return c.Do(req)
-}
-
-// ComputeOASHash downloads an OAS document, parses it and returns a hash.
-func ComputeOASHash(oasURL string) (string, error) {
-	resp, err := http.Get(oasURL)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("OAS download failed with status %d", resp.StatusCode)
-	}
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	spec, err := ParseAndValidateOAS(data)
-	if err != nil {
-		return "", err
-	}
-	serialized, err := json.Marshal(spec)
-	if err != nil {
-		return "", err
-	}
-	sum := sha256.Sum256(serialized)
-	return hex.EncodeToString(sum[:]), nil
 }
 
 // DeriveAuthType determines authentication type from security schemes.

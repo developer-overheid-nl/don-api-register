@@ -1,0 +1,1118 @@
+[
+  {
+    "request": {
+      "oasUrl": "https://internationaal.ondernemen.overheid.nl/api/iio/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10005"
+    },
+    "status": 201,
+    "body": {
+      "id": "ngcnRtrNg",
+      "oasUrl": "https://internationaal.ondernemen.overheid.nl/api/iio/v1/openapi.json",
+      "title": "IIO API",
+      "description": "Deze API (Application Programming Interface) van RVO biedt de mogelijkheid om data van het Informatiehuis Internationaal Ondernemen (IIO) op te vragen.\nOm ervoor te zorgen dat RVO zijn dienstverlening zo goed mogelijk aan kan bieden is de Informatie Internationaal Ondernemen (IIO) API momenteel alleen bruikbaar met behulp van een API-key. RVO gebruikt deze key om inzicht te krijgen in het gebruik van de API. Bijvoorbeeld om te meten welke endpoints en filtermogelijkheden het populairst zijn. We gebruiken de API-key ook om de gebruikers van de API in beeld te krijgen. Zo kunnen wij gebruikers tijdig informeren over incidenten (veroorzaakte piekbelasting, storingen, etc.) en backwards incompatible wijzigingen (versie updates, deprecation periods, etc.).\n\nEen IIO API-key kan verkregen worden door een e-mail te sturen naar informatiehuisIO@rvo.nl. Om onze dienstverlening in de toekomst te kunnen verbeteren en aan te laten sluiten bij onze gebruikers stellen wij het op prijs als je ook laat weten wie je bent en wat je motivatie is om deze API te gebruiken.\n\nDe loggings gegevens worden enkel gebruikt voor statische doeleinden, beheer en doorontwikkeling. Loggings gegevens worden niet gepubliceerd als dit herleidbaar kan zijn naar individuele gebruikers.\n\nEen compleet overzicht van alle technische wijzigingen is te vinden in de onderstaande changelog: [https://internationaal.ondernemen.overheid.nl/api/iio/v1/changelog.md](https://internationaal.ondernemen.overheid.nl/api/iio/v1/changelog.md)\n",
+      "contact": {
+        "name": "Rijksdienst voor Ondernemend Nederland",
+        "url": "https://www.rvo.nl/onderwerpen/open-data/informatiehuis",
+        "email": "InformatiehuisIO@rvo.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10005",
+        "label": "Rijksdienst voor Ondernemend Nederland",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/oorg/oorg10005"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/ngcnRtrNg"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.2.3"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/kadaster/3d-basisvoorziening/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 201,
+    "body": {
+      "id": "Xcc7RtrNR",
+      "oasUrl": "https://api.pdok.nl/kadaster/3d-basisvoorziening/ogc/v1/openapi.json",
+      "title": "3D Basisvoorziening",
+      "description": "De 3D Basisvoorziening is een verzameling van ruimtelijke bestanden die hoogte informatie bevatten. Deze bestanden (collecties) worden op verschillende manieren gegenereerd. Er zijn acht collecties beschikbaar.  De 3D Basisvoorziening kan gebruikt worden op schaalniveaus tussen 1:500 en 1:10.000. De bestanden zijn o.a. gebaseerd op topografie uit de Basisregistratie Grootschalige Topografie (BGT), de gebouwen uit de Basisregistratie Adressen en Gebouwen (BAG), en hoogtes uit luchtfotobeelden en het Actueel Hoogtebestand Nederland (AHN4).  Meer informatie over deze dataset en overige producten zoals het downloaden van deze dataset voor analysedoeleinden of een 3D Viewer zijn te vinden op de website van PDOK  en in de productbeschrijving.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195",
+        "label": "Dienst voor het kadaster en de openbare registers",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/Xcc7RtrNR"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/bzk/bro-gminsamenhang-karakteristieken/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+    },
+    "status": 201,
+    "body": {
+      "id": "EL57gp9HR",
+      "oasUrl": "https://api.pdok.nl/bzk/bro-gminsamenhang-karakteristieken/ogc/v1/openapi.json",
+      "title": "BRO - Grondwatermonitoring (GM) in samenhang - karakteristieken",
+      "description": "Deze dataset bevat de gegevens van nederlandse grondwatermonitoring afkomstig uit de Basisregistratie Ondergrond (BRO). Het betreft de meest karakteristieke (ken)gegevens van grondwatermonitoringputten en de daarmee samenhangende kengegevens van de grondwatermonitoringnetten waarvoor die putten zijn gebruikt, plus de karakteristieken van in die putten gemeten grondwaterstands- en grondwatersamenstellingsgegevens.  Grondwatermonitoring houdt in dat de toestand van het grondwater in een bepaald gebied, of eigenlijk in een bepaald deel van de ondergrond, over langere tijd gevolgd wordt. De grootte van het gebied en de diepte van monitoring verschillen per grondwatermonitoringnet. Er wordt daarbij gekeken naar de grondwaterstand (kwantiteit) en/of naar de samenstelling van het grondwater (kwaliteit). Hiervoor worden periodiek metingen uitgevoerd. Een beschrijving van deze dataset is opgenomen op de BRO Productomgeving.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+        "label": "ministerie van Binnenlandse Zaken en Koninkrijksrelaties",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/EL57gp9HR"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/brt/top10nl/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 201,
+    "body": {
+      "id": "FktnRtrHR",
+      "oasUrl": "https://api.pdok.nl/brt/top10nl/ogc/v1/openapi.json",
+      "title": "BRT TOP10NL",
+      "description": "TOP10NL is een digitaal objectgericht kaartbestand wat ten grondslag ligt aan de topografische kaart 1:10000 en wat veelvuldig in diverse GIS- en CAD-systemen wordt gebruikt voor ondergrond, analyse-, en beheers- en planningsactiviteiten.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195",
+        "label": "Dienst voor het kadaster en de openbare registers",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/FktnRtrHR"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/lv/bag/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 201,
+    "body": {
+      "id": "o7pngt9Hg",
+      "oasUrl": "https://api.pdok.nl/lv/bag/ogc/v1/openapi.json",
+      "title": "Basisregistratie Adressen en Gebouwen",
+      "description": "De gegevens bestaan uit BAG-panden inclusief panden met de status 'gesloopt' en een deelselectie van BAG-gegevens van deze panden en de zich daarin bevindende verblijfsobjecten. Ook de ligplaatsen en standplaatsen zijn hierin opgenomen met een deelselectie van BAG-gegevens. Lees meer over de BAG en bekijk de BAG vector tiles in de Vectortile Viewer.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195",
+        "label": "Dienst voor het kadaster en de openbare registers",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/o7pngt9Hg"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "0.1.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/lv/bag/ogc/v1-demo/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 201,
+    "body": {
+      "id": "QOp7gt9NR",
+      "oasUrl": "https://api.pdok.nl/lv/bag/ogc/v1-demo/openapi.json",
+      "title": "Basisregistratie Adressen en Gebouwen",
+      "description": "De gegevens bestaan uit BAG-panden inclusief panden met de status 'gesloopt' en een deel van BAG-gegevens van deze panden met de zich daarin bevindende verblijfsobjecten en adresinformatie. Ook de ligplaatsen en standplaatsen zijn in de Vector Tiles opgenomen. Lees meer over de BAG en bekijk de BAG vector tiles in de Vectortile Viewer.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195",
+        "label": "Dienst voor het kadaster en de openbare registers",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/QOp7gt9NR"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "0.1.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/lv/bgt/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 201,
+    "body": {
+      "id": "zwp7Rp9NR",
+      "oasUrl": "https://api.pdok.nl/lv/bgt/ogc/v1/openapi.json",
+      "title": "Basisregistratie Grootschalige Topografie",
+      "description": "De Basisregistratie Grootschalige Topografie (BGT) is de gedetailleerde grootschalige basiskaart (digitaal) van Nederland, waarin de ligging van alle fysieke objecten zoals gebouwen, wegen, water, spoorlijnen en (landbouw)terreinen is geregistreerd. Lees meer over de BGT en bekijk de BGT vector tiles in de Vectortile Viewer.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195",
+        "label": "Dienst voor het kadaster en de openbare registers",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/zwp7Rp9NR"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/rce/beschermde-gebieden-cultuurhistorie/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10003"
+    },
+    "status": 201,
+    "body": {
+      "id": "q3p7gp9Ng",
+      "oasUrl": "https://api.pdok.nl/rce/beschermde-gebieden-cultuurhistorie/ogc/v1/openapi.json",
+      "title": "Beschermde Gebieden - Cultuurhistorie (INSPIRE geharmoniseerd)",
+      "description": "Deze API toont de Rijksmonumenten, Stads- en Dorpsgezichten en het Nederlandse UNESCO cultureel Werelderfgoed. De gegevens zijn conform INSPIRE geharmoniseerd en afkomstig van de Rijksdienst voor het Cultureel Erfgoed.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10003",
+        "label": "Rijksdienst voor het Cultureel Erfgoed",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/oorg/oorg10003"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/q3p7gp9Ng"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/kadaster/bestuurlijkegebieden/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 201,
+    "body": {
+      "id": "SMhngt9Ng",
+      "oasUrl": "https://api.pdok.nl/kadaster/bestuurlijkegebieden/ogc/v1/openapi.json",
+      "title": "Bestuurlijke Gebieden",
+      "description": "Overzicht van de bestuurlijke indeling van Nederland in gemeenten en provincies alsmede de rijksgrens. Gegevens zijn afgeleid uit de Basisregistratie Kadaster (BRK). Lees meer over de Bestuurlijke gebieden en bekijk de vector tiles in de Vectortile Viewer.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195",
+        "label": "Dienst voor het kadaster en de openbare registers",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/SMhngt9Ng"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/rws/digitaal-topografisch-bestand/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+    },
+    "status": 201,
+    "body": {
+      "id": "zO27RtrHg",
+      "oasUrl": "https://api.pdok.nl/rws/digitaal-topografisch-bestand/ogc/v1/openapi.json",
+      "title": "Digitaal Topografisch Bestand",
+      "description": "Digitaal Topografisch Bestand van de natte hoofdinfrastructuur in beheer bij Rijkswaterstaat (DTB-Nat) en de droge hoofdinfrastructuur (DTB-Droog) in beheer bij Rijkswaterstaat opgebouwd uit punt-, lijn- en vlakinformatie.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004",
+        "label": "Rijkswaterstaat",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/zO27RtrHg"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/rws/overstromingen-gebeurtenis/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+    },
+    "status": 201,
+    "body": {
+      "id": "D227Rt9NR",
+      "oasUrl": "https://api.pdok.nl/rws/overstromingen-gebeurtenis/ogc/v1/openapi.json",
+      "title": "Gebieden met Natuurrisico's - Overstromingen - Geobserveerde gebeurtenis - Richtlijn Overstromingsrisico's (ROR) (INSPIRE geharmoniseerd)",
+      "description": "De OGC API Features service Gebieden met natuurrisico's - Overstromingen - Geobserveerde gebeurtenis bevat de geobserveerde gebeurtenissen uit het rapport 'Overstromingsrisico's in Nederland, 2018 in het kader van de Europese Richtlijn.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004",
+        "label": "Rijkswaterstaat",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/D227Rt9NR"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/rws/overstromingen-risicogebied/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+    },
+    "status": 201,
+    "body": {
+      "id": "axhnRtrNR",
+      "oasUrl": "https://api.pdok.nl/rws/overstromingen-risicogebied/ogc/v1/openapi.json",
+      "title": "Gebieden met Natuurrisico's - Overstromingen - Risicogebied - Richtlijn Overstromingsrisico's (ROR) (INSPIRE geharmoniseerd)",
+      "description": "De OGC API Features service Gebieden met Natuurrisico's - Overstromingen - Risicogebied bevat geharmoniseerde Risicogebieden. Discrete ruimtelijke objecten die natuurlijke verschijnselen vertegenwoordigen die relevant zijn voor de studie van natuurrampen die zich hebben voorgedaan of momenteel voordoen en die zijn waargenomen in Nederland uit het rapport 'Overstromingsrisico's in Nederland, 2018 in het kader van de Europese Richtlijn Overstromingsrisico’s (ROR) 2e cyclus: 2016 - 2021'.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004",
+        "label": "Rijkswaterstaat",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/axhnRtrNR"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/rws/kwetsbaar-gebied-agglomeraties/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+    },
+    "status": 201,
+    "body": {
+      "id": "Ys2ngprNg",
+      "oasUrl": "https://api.pdok.nl/rws/kwetsbaar-gebied-agglomeraties/ogc/v1/openapi.json",
+      "title": "Gebiedsbeheer eenheden - Kwetsbaar gebied - Agglomeraties - RSA (INSPIRE geharmoniseerd)",
+      "description": "Naar INSPIRE thema Gebiedsbeheer, gebieden waar beperkingen gelden, gereguleerde gebieden en rapportage-eenheden geharmoniseerde agglomeraties zoals gerapporteerd naar de Europese Commissie tbv EU rapportage Stedelijk Afvalwater 2020.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004",
+        "label": "Rijkswaterstaat",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/Ys2ngprNg"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/rws/kwetsbaar-gebied/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+    },
+    "status": 201,
+    "body": {
+      "id": "3Xh7gp9HR",
+      "oasUrl": "https://api.pdok.nl/rws/kwetsbaar-gebied/ogc/v1/openapi.json",
+      "title": "Gebiedsbeheer eenheden - Kwetsbaar gebied - RSA (INSPIRE geharmoniseerd)",
+      "description": "Naar INSPIRE thema Gebiedsbeheer, gebieden waar beperkingen gelden, gereguleerde gebieden en rapportage-eenheden geharmoniseerd kwetsbaar gebied zoals gerapporteerd naar de Europese Commissie tbv EU rapportage Stedelijk Afvalwater 2020",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004",
+        "label": "Rijkswaterstaat",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/3Xh7gp9HR"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/omgevingswet/omgevingsdocumenten/ogc/v2/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 201,
+    "body": {
+      "id": "mmo7Rt9Hg",
+      "oasUrl": "https://api.pdok.nl/omgevingswet/omgevingsdocumenten/ogc/v2/openapi.json",
+      "title": "Geometrieën Omgevingswet API",
+      "description": "De Geometrieën Omgevingswet API ontsluit twee vector tile-datasets met daarin de geometrieën uit omgevingsdocumenten en vergunningen. De geometrieën zijn beschikbaar in RD-formaat en kennen elk één attribuut: de geometrie-identificatie. De twee datasets die met deze API ontsloten worden zijn de Actueel v2 en de Volledig v2. Van elk van de datasets zijn vijf varianten beschikbaar; één voor elk van de verschillende Omgevingswet-omgevingen.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195",
+        "label": "Dienst voor het kadaster en de openbare registers",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/mmo7Rt9Hg"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "2.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/kadaster/brk-kadastrale-kaart/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 201,
+    "body": {
+      "id": "THongp9HR",
+      "oasUrl": "https://api.pdok.nl/kadaster/brk-kadastrale-kaart/ogc/v1/openapi.json",
+      "title": "Kadastrale Kaart",
+      "description": "Overzicht van de ligging van de kadastrale percelen in Nederland. Fungeert als schakel tussen terrein en registratie, vervult voor externe gebruiker vaak een referentiefunctie, een ondergrond ten opzichte waarvan de gebruiker eigen informatie kan vastleggen en presenteren. Een kadastrale kaart geeft slechts een indicatie van de ligging van de kadastrale grenzen. Er kunnen geen maten aan worden ontleend.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195",
+        "label": "Dienst voor het kadaster en de openbare registers",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/THongp9HR"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/rws/nationaal-wegenbestand-wegen/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+    },
+    "status": 201,
+    "body": {
+      "id": "1honRp9Ng",
+      "oasUrl": "https://api.pdok.nl/rws/nationaal-wegenbestand-wegen/ogc/v1/openapi.json",
+      "title": "NWB - Wegen",
+      "description": "Dit is de OGC API Features service van het Nationaal Wegen Bestand (NWB) - wegen. Deze dataset bevat alleen de wegvakken en hectometerpunten. Het Nationaal Wegen Bestand - Wegen is een digitaal geografisch bestand van alle wegen in Nederland. Opgenomen zijn alle wegen die worden beheerd door wegbeheerders als het Rijk, provincies, gemeenten en waterschappen, echter alleen voor zover deze zijn voorzien van een straatnaam of nummer.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004",
+        "label": "Rijkswaterstaat",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/1honRp9Ng"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/rws/rioolnetwerk-leidingelementen/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+    },
+    "status": 201,
+    "body": {
+      "id": "H-Tngt9NR",
+      "oasUrl": "https://api.pdok.nl/rws/rioolnetwerk-leidingelementen/ogc/v1/openapi.json",
+      "title": "Nuts- en Overheidsdiensten - Riool - Leidingelementen - RSA (INSPIRE geharmoniseerd)",
+      "description": "Naar INSPIRE thema Nutsdiensten en overheidsdiensten geharmoniseerde lozingspunten zoals gerapporteerd naar de Europese Commissie tbv EU rapportage Stedelijk Afvalwater 2020.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004",
+        "label": "Rijkswaterstaat",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/H-Tngt9NR"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/rws/rioolnetwerk-milieumanagementvoorziening/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+    },
+    "status": 201,
+    "body": {
+      "id": "YyTnRtrHR",
+      "oasUrl": "https://api.pdok.nl/rws/rioolnetwerk-milieumanagementvoorziening/ogc/v1/openapi.json",
+      "title": "Nuts- en Overheidsdiensten - Riool - Milieu management voorziening - RSA (INSPIRE geharmoniseerd)",
+      "description": "Naar INSPIRE thema Nutsdiensten en overheidsdiensten geharmoniseerde riool water zuiveringsinstallaties (RWZI's) zoals gerapporteerd naar de Europese Commissie tbv EU rapportage Stedelijk Afvalwater 2020.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004",
+        "label": "Rijkswaterstaat",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/YyTnRtrHR"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/rws/richtlijn-stedelijk-afvalwater/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+    },
+    "status": 201,
+    "body": {
+      "id": "gjTngtrHR",
+      "oasUrl": "https://api.pdok.nl/rws/richtlijn-stedelijk-afvalwater/ogc/v1/openapi.json",
+      "title": "Richtlijn Stedelijk Afvalwater (RSA)",
+      "description": "Deze Richtlijn Stedelijk Afvalwater API bevat de meest actuele versie van agglomeraties, rioolwaterzuiveringsinstallaties (RWZI's), lozingspunten en kwetsbare gebieden zoals gerapporteerd naar de Europese Commissie tbv EU rapportage",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004",
+        "label": "Rijkswaterstaat",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/gjTngtrHR"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/rws/scheepvaart-verkeersscheidingsstelsel-noordzee/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+    },
+    "status": 201,
+    "body": {
+      "id": "1zA7gtrHg",
+      "oasUrl": "https://api.pdok.nl/rws/scheepvaart-verkeersscheidingsstelsel-noordzee/ogc/v1/openapi.json",
+      "title": "Scheepvaart Verkeersscheidingsstelsel Noordzee (Nederlands Continentaal Plat)",
+      "description": "Het Scheepvaart Verkeersscheidingsstelsel Noordzee bevat kilometerpunten op de as van de vaargeulen op het Nederlands Continentaal Plat, Ankergebieden, vaargeulen, begrenzing en zonering. Deze dataset is aangemerkt als As-Is bron voor EU-doelen.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004",
+        "label": "Rijkswaterstaat",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/oorg/oorg10004"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/1zA7gtrHg"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/hwh/waterschappen-hydrografie/ogc/v1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/so/so0652"
+    },
+    "status": 201,
+    "body": {
+      "id": "HD0ngprNg",
+      "oasUrl": "https://api.pdok.nl/hwh/waterschappen-hydrografie/ogc/v1/openapi.json",
+      "title": "Waterschappen Hydrografie (INSPIRE geharmoniseerd)",
+      "description": "Deze dataset is gebaseerd op (geharmoniseerde) data van alle waterschappen in Nederland conform INSPIRE. De dataset bevat de volgende INSPIRE objecten: CrossingLine, CrossingPoint, DamOrWeir, DrainageBasin, Embankment, Lock, Sluice, Watercourse.",
+      "contact": {
+        "name": "PDOK Support",
+        "url": "https://www.pdok.nl/support1",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/so/so0652",
+        "label": "Het Waterschapshuis",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/so/so0652"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/HD0ngprNg"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/lv/bgt/download/v1_0/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 400,
+    "body": {
+      "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "invalid OAS: invalid paths: invalid path /delta/predefined/bgt-citygml-nl-delta.zip: invalid operation GET: header schema is invalid: parameter must contain exactly one of content and schema: &{{map[type:string] <nil>   Absolute path waarop het bestand gedownload kan worden  <nil> false false false false <nil> <nil> map[] map[]}}",
+      "instance": "https://api.pdok.nl/lv/bgt/download/v1_0/openapi.json"
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/kadaster/kadastralekaart/download/v5_0/ui/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 400,
+    "body": {
+      "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "OAS download failed with status 404",
+      "instance": "https://api.pdok.nl/kadaster/kadastralekaart/download/v5_0/ui/openapi.json"
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/bzk/locatieserver/search/v3_1/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 400,
+    "body": {
+      "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "Validatie mislukt: ontbrekende of ongeldige eigenschappen",
+      "instance": "https://api.pdok.nl/bzk/locatieserver/search/v3_1/openapi.json",
+      "invalidParams": [
+        {
+          "name": "contact.name",
+          "reason": "contact.name is verplicht"
+        },
+        {
+          "name": "contact.url",
+          "reason": "contact.url is verplicht"
+        }
+      ]
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/brt/top10nl/download/v1_0/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 400,
+    "body": {
+      "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "invalid OAS: invalid paths: invalid path /full/predefined/top10nl-gml-nl-nohist.zip: invalid operation GET: header schema is invalid: parameter must contain exactly one of content and schema: &{{map[type:string] <nil>   Absolute path waarop het bestand gedownload kan worden  <nil> false false false false <nil> <nil> map[] map[]}}",
+      "instance": "https://api.pdok.nl/brt/top10nl/download/v1_0/openapi.json"
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/brt/top50nl/download/v1_0/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 400,
+    "body": {
+      "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "invalid OAS: invalid paths: invalid path /full/predefined/top50nl-gml-nl-nohist.zip: invalid operation GET: header schema is invalid: parameter must contain exactly one of content and schema: &{{map[type:string] <nil>   Absolute path waarop het bestand gedownload kan worden  <nil> false false false false <nil> <nil> map[] map[]}}",
+      "instance": "https://api.pdok.nl/brt/top50nl/download/v1_0/openapi.json"
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/brt/top100nl/download/v1_0/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 400,
+    "body": {
+      "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "invalid OAS: invalid paths: invalid path /full/predefined/top100nl-gml-nl-nohist.zip: invalid operation GET: header schema is invalid: parameter must contain exactly one of content and schema: &{{map[type:string] <nil>   Absolute path waarop het bestand gedownload kan worden  <nil> false false false false <nil> <nil> map[] map[]}}",
+      "instance": "https://api.pdok.nl/brt/top100nl/download/v1_0/openapi.json"
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/brt/top250nl/download/v1_0/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 400,
+    "body": {
+      "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "invalid OAS: invalid paths: invalid path /full/predefined/top250nl-gml-nl-nohist.zip: invalid operation GET: header schema is invalid: parameter must contain exactly one of content and schema: &{{map[type:string] <nil>   Absolute path waarop het bestand gedownload kan worden  <nil> false false false false <nil> <nil> map[] map[]}}",
+      "instance": "https://api.pdok.nl/brt/top250nl/download/v1_0/openapi.json"
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/brt/top500nl/download/v1_0/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 400,
+    "body": {
+      "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "invalid OAS: invalid paths: invalid path /full/predefined/top500nl-gml-nl-nohist.zip: invalid operation GET: header schema is invalid: parameter must contain exactly one of content and schema: &{{map[type:string] <nil>   Absolute path waarop het bestand gedownload kan worden  <nil> false false false false <nil> <nil> map[] map[]}}",
+      "instance": "https://api.pdok.nl/brt/top500nl/download/v1_0/openapi.json"
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://api.pdok.nl/brt/top1000nl/download/v1_0/openapi.json",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+    },
+    "status": 400,
+    "body": {
+      "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "invalid OAS: invalid paths: invalid path /full/predefined/top1000nl-gml-nl-nohist.zip: invalid operation GET: header schema is invalid: parameter must contain exactly one of content and schema: &{{map[type:string] <nil>   Absolute path waarop het bestand gedownload kan worden  <nil> false false false false <nil> <nil> map[] map[]}}",
+      "instance": "https://api.pdok.nl/brt/top1000nl/download/v1_0/openapi.json"
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://gist.githubusercontent.com/dvh/77df71d0a8d23cefc471348a1495a997/raw",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+    },
+    "status": 201,
+    "body": {
+      "id": "HAJ7RprHg",
+      "oasUrl": "https://gist.githubusercontent.com/dvh/77df71d0a8d23cefc471348a1495a997/raw",
+      "title": "Retired API",
+      "description": "Deze API is in het verleden offline gehaald (sunset) en derhalve niet meer beschikbaar (retired)",
+      "contact": {
+        "name": "Team developer.overheid.nl",
+        "url": "https://github.com/developer-overheid-nl/don-api-register/issues",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+        "label": "ministerie van Binnenlandse Zaken en Koninkrijksrelaties",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/HAJ7RprHg"
+        }
+      },
+      "lifecycle": {
+        "status": "retired",
+        "version": "1.0.0",
+        "sunset": "2025-04-01"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://gist.github.com/dvh/233b6a5cb891a09c6ab6a593bd65b373/raw",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+    },
+    "status": 400,
+    "body": {
+      "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
+      "title": "Bad Request",
+      "status": 400,
+      "detail": "failed to unmarshal data: json error: invalid character '\"' after object key:value pair, yaml error: error converting YAML to JSON: yaml: line 2: did not find expected ',' or '}'",
+      "instance": "https://gist.github.com/dvh/233b6a5cb891a09c6ab6a593bd65b373/raw"
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://gist.github.com/dvh/63cc3ea6d944600219db1cdb7fbc1d65/raw",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+    },
+    "status": 201,
+    "body": {
+      "id": "GMx7gtrHR",
+      "oasUrl": "https://gist.github.com/dvh/63cc3ea6d944600219db1cdb7fbc1d65/raw",
+      "title": "Will be deprecated API",
+      "description": "Deze API wordt binnenkort deprecated, en wordt dus niet doorontwikkeld en geven we ook geen support meer op.",
+      "contact": {
+        "name": "Team developer.overheid.nl",
+        "url": "https://github.com/developer-overheid-nl/don-api-register/issues",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+        "label": "ministerie van Binnenlandse Zaken en Koninkrijksrelaties",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/GMx7gtrHR"
+        }
+      },
+      "lifecycle": {
+        "status": "active",
+        "version": "1.0.0",
+        "deprecated": "2026-04-01"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://gist.github.com/dvh/78822d11c4cebc68ecfd561efb6ee6ed/raw",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+    },
+    "status": 201,
+    "body": {
+      "id": "bcbnRp9Ng",
+      "oasUrl": "https://gist.github.com/dvh/78822d11c4cebc68ecfd561efb6ee6ed/raw",
+      "title": "Deprecated API",
+      "description": "Deze API wordt niet meer onderhouden (deprecated) maar kun je uiteraard nog wel gewoon gebruiken",
+      "contact": {
+        "name": "Team developer.overheid.nl",
+        "url": "https://github.com/developer-overheid-nl/don-api-register/issues",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+        "label": "ministerie van Binnenlandse Zaken en Koninkrijksrelaties",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/bcbnRp9Ng"
+        }
+      },
+      "lifecycle": {
+        "status": "deprecated",
+        "version": "1.0.0",
+        "deprecated": "2025-04-01"
+      }
+    }
+  },
+  {
+    "request": {
+      "oasUrl": "https://gist.github.com/dvh/839c636a1a61ecdb7e1dc8ec37b130b7/raw",
+      "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+    },
+    "status": 201,
+    "body": {
+      "id": "VUb7RtrHg",
+      "oasUrl": "https://gist.github.com/dvh/839c636a1a61ecdb7e1dc8ec37b130b7/raw",
+      "title": "Sunset API",
+      "description": "Deze API wordt binnenkort offline gehaald (sunset)",
+      "contact": {
+        "name": "Team developer.overheid.nl",
+        "url": "https://github.com/developer-overheid-nl/don-api-register/issues",
+        "email": "developer.overheid@geonovum.nl"
+      },
+      "organisation": {
+        "uri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+        "label": "ministerie van Binnenlandse Zaken en Koninkrijksrelaties",
+        "_links": {
+          "apis": {
+            "href": "/v1/apis?organisation=https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+          }
+        }
+      },
+      "adrScore": null,
+      "_links": {
+        "self": {
+          "href": "/v1/apis/VUb7RtrHg"
+        }
+      },
+      "lifecycle": {
+        "status": "sunset",
+        "version": "1.0.0",
+        "sunset": "2026-02-01"
+      }
+    }
+  }
+]

@@ -1,11 +1,12 @@
 package openapi
 
 import (
-	"github.com/google/uuid"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 )

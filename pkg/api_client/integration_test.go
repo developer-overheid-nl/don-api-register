@@ -168,14 +168,22 @@ func TestIntegration_CreateApiFromOas(t *testing.T) {
 }
 
 func TestIntegration_UpdateApi(t *testing.T) {
-	repo := &stubRepo{findByOas: func(ctx context.Context, url string) (*models.Api, error) {
-		org := "https://org.example.com"
-		return &models.Api{Id: "a1", Organisation: &models.Organisation{Uri: org, Label: "l"}, OrganisationID: &org}, nil
-	}}
-	srv := newServer(repo)
-	defer srv.Close()
+    repo := &stubRepo{getByID: func(ctx context.Context, id string) (*models.Api, error) {
+        org := "https://org.example.com"
+        return &models.Api{Id: id, Organisation: &models.Organisation{Uri: org, Label: "l"}, OrganisationID: &org}, nil
+    }}
+    srv := newServer(repo)
+    defer srv.Close()
 
-	body := `{"oasUrl":"http://example.com","organisationUri":"https://org.example.com"}`
+    // serve a valid minimal OAS
+    spec := `{"openapi":"3.0.0","info":{"title":"T","version":"1.0.0","contact":{"name":"n","email":"e","url":"u"}},"paths":{}}`
+    oasSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Content-Type", "application/json")
+        _, _ = w.Write([]byte(spec))
+    }))
+    defer oasSrv.Close()
+
+    body := fmt.Sprintf(`{"oasUrl":"%s","organisationUri":"%s"}`, oasSrv.URL, "https://org.example.com")
 	req, _ := http.NewRequest(http.MethodPut, srv.URL+"/v1/apis/a1", strings.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+tokenWithScope("apis:write"))
 	req.Header.Set("Content-Type", "application/json")

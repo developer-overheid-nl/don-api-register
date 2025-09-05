@@ -252,7 +252,7 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 		return err
 	}
 	// Hash veranderd sinds we deze lint planden? Skip.
-	if current.OasHash != expectedHash {
+	if current.OasHash == expectedHash {
 		return nil
 	}
 

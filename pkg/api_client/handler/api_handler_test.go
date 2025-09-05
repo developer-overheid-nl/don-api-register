@@ -1,13 +1,12 @@
 package handler
 
 import (
-    "context"
-    "net/http"
-    "net/http/httptest"
-    "testing"
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
-	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/params"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -88,7 +87,7 @@ func TestListApis_Handler(t *testing.T) {
 	ctx.Request = req
 	ctx.Set("FullPath", "/v1/apis")
 
-	resp, err := ctrl.ListApis(ctx, &params.ListApisParams{Page: 3, PerPage: 7})
+	resp, err := ctrl.ListApis(ctx, &models.ListApisParams{Page: 3, PerPage: 7})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Len(t, resp, 2)
@@ -158,53 +157,53 @@ func TestCreateApiFromOas_Handler(t *testing.T) {
 }
 
 func TestUpdateApi_Handler(t *testing.T) {
-    // needs post (geen bestaande API, moet fout geven)
-    repo1 := &stubRepo{
-        findOasFunc: func(ctx context.Context, url string) (*models.Api, error) { return nil, nil },
-    }
+	// needs post (geen bestaande API, moet fout geven)
+	repo1 := &stubRepo{
+		findOasFunc: func(ctx context.Context, url string) (*models.Api, error) { return nil, nil },
+	}
 	svc1 := services.NewAPIsAPIService(repo1)
 	ctrl1 := NewAPIsAPIController(svc1)
 
 	w := httptest.NewRecorder()
 	ctx1, _ := gin.CreateTestContext(w)
-    ctx1.Request = httptest.NewRequest("PUT", "/v1/apis", nil)
+	ctx1.Request = httptest.NewRequest("PUT", "/v1/apis", nil)
 
 	input := &models.UpdateApiInput{OasUrl: "u", OrganisationUri: "https://example.org"}
 	resp1, err1 := ctrl1.UpdateApi(ctx1, input)
 	assert.Error(t, err1)
 	assert.Nil(t, resp1)
 
-    // success pad
-    orgID := "https://example.org"
-    repo2 := &stubRepo{
-        retrFunc: func(ctx context.Context, id string) (*models.Api, error) {
-            return &models.Api{
-                Id:             id,
-                OrganisationID: &orgID,
-                Organisation:   &models.Organisation{Uri: orgID, Label: "ORG"},
-                Servers:        []models.Server{}, // altijd een lege slice, nooit nil
-            }, nil
-        },
-    }
-    svc2 := services.NewAPIsAPIService(repo2)
-    ctrl2 := NewAPIsAPIController(svc2)
+	// success pad
+	orgID := "https://example.org"
+	repo2 := &stubRepo{
+		retrFunc: func(ctx context.Context, id string) (*models.Api, error) {
+			return &models.Api{
+				Id:             id,
+				OrganisationID: &orgID,
+				Organisation:   &models.Organisation{Uri: orgID, Label: "ORG"},
+				Servers:        []models.Server{}, // altijd een lege slice, nooit nil
+			}, nil
+		},
+	}
+	svc2 := services.NewAPIsAPIService(repo2)
+	ctrl2 := NewAPIsAPIController(svc2)
 
-    ctx2, _ := gin.CreateTestContext(w)
-    ctx2.Request = httptest.NewRequest("PUT", "/v1/apis/a1", nil)
-    ctx2.Params = gin.Params{{Key: "id", Value: "a1"}}
+	ctx2, _ := gin.CreateTestContext(w)
+	ctx2.Request = httptest.NewRequest("PUT", "/v1/apis/a1", nil)
+	ctx2.Params = gin.Params{{Key: "id", Value: "a1"}}
 
-    // serve a valid OAS so the update can succeed
-    spec := `{"openapi":"3.0.0","info":{"title":"T","version":"1.0.0","contact":{"name":"n","email":"e","url":"u"}},"paths":{}}`
-    oasSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Content-Type", "application/json")
-        _, _ = w.Write([]byte(spec))
-    }))
-    defer oasSrv.Close()
+	// serve a valid OAS so the update can succeed
+	spec := `{"openapi":"3.0.0","info":{"title":"T","version":"1.0.0","contact":{"name":"n","email":"e","url":"u"}},"paths":{}}`
+	oasSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(spec))
+	}))
+	defer oasSrv.Close()
 
-    input2 := &models.UpdateApiInput{OasUrl: oasSrv.URL, OrganisationUri: "https://example.org"}
-    resp2, err2 := ctrl2.UpdateApi(ctx2, input2)
-    assert.NoError(t, err2)
-    assert.NotNil(t, resp2)
+	input2 := &models.UpdateApiInput{OasUrl: oasSrv.URL, OrganisationUri: "https://example.org"}
+	resp2, err2 := ctrl2.UpdateApi(ctx2, input2)
+	assert.NoError(t, err2)
+	assert.NotNil(t, resp2)
 }
 
 func TestListOrganisations_Handler(t *testing.T) {

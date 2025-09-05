@@ -15,7 +15,6 @@ import (
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	util "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/util"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
-	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/params"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
 	"github.com/developer-overheid-nl/don-api-register/pkg/linter"
 	"github.com/developer-overheid-nl/don-api-register/pkg/tools"
@@ -94,7 +93,7 @@ func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Ap
 	return detail, nil
 }
 
-func (s *APIsAPIService) ListApis(ctx context.Context, p *params.ListApisParams) ([]models.ApiSummary, models.Pagination, error) {
+func (s *APIsAPIService) ListApis(ctx context.Context, p *models.ListApisParams) ([]models.ApiSummary, models.Pagination, error) {
 	apis, pagination, err := s.repo.GetApis(ctx, p.Page, p.PerPage, p.Organisation, p.Ids)
 	if err != nil {
 		return nil, models.Pagination{}, err

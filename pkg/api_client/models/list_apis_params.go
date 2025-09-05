@@ -1,4 +1,4 @@
-package params
+package models
 
 type ListApisParams struct {
 	Page         int     `query:"page"`

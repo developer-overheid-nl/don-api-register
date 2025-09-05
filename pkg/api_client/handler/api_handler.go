@@ -7,7 +7,6 @@ import (
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/util"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
-	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/params"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	"github.com/gin-gonic/gin"
 )
@@ -23,7 +22,7 @@ func NewAPIsAPIController(s *services.APIsAPIService) *APIsAPIController {
 }
 
 // ListApis handles GET /apis
-func (c *APIsAPIController) ListApis(ctx *gin.Context, p *params.ListApisParams) ([]models.ApiSummary, error) {
+func (c *APIsAPIController) ListApis(ctx *gin.Context, p *models.ListApisParams) ([]models.ApiSummary, error) {
 	if p.Page < 1 {
 		p.Page = 1
 	}

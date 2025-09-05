@@ -2,8 +2,7 @@ package jobs
 
 import (
 	"context"
-
-	"github.com/developer-overheid-nl/don-api-register/pkg/tools"
+	"fmt"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	"github.com/robfig/cron/v3"
@@ -13,9 +12,8 @@ import (
 func ScheduleDailyLint(ctx context.Context, svc *services.APIsAPIService) *cron.Cron {
 	c := cron.New()
 	_, _ = c.AddFunc("@every 15m", func() {
-		tools.Dispatch(context.Background(), "lint_all", func(ctx context.Context) error {
-			return svc.LintAllApis(ctx)
-		})
+		fmt.Printf("Starting linter job\n")
+		svc.LintAllApis(ctx)
 	})
 	c.Start()
 

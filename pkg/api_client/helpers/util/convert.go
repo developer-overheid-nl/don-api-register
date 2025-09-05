@@ -17,54 +17,46 @@ func parseTime(value string) time.Time {
 }
 
 func ToApiSummary(api *models.Api) models.ApiSummary {
-    // Safely derive organisation fields when relation is missing
-    var orgURI, orgLabel string
-    var orgLinks *models.Links
-    if api.Organisation != nil {
-        orgURI = api.Organisation.Uri
-        orgLabel = api.Organisation.Label
-        orgLinks = &models.Links{
-            Apis: &models.Link{Href: fmt.Sprintf("/v1/apis?organisation=%s", api.Organisation.Uri)},
-        }
-    }
+	return models.ApiSummary{
+		Id:          api.Id,
+		OasUrl:      api.OasUri,
+		Title:       api.Title,
+		Description: api.Description,
+		Contact: models.Contact{
+			Name:  api.ContactName,
+			URL:   api.ContactUrl,
+			Email: api.ContactEmail,
+		},
+		Lifecycle: models.Lifecycle{
+			Version:    api.Version,
+			Sunset:     api.Sunset,
+			Deprecated: api.Deprecated,
+			Status: func() string {
+				switch {
+				case api.Sunset != "" && parseTime(api.Sunset).After(time.Now()):
+					return "sunset"
+				case api.Sunset != "" && parseTime(api.Sunset).Before(time.Now()):
+					return "retired"
+				case api.Deprecated != "" && parseTime(api.Deprecated).Before(time.Now()):
+					return "deprecated"
+				default:
+					return "active"
+				}
+			}(),
+		},
+		AdrScore: api.AdrScore,
+		Organisation: models.OrganisationSummary{
+			Uri:   api.Organisation.Uri,
+			Label: api.Organisation.Label,
+			Links: &models.Links{
+				Apis: &models.Link{Href: fmt.Sprintf("/v1/apis?organisation=%s", api.Organisation.Uri)},
+			},
+		},
 
-    return models.ApiSummary{
-        Id:          api.Id,
-        OasUrl:      api.OasUri,
-        Title:       api.Title,
-        Description: api.Description,
-        Contact: models.Contact{
-            Name:  api.ContactName,
-            URL:   api.ContactUrl,
-            Email: api.ContactEmail,
-        },
-        Lifecycle: models.Lifecycle{
-            Version:    api.Version,
-            Sunset:     api.Sunset,
-            Deprecated: api.Deprecated,
-            Status: func() string {
-                switch {
-                case api.Sunset != "" && parseTime(api.Sunset).After(time.Now()):
-                    return "sunset"
-                case api.Sunset != "" && parseTime(api.Sunset).Before(time.Now()):
-                    return "retired"
-                case api.Deprecated != "" && parseTime(api.Deprecated).Before(time.Now()):
-                    return "deprecated"
-                default:
-                    return "active"
-                }
-            }(),
-        },
-        AdrScore: api.AdrScore,
-        Organisation: models.OrganisationSummary{
-            Uri:   orgURI,
-            Label: orgLabel,
-            Links: orgLinks,
-        },
-        Links: &models.Links{
-            Self: &models.Link{Href: fmt.Sprintf("/v1/apis/%s", api.Id)},
-        },
-    }
+		Links: &models.Links{
+			Self: &models.Link{Href: fmt.Sprintf("/v1/apis/%s", api.Id)},
+		},
+	}
 }
 
 func ToApiDetail(api *models.Api) *models.ApiDetail {

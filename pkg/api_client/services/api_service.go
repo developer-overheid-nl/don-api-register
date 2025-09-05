@@ -19,7 +19,6 @@ import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/linter"
 	"github.com/developer-overheid-nl/don-api-register/pkg/tools"
 	"github.com/google/uuid"
-	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 )
 
@@ -194,17 +193,12 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 		return err
 	}
 
-	sem := make(chan struct{}, 5)
-	g, ctx := errgroup.WithContext(ctx)
-
 	for _, api := range apis {
-		g.Go(func() error {
-			sem <- struct{}{}
-			defer func() { <-sem }()
+		tools.Dispatch(context.Background(), "lint", func(ctx context.Context) error {
 			return s.lintAndPersist(ctx, api.Id, api.OasUri, api.OasHash)
 		})
 	}
-	return g.Wait()
+	return nil
 }
 
 var measuredRules = map[string]struct{}{

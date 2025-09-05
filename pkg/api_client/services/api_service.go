@@ -250,6 +250,7 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 	}
 
 	// Run linter
+	fmt.Println("Running linter...")
 	output, _ := linter.LintURL(ctx, oasURL)
 	now := time.Now()
 
@@ -278,9 +279,7 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 	if saveErr := s.repo.SaveLintResult(ctx, res); saveErr != nil {
 		return saveErr
 	}
-
-	// Belangrijk: géén OasHash aanpassen hier.
-	// (AdrScore updaten mág hier wel; dat is geen inhoudelijke wijziging van de OAS)
+	fmt.Println(&score)
 	current.AdrScore = &score
 	return s.repo.UpdateApi(ctx, *current)
 }

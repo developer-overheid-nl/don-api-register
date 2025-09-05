@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
-	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/params"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -36,10 +35,10 @@ func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, erro
 	return s.getByID(ctx, id)
 }
 func (s *stubRepo) GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error) {
-    if s.getLintRes != nil {
-        return s.getLintRes(ctx, apiID)
-    }
-    return nil, nil
+	if s.getLintRes != nil {
+		return s.getLintRes(ctx, apiID)
+	}
+	return nil, nil
 }
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
 	return s.getApis(ctx, page, perPage, organisation, ids)
@@ -62,19 +61,19 @@ func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation,
 }
 
 func TestUpdateOasUri_NotFound(t *testing.T) {
-    repo := &stubRepo{
-        getByID: func(ctx context.Context, id string) (*models.Api, error) {
-            return nil, gorm.ErrRecordNotFound
-        },
-    }
-    service := services.NewAPIsAPIService(repo)
+	repo := &stubRepo{
+		getByID: func(ctx context.Context, id string) (*models.Api, error) {
+			return nil, gorm.ErrRecordNotFound
+		},
+	}
+	service := services.NewAPIsAPIService(repo)
 
-    input := &models.UpdateApiInput{
-        Id:              "missing-id",
-        OasUrl:          "https://niet-bestaand.nl/openapi.json",
-        OrganisationUri: "https://identifier.overheid.nl/tooi/id/xxx",
-        Contact:         models.Contact{}, // vul verder aan als nodig
-    }
+	input := &models.UpdateApiInput{
+		Id:              "missing-id",
+		OasUrl:          "https://niet-bestaand.nl/openapi.json",
+		OrganisationUri: "https://identifier.overheid.nl/tooi/id/xxx",
+		Contact:         models.Contact{}, // vul verder aan als nodig
+	}
 
 	result, err := service.UpdateOasUri(context.Background(), input)
 
@@ -132,7 +131,7 @@ func TestListApis_Pagination(t *testing.T) {
 	}
 	service := services.NewAPIsAPIService(repo)
 	baseURL := "/v1/apis"
-	p := &params.ListApisParams{Page: 1, PerPage: 2, BaseURL: baseURL}
+	p := &models.ListApisParams{Page: 1, PerPage: 2, BaseURL: baseURL}
 	res, _, err := service.ListApis(context.Background(), p)
 	assert.NoError(t, err)
 	assert.Len(t, res, 2)

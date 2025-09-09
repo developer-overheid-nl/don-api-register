@@ -1,15 +1,15 @@
 package services
 
 import (
-    "context"
-    "errors"
-    "fmt"
-    "math"
-    "net/url"
-    "log"
-    "sort"
-    "strings"
-    "time"
+	"context"
+	"errors"
+	"fmt"
+	"log"
+	"math"
+	"net/url"
+	"sort"
+	"strings"
+	"time"
 
 	httpclient "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
 	openapi "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/openapi"
@@ -189,18 +189,25 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 // LintAllApis runs the linter for every registered API and stores
 // the output in the database
 func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
-    apis, err := s.repo.AllApis(ctx)
-    if err != nil {
-        return err
-    }
+	apis, err := s.repo.AllApis(ctx)
+	if err != nil {
+		return err
+	}
 
-    for _, api := range apis {
-        // Use the provided ctx so cron timeout/cancellation is respected.
-        tools.Dispatch(ctx, "lint", func(ctx context.Context) error {
-            return s.lintAndPersist(ctx, api.Id, api.OasUri, api.OasHash)
-        })
-    }
-    return nil
+	for _, api := range apis {
+
+		resp, err := openapi.FetchParseValidateAndHash(ctx, api.OasUri, openapi.FetchOpts{
+			Origin: "https://developer.overheid.nl",
+		})
+		if err != nil {
+			return problem.NewBadRequest(api.OasUri, err.Error())
+		}
+		// Use the provided ctx so cron timeout/cancellation is respected.
+		tools.Dispatch(ctx, "lint", func(ctx context.Context) error {
+			return s.lintAndPersist(ctx, api.Id, api.OasUri, resp.Hash)
+		})
+	}
+	return nil
 }
 
 var measuredRules = map[string]struct{}{
@@ -241,58 +248,58 @@ func computeAdrScore(msgs []models.LintMessage) (score int, failed []string) {
 // lintAndPersist runs the linter when the OAS has changed and stores
 // both the lint result and updated hash.
 func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expectedHash string) error {
-    // Re-read uit DB om races met andere updates te voorkomen
-    current, err := s.repo.GetApiByID(ctx, apiID)
-    if err != nil || current == nil {
-        return err
-    }
-    // Hash veranderd sinds we deze lint planden? Skip.
-    log.Printf("[lint] api=%s expectedHash=%s currentHash=%s", apiID, expectedHash, current.OasHash)
-    if current.OasHash == expectedHash {
-        log.Printf("[lint] skip lint: hash unchanged")
-        return nil
-    }
+	// Re-read uit DB om races met andere updates te voorkomen
+	current, err := s.repo.GetApiByID(ctx, apiID)
+	if err != nil || current == nil {
+		return err
+	}
+	// Hash veranderd sinds we deze lint planden? Skip.
+	log.Printf("[lint] api=%s expectedHash=%s currentHash=%s", apiID, expectedHash, current.OasHash)
+	if current.OasHash == expectedHash {
+		log.Printf("[lint] skip lint: hash unchanged")
+		return nil
+	}
 
-    // Run linter
-    log.Printf("[lint] running spectral for url=%s", oasURL)
-    output, _ := linter.LintURL(ctx, oasURL)
-    now := time.Now()
+	// Run linter
+	log.Printf("[lint] running spectral for url=%s", oasURL)
+	output, _ := linter.LintURL(ctx, oasURL)
+	now := time.Now()
 
-    msgs := openapi.ParseOutput(output, now)
+	msgs := openapi.ParseOutput(output, now)
 
-    var errCount, warnCount int
-    for _, m := range msgs {
-        switch strings.ToLower(m.Severity) {
-        case "error":
-            errCount++
-        case "warning":
-            warnCount++
-        }
-    }
-    score, _ := computeAdrScore(msgs)
-    log.Printf("[lint] messages=%d errors=%d warnings=%d score=%d", len(msgs), errCount, warnCount, score)
+	var errCount, warnCount int
+	for _, m := range msgs {
+		switch strings.ToLower(m.Severity) {
+		case "error":
+			errCount++
+		case "warning":
+			warnCount++
+		}
+	}
+	score, _ := computeAdrScore(msgs)
+	log.Printf("[lint] messages=%d errors=%d warnings=%d score=%d", len(msgs), errCount, warnCount, score)
 
-    res := &models.LintResult{
-        ID:        uuid.New().String(),
-        ApiID:     apiID,
-        Successes: score == 100,
-        Failures:  errCount, // occurrences
-        Warnings:  warnCount,
-        Messages:  msgs,
-        CreatedAt: now,
-    }
-    if saveErr := s.repo.SaveLintResult(ctx, res); saveErr != nil {
-        log.Printf("[lint] save result failed: %v", saveErr)
-        return saveErr
-    }
-    log.Printf("[lint] saved lint result id=%s", res.ID)
-    current.AdrScore = &score
-    if err := s.repo.UpdateApi(ctx, *current); err != nil {
-        log.Printf("[lint] update AdrScore failed: %v", err)
-        return err
-    }
-    log.Printf("[lint] updated AdrScore=%d api=%s", score, apiID)
-    return nil
+	res := &models.LintResult{
+		ID:        uuid.New().String(),
+		ApiID:     apiID,
+		Successes: score == 100,
+		Failures:  errCount, // occurrences
+		Warnings:  warnCount,
+		Messages:  msgs,
+		CreatedAt: now,
+	}
+	if saveErr := s.repo.SaveLintResult(ctx, res); saveErr != nil {
+		log.Printf("[lint] save result failed: %v", saveErr)
+		return saveErr
+	}
+	log.Printf("[lint] saved lint result id=%s", res.ID)
+	current.AdrScore = &score
+	if err := s.repo.UpdateApi(ctx, *current); err != nil {
+		log.Printf("[lint] update AdrScore failed: %v", err)
+		return err
+	}
+	log.Printf("[lint] updated AdrScore=%d api=%s", score, apiID)
+	return nil
 }
 
 func (s *APIsAPIService) ListOrganisations(ctx context.Context) ([]models.Organisation, int, error) {

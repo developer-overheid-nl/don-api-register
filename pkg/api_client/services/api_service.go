@@ -20,6 +20,8 @@ import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/linter"
 	"github.com/developer-overheid-nl/don-api-register/pkg/tools"
 	"github.com/google/uuid"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 	"gorm.io/gorm"
 )
 
@@ -194,20 +196,36 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 		return err
 	}
 
-	for _, api := range apis {
+	const maxConcurrent = 2
+	sem := semaphore.NewWeighted(int64(maxConcurrent))
+	g, ctx := errgroup.WithContext(ctx)
 
-		resp, err := openapi.FetchParseValidateAndHash(ctx, api.OasUri, openapi.FetchOpts{
-			Origin: "https://developer.overheid.nl",
-		})
+	for _, api := range apis {
+		api := api // capture
+
+		// Bereken hash alvast (en respecteer job-context)
+		resp, err := openapi.FetchParseValidateAndHash(ctx, api.OasUri, openapi.FetchOpts{Origin: "https://developer.overheid.nl"})
 		if err != nil {
-			return problem.NewBadRequest(api.OasUri, err.Error())
+			// Loggen en doorgaan – één kapotte API mag de rest niet blokkeren
+			log.Printf("[lint] skip api=%s: hash fetch failed: %v", api.Id, err)
+			continue
 		}
-		// Use the provided ctx so cron timeout/cancellation is respected.
-		tools.Dispatch(ctx, "lint", func(ctx context.Context) error {
-			return s.lintAndPersist(ctx, api.Id, api.OasUri, resp.Hash)
+
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
+		g.Go(func() error {
+			defer sem.Release(1)
+
+			// Per-lint timeout (overschrijft niet je job-timeout)
+			lintCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+			defer cancel()
+
+			return s.lintAndPersist(lintCtx, api.Id, api.OasUri, resp.Hash)
 		})
 	}
-	return nil
+
+	return g.Wait() // ⬅️ WACHTEN tot alles klaar is
 }
 
 var measuredRules = map[string]struct{}{
@@ -248,22 +266,51 @@ func computeAdrScore(msgs []models.LintMessage) (score int, failed []string) {
 // lintAndPersist runs the linter when the OAS has changed and stores
 // both the lint result and updated hash.
 func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expectedHash string) error {
-	// Re-read uit DB om races met andere updates te voorkomen
 	current, err := s.repo.GetApiByID(ctx, apiID)
 	if err != nil || current == nil {
 		return err
 	}
-	// Hash veranderd sinds we deze lint planden? Skip.
+
 	log.Printf("[lint] api=%s expectedHash=%s currentHash=%s", apiID, expectedHash, current.OasHash)
 	if current.OasHash == expectedHash {
 		log.Printf("[lint] skip lint: hash unchanged")
 		return nil
 	}
 
-	// Run linter
 	log.Printf("[lint] running spectral for url=%s", oasURL)
-	output, _ := linter.LintURL(ctx, oasURL)
+	output, lintRunErr := linter.LintURL(ctx, oasURL) // zie stap 3 voor verbeterde LintURL
 	now := time.Now()
+
+	// Als Spectral niks heeft teruggegeven, log een synthetische fout zodat je toch historie hebt.
+	if strings.TrimSpace(output) == "" && lintRunErr != nil {
+		msg := models.LintMessage{
+			ID:        uuid.New().String(),
+			Code:      "lint-exec",
+			Severity:  "error",
+			CreatedAt: now,
+			Infos: []models.LintMessageInfo{{
+				ID:            uuid.New().String(),
+				LintMessageID: "", // ingevuld bij save
+				Message:       lintRunErr.Error(),
+				Path:          oasURL,
+			}},
+		}
+		res := &models.LintResult{
+			ID:        uuid.New().String(),
+			ApiID:     apiID,
+			Successes: false,
+			Failures:  1,
+			Warnings:  0,
+			Messages:  []models.LintMessage{msg},
+			CreatedAt: now,
+		}
+		if err := s.repo.SaveLintResult(ctx, res); err != nil {
+			log.Printf("[lint] save result failed: %v", err)
+			return err
+		}
+		// Hash niet bijwerken, want lint is niet gelukt – zodat we later opnieuw proberen.
+		return nil
+	}
 
 	msgs := openapi.ParseOutput(output, now)
 
@@ -283,22 +330,25 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 		ID:        uuid.New().String(),
 		ApiID:     apiID,
 		Successes: score == 100,
-		Failures:  errCount, // occurrences
+		Failures:  errCount,
 		Warnings:  warnCount,
 		Messages:  msgs,
 		CreatedAt: now,
 	}
-	if saveErr := s.repo.SaveLintResult(ctx, res); saveErr != nil {
-		log.Printf("[lint] save result failed: %v", saveErr)
-		return saveErr
-	}
-	log.Printf("[lint] saved lint result id=%s", res.ID)
-	current.AdrScore = &score
-	if err := s.repo.UpdateApi(ctx, *current); err != nil {
-		log.Printf("[lint] update AdrScore failed: %v", err)
+	if err := s.repo.SaveLintResult(ctx, res); err != nil {
+		log.Printf("[lint] save result failed: %v", err)
 		return err
 	}
-	log.Printf("[lint] updated AdrScore=%d api=%s", score, apiID)
+	log.Printf("[lint] saved lint result id=%s", res.ID)
+
+	// ✅ Hash en score wegschrijven
+	current.AdrScore = &score
+	current.OasHash = expectedHash
+	if err := s.repo.UpdateApi(ctx, *current); err != nil {
+		log.Printf("[lint] update api failed: %v", err)
+		return err
+	}
+	log.Printf("[lint] updated AdrScore=%d & OasHash=%s api=%s", score, expectedHash, apiID)
 	return nil
 }
 

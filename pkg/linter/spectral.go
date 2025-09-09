@@ -1,55 +1,81 @@
 package linter
 
 import (
-    "context"
-    "errors"
-    "fmt"
-    "log"
-    "os"
-    "os/exec"
-    "time"
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"strings"
+	"time"
 )
+
+func findSpectral() (string, error) {
+	p, err := exec.LookPath("spectral")
+	if err != nil {
+		return "", fmt.Errorf("spectral niet gevonden op PATH (%s): %w", os.Getenv("PATH"), err)
+	}
+	return p, nil
+}
 
 // LintURL runs the spectral linter for a single URL.
 func LintURL(ctx context.Context, url string) (string, error) {
-    const ruleset = "https://static.developer.overheid.nl/adr/2.1/ruleset.yaml"
+	sp, err := findSpectral()
+	if err != nil {
+		return "", err
+	}
 
-    // Basic diagnostics to help on servers
-    if path, err := exec.LookPath("spectral"); err != nil {
-        log.Printf("[lint:spectral] spectral binary not found in PATH (%s): %v", os.Getenv("PATH"), err)
-    } else {
-        log.Printf("[lint:spectral] using spectral at: %s", path)
-    }
-    if wd, err := os.Getwd(); err == nil {
-        log.Printf("[lint:spectral] working dir: %s", wd)
-    }
-    log.Printf("[lint:spectral] command: spectral lint -F error -D -r %s %s", ruleset, url)
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		cctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+		defer cancel()
+		ctx = cctx
+	}
 
-    cmd := exec.CommandContext(
-        ctx,
-        "spectral", "lint",
-        "-F", "error",
-        "-D",
-        "-r", ruleset,
-        url,
-    )
+	args := []string{
+		"lint",
+		"-f", "json",
+		"-F", "error", // non-zero exit alleen bij errors in regels
+		"-D",
+		"-r", "https://static.developer.overheid.nl/adr/2.1/ruleset.yaml",
+		url,
+	}
+	cmd := exec.CommandContext(ctx, sp, args...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
-    started := time.Now()
-    output, err := cmd.CombinedOutput()
-    dur := time.Since(started)
-    log.Printf("[lint:spectral] finished in %s (bytes=%d)", dur, len(output))
+	start := time.Now()
+	log.Printf("[lint:spectral] exec: %s %s", sp, strings.Join(args, " "))
 
-    if err != nil {
-        var ee *exec.ExitError
-        switch {
-        case errors.As(err, &ee):
-            // Non-zero exit means lint errors were found; not a fatal error for us
-            log.Printf("[lint:spectral] non-zero exit (code=%d); treating as lint findings", ee.ExitCode())
-            return string(output), nil
-        default:
-            log.Printf("[lint:spectral] execution error: %v", err)
-            return string(output), fmt.Errorf("spectral lint failed for %s: %w", url, err)
-        }
-    }
-    return string(output), nil
+	runErr := cmd.Run()
+	dur := time.Since(start)
+	outStr := stdout.String()
+	errStr := stderr.String()
+
+	log.Printf("[lint:spectral] finished in %s (bytes=%d)", dur, len(outStr))
+
+	// Als er een exitstatus is en stdout is leeg: behandel als fout (bv. context kill, netwerk, OOM)
+	if runErr != nil {
+		var ee *exec.ExitError
+		if errors.As(runErr, &ee) {
+			log.Printf("[lint:spectral] non-zero exit (code=%d)", ee.ExitCode())
+			if strings.TrimSpace(outStr) == "" {
+				if ctx.Err() != nil {
+					return "", ctx.Err() // “context canceled/deadline exceeded”
+				}
+				if strings.TrimSpace(errStr) != "" {
+					return "", fmt.Errorf("spectral failed: %s", strings.TrimSpace(errStr))
+				}
+				return "", fmt.Errorf("spectral failed with exit code %d", ee.ExitCode())
+			}
+			// stdout bevat JSON → geef het terug (lint findings)
+			return outStr, nil
+		}
+		// Andere exec-fout
+		return "", fmt.Errorf("spectral exec failed: %w", runErr)
+	}
+
+	return outStr, nil
 }

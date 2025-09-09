@@ -9,7 +9,6 @@ import (
 
 func parseTime(value string) time.Time {
 	t, err := time.Parse(time.DateOnly, value)
-	fmt.Printf("Parsed time: %v\n", t)
 	if err != nil {
 		return time.Time{}
 	}

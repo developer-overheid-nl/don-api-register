@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -121,6 +122,9 @@ func main() {
 	APIsAPIService := services.NewAPIsAPIService(apiRepo)
 	APIsAPIController := handler.NewAPIsAPIController(APIsAPIService)
 	jobs.ScheduleDailyLint(context.Background(), APIsAPIService)
+	if _, err := APIsAPIService.CreateOrganisation(context.Background(), &models.Organisation{Uri: "https://www.pdok.nl", Label: "PDOK"}); err != nil {
+		fmt.Printf("[pdok-import] create org warning: %v\n", err)
+	}
 
 	// Start server
 	router := api.NewRouter(version, APIsAPIController)

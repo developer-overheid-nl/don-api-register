@@ -14,10 +14,10 @@ import (
 	httpclient "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
 	openapi "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/openapi"
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
+	toolslint "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
 	util "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/util"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
-	"github.com/developer-overheid-nl/don-api-register/pkg/linter"
 	"github.com/developer-overheid-nl/don-api-register/pkg/tools"
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
@@ -273,16 +273,15 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 
 	log.Printf("[lint] api=%s expectedHash=%s currentHash=%s", apiID, expectedHash, current.OasHash)
 	if current.OasHash == expectedHash {
-		log.Printf("[lint] skip lint: hash unchanged")
-		return nil
+		log.Printf("[lint] hash unchanged; proceeding to fetch tools lint for score update")
 	}
 
-	log.Printf("[lint] running spectral for url=%s", oasURL)
-	output, lintRunErr := linter.LintURL(ctx, oasURL) // zie stap 3 voor verbeterde LintURL
+	// Call external tools API for linting of the OAS URL
+	log.Printf("[lint] calling tools lint for url=%s", oasURL)
+	dto, lintRunErr := toolslint.LintGet(ctx, oasURL)
 	now := time.Now()
-
-	// Als Spectral niks heeft teruggegeven, log een synthetische fout zodat je toch historie hebt.
-	if strings.TrimSpace(output) == "" && lintRunErr != nil {
+	if lintRunErr != nil || dto == nil {
+		// Fallback: store a synthetic error result to keep history
 		msg := models.LintMessage{
 			ID:        uuid.New().String(),
 			Code:      "lint-exec",
@@ -290,8 +289,8 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 			CreatedAt: now,
 			Infos: []models.LintMessageInfo{{
 				ID:            uuid.New().String(),
-				LintMessageID: "", // ingevuld bij save
-				Message:       lintRunErr.Error(),
+				LintMessageID: "",
+				Message:       fmt.Sprintf("tools lint failed: %v", lintRunErr),
 				Path:          oasURL,
 			}},
 		}
@@ -312,28 +311,51 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 		return nil
 	}
 
-	msgs := openapi.ParseOutput(output, now)
-
+	// Map DTO to our persistence model
+	msgs := make([]models.LintMessage, 0, len(dto.Messages))
 	var errCount, warnCount int
-	for _, m := range msgs {
-		switch strings.ToLower(m.Severity) {
-		case "error":
+	for _, m := range dto.Messages {
+		if strings.ToLower(m.Severity) == "error" {
 			errCount++
-		case "warning":
+		} else if strings.ToLower(m.Severity) == "warning" {
 			warnCount++
 		}
+		infos := make([]models.LintMessageInfo, 0, len(m.Infos))
+		for _, i := range m.Infos {
+			infos = append(infos, models.LintMessageInfo{
+				ID:            i.ID,
+				LintMessageID: i.LintMessageID,
+				Message:       i.Message,
+				Path:          i.Path,
+			})
+		}
+		id := m.ID
+		if strings.TrimSpace(id) == "" {
+			id = uuid.New().String()
+		}
+		msgs = append(msgs, models.LintMessage{
+			ID:        id,
+			Severity:  m.Severity,
+			Code:      m.Code,
+			Infos:     infos,
+			CreatedAt: m.CreatedAt,
+		})
 	}
-	score, _ := computeAdrScore(msgs)
+	score := dto.Score
 	log.Printf("[lint] messages=%d errors=%d warnings=%d score=%d", len(msgs), errCount, warnCount, score)
 
+	rid := dto.ID
+	if strings.TrimSpace(rid) == "" {
+		rid = uuid.New().String()
+	}
 	res := &models.LintResult{
-		ID:        uuid.New().String(),
+		ID:        rid,
 		ApiID:     apiID,
-		Successes: score == 100,
-		Failures:  errCount,
-		Warnings:  warnCount,
+		Successes: dto.Successes,
+		Failures:  dto.Failures,
+		Warnings:  dto.Warnings,
 		Messages:  msgs,
-		CreatedAt: now,
+		CreatedAt: dto.CreatedAt,
 	}
 	if err := s.repo.SaveLintResult(ctx, res); err != nil {
 		log.Printf("[lint] save result failed: %v", err)

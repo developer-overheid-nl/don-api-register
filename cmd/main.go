@@ -14,7 +14,6 @@ import (
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	util "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/util"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
-	"github.com/developer-overheid-nl/don-api-register/pkg/jobs"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/loopfz/gadgeto/tonic"
@@ -121,7 +120,6 @@ func main() {
 	apiRepo := repositories.NewApiRepository(db)
 	APIsAPIService := services.NewAPIsAPIService(apiRepo)
 	APIsAPIController := handler.NewAPIsAPIController(APIsAPIService)
-	jobs.ScheduleDailyLint(context.Background(), APIsAPIService)
 	if _, err := APIsAPIService.CreateOrganisation(context.Background(), &models.Organisation{Uri: "https://www.pdok.nl", Label: "PDOK"}); err != nil {
 		fmt.Printf("[pdok-import] create org warning: %v\n", err)
 	}

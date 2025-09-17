@@ -5,9 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
 
@@ -226,41 +224,6 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 	}
 
 	return g.Wait() // ⬅️ WACHTEN tot alles klaar is
-}
-
-var measuredRules = map[string]struct{}{
-	"openapi3":                     {},
-	"openapi-root-exists":          {},
-	"missing-version-header":       {},
-	"missing-header":               {},
-	"include-major-version-in-uri": {},
-	"paths-no-trailing-slash":      {},
-	"info-contact-fields-exist":    {},
-	"http-methods":                 {},
-	"semver":                       {},
-}
-
-func computeAdrScore(msgs []models.LintMessage) (score int, failed []string) {
-	failedSet := map[string]struct{}{}
-	for _, m := range msgs {
-		if strings.ToLower(m.Severity) != "error" {
-			continue
-		}
-		if _, ok := measuredRules[m.Code]; ok {
-			failedSet[m.Code] = struct{}{}
-		}
-	}
-	for k := range failedSet {
-		failed = append(failed, k)
-	}
-	sort.Strings(failed)
-
-	total := len(measuredRules)
-	if total == 0 {
-		return 100, failed
-	}
-	score = int(math.Round((1 - float64(len(failed))/float64(total)) * 100))
-	return score, failed
 }
 
 // lintAndPersist runs the linter when the OAS has changed and stores

@@ -27,7 +27,7 @@ type stubRepo struct {
 	findOrg   func(ctx context.Context, uri string) (*models.Organisation, error)
 	saveApi   func(api *models.Api) error
 	saveSrv   func(server models.Server) error
-	saveOrg   func(org *models.Organisation) error
+    saveOrg   func(org *models.Organisation) error
 }
 
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
@@ -79,7 +79,11 @@ func (s *stubRepo) GetLintResults(ctx context.Context, apiID string) ([]models.L
 	return nil, nil
 }
 func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, int, error) {
-	return nil, 0, nil
+    return nil, 0, nil
+}
+func (s *stubRepo) SaveArtifact(ctx context.Context, art *models.ApiArtifact) error { return nil }
+func (s *stubRepo) GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error) {
+    return nil, nil
 }
 
 func newServer(repo repositories.ApiRepository) *httptest.Server {

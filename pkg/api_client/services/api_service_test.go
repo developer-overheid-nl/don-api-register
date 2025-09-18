@@ -22,7 +22,7 @@ type stubRepo struct {
 	saveServer func(server models.Server) error
 	saveApi    func(api *models.Api) error
 	saveOrg    func(org *models.Organisation) error
-	getOrgs    func(ctx context.Context) ([]models.Organisation, int, error)
+    getOrgs    func(ctx context.Context) ([]models.Organisation, int, error)
 }
 
 func (s *stubRepo) FindByOasUrl(ctx context.Context, url string) (*models.Api, error) {
@@ -57,7 +57,11 @@ func (s *stubRepo) SaveOrganisatie(org *models.Organisation) error {
 func (s *stubRepo) AllApis(ctx context.Context) ([]models.Api, error)                   { return nil, nil }
 func (s *stubRepo) SaveLintResult(ctx context.Context, result *models.LintResult) error { return nil }
 func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, int, error) {
-	return s.getOrgs(ctx)
+    return s.getOrgs(ctx)
+}
+func (s *stubRepo) SaveArtifact(ctx context.Context, art *models.ApiArtifact) error { return nil }
+func (s *stubRepo) GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error) {
+    return nil, nil
 }
 
 func TestUpdateOasUri_NotFound(t *testing.T) {

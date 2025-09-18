@@ -10,14 +10,20 @@ import (
 )
 
 func Connect(connStr string) (*gorm.DB, error) {
-	db, err := gorm.Open(postgres.Open(connStr))
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
+    db, err := gorm.Open(postgres.Open(connStr))
+    if err != nil {
+        return nil, fmt.Errorf("failed to connect to database: %w", err)
+    }
 
-	if err := db.AutoMigrate(&models.Api{}, &models.LintResult{}, &models.LintMessage{}, &models.LintMessageInfo{}); err != nil {
-		return nil, fmt.Errorf("migration failed: %w", err)
-	}
+    if err := db.AutoMigrate(
+        &models.Api{},
+        &models.LintResult{},
+        &models.LintMessage{},
+        &models.LintMessageInfo{},
+        &models.ApiArtifact{},
+    ); err != nil {
+        return nil, fmt.Errorf("migration failed: %w", err)
+    }
 
-	return db, nil
+    return db, nil
 }

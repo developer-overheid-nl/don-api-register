@@ -12,18 +12,20 @@ import (
 )
 
 type ApiRepository interface {
-	GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
-	GetApiByID(ctx context.Context, oasUrl string) (*models.Api, error)
-	Save(api *models.Api) error
-	UpdateApi(ctx context.Context, api models.Api) error
-	FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api, error)
-	SaveServer(server models.Server) error
-	SaveOrganisatie(organisation *models.Organisation) error
-	AllApis(ctx context.Context) ([]models.Api, error)
-	SaveLintResult(ctx context.Context, result *models.LintResult) error
-	GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error)
-	GetOrganisations(ctx context.Context) ([]models.Organisation, int, error)
-	FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error)
+    GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
+    GetApiByID(ctx context.Context, oasUrl string) (*models.Api, error)
+    Save(api *models.Api) error
+    UpdateApi(ctx context.Context, api models.Api) error
+    FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api, error)
+    SaveServer(server models.Server) error
+    SaveOrganisatie(organisation *models.Organisation) error
+    AllApis(ctx context.Context) ([]models.Api, error)
+    SaveLintResult(ctx context.Context, result *models.LintResult) error
+    GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error)
+    GetOrganisations(ctx context.Context) ([]models.Organisation, int, error)
+    FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error)
+    SaveArtifact(ctx context.Context, art *models.ApiArtifact) error
+    GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error)
 }
 
 type apiRepository struct {
@@ -183,4 +185,22 @@ func (r *apiRepository) FindOrganisationByURI(ctx context.Context, uri string) (
 		return nil, err
 	}
 	return &org, nil
+}
+
+func (r *apiRepository) SaveArtifact(ctx context.Context, art *models.ApiArtifact) error {
+    return r.db.WithContext(ctx).Create(art).Error
+}
+
+func (r *apiRepository) GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error) {
+    var a models.ApiArtifact
+    if err := r.db.WithContext(ctx).
+        Where("api_id = ? AND kind = ?", apiID, kind).
+        Order("created_at desc").
+        First(&a).Error; err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return nil, nil
+        }
+        return nil, err
+    }
+    return &a, nil
 }

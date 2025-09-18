@@ -57,6 +57,10 @@ func (s *stubRepo) UpdateApi(ctx context.Context, api models.Api) error         
 func (s *stubRepo) SaveServer(server models.Server) error                            { return nil }
 func (s *stubRepo) AllApis(ctx context.Context) ([]models.Api, error)                { return nil, nil }
 func (s *stubRepo) SaveLintResult(ctx context.Context, res *models.LintResult) error { return nil }
+func (s *stubRepo) SaveArtifact(ctx context.Context, art *models.ApiArtifact) error  { return nil }
+func (s *stubRepo) GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error) {
+	return nil, nil
+}
 
 func TestListApis_Handler(t *testing.T) {
 	repo := &stubRepo{

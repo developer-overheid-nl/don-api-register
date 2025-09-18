@@ -12,7 +12,7 @@ import (
 	httpclient "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
 	openapi "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/openapi"
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
-	toolslint "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
+    toolslint "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
 	util "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/util"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
@@ -69,9 +69,9 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 		return nil, err
 	}
 
-	tools.Dispatch(context.Background(), "lint", func(ctx context.Context) error {
-		return s.lintAndPersist(ctx, api.Id, body.OasUrl, res.Hash)
-	})
+    tools.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
+        return s.runToolsAndPersist(ctx, api.Id, body.OasUrl, res.Hash)
+    })
 
 	updated := util.ToApiSummary(api)
 	return &updated, nil
@@ -178,9 +178,9 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 		return nil, problem.NewInternalServerError("kan API hash niet opslaan: " + err.Error())
 	}
 
-	tools.Dispatch(context.Background(), "lint", func(ctx context.Context) error {
-		return s.lintAndPersist(ctx, api.Id, requestBody.OasUrl, resp.Hash)
-	})
+    tools.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
+        return s.runToolsAndPersist(ctx, api.Id, requestBody.OasUrl, resp.Hash)
+    })
 
 	created := util.ToApiSummary(api)
 	return &created, nil
@@ -229,10 +229,10 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 // lintAndPersist runs the linter when the OAS has changed and stores
 // both the lint result and updated hash.
 func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expectedHash string) error {
-	current, err := s.repo.GetApiByID(ctx, apiID)
-	if err != nil || current == nil {
-		return err
-	}
+    current, err := s.repo.GetApiByID(ctx, apiID)
+    if err != nil || current == nil {
+        return err
+    }
 
 	log.Printf("[lint] api=%s expectedHash=%s currentHash=%s", apiID, expectedHash, current.OasHash)
 	if current.OasHash == expectedHash {
@@ -241,38 +241,14 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 
 	// Call external tools API for linting of the OAS URL
 	log.Printf("[lint] calling tools lint for url=%s", oasURL)
-	dto, lintRunErr := toolslint.LintGet(ctx, oasURL)
-	now := time.Now()
-	if lintRunErr != nil || dto == nil {
-		// Fallback: store a synthetic error result to keep history
-		msg := models.LintMessage{
-			ID:        uuid.New().String(),
-			Code:      "lint-exec",
-			Severity:  "error",
-			CreatedAt: now,
-			Infos: []models.LintMessageInfo{{
-				ID:            uuid.New().String(),
-				LintMessageID: "",
-				Message:       fmt.Sprintf("tools lint failed: %v", lintRunErr),
-				Path:          oasURL,
-			}},
-		}
-		res := &models.LintResult{
-			ID:        uuid.New().String(),
-			ApiID:     apiID,
-			Successes: false,
-			Failures:  1,
-			Warnings:  0,
-			Messages:  []models.LintMessage{msg},
-			CreatedAt: now,
-		}
-		if err := s.repo.SaveLintResult(ctx, res); err != nil {
-			log.Printf("[lint] save result failed: %v", err)
-			return err
-		}
-		// Hash niet bijwerken, want lint is niet gelukt – zodat we later opnieuw proberen.
-		return nil
-	}
+    dto, lintErr := toolslint.LintGet(ctx, oasURL)
+    if dto == nil {
+        // Avoid panic on nil; log and return error to caller
+        if lintErr != nil {
+            log.Printf("[lint] tools lint error: %v", lintErr)
+        }
+        return lintErr
+    }
 
 	// Map DTO to our persistence model
 	msgs := make([]models.LintMessage, 0, len(dto.Messages))
@@ -329,16 +305,78 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 	// ✅ Hash en score wegschrijven
 	current.AdrScore = &score
 	current.OasHash = expectedHash
-	if err := s.repo.UpdateApi(ctx, *current); err != nil {
-		log.Printf("[lint] update api failed: %v", err)
-		return err
-	}
-	log.Printf("[lint] updated AdrScore=%d & OasHash=%s api=%s", score, expectedHash, apiID)
-	return nil
+    if err := s.repo.UpdateApi(ctx, *current); err != nil {
+        log.Printf("[lint] update api failed: %v", err)
+        return err
+    }
+    log.Printf("[lint] updated AdrScore=%d & OasHash=%s api=%s", score, expectedHash, apiID)
+    return nil
+}
+
+// runToolsAndPersist runs lint, bruno and postman generation
+// and persists their outputs. Lint result + ADR score are stored as before;
+// Bruno and Postman artifacts are stored as blobs linked to the API.
+func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL, expectedHash string) error {
+    // Lint first; do not abort the rest if lint fails
+    if err := s.lintAndPersist(ctx, apiID, oasURL, expectedHash); err != nil {
+        log.Printf("[tools] lint failed: %v", err)
+    }
+
+    // Generate artifacts in parallel, but do not fail the whole job if one fails
+    g, ctx := errgroup.WithContext(ctx)
+
+    g.Go(func() error {
+        data, name, ct, err := toolslint.BrunoPost(ctx, oasURL)
+        if err != nil {
+            log.Printf("[tools] bruno generation failed: %v", err)
+            return nil
+        }
+        art := &models.ApiArtifact{
+            ID:          uuid.New().String(),
+            ApiID:       apiID,
+            Kind:        "bruno",
+            Filename:    name,
+            ContentType: ct,
+            Data:        data,
+            CreatedAt:   time.Now(),
+        }
+        if err := s.repo.SaveArtifact(ctx, art); err != nil {
+            log.Printf("[tools] save bruno artifact failed: %v", err)
+        } else {
+            log.Printf("[tools] saved bruno artifact id=%s api=%s", art.ID, apiID)
+        }
+        return nil
+    })
+
+    g.Go(func() error {
+        data, name, ct, err := toolslint.PostmanPost(ctx, oasURL)
+        if err != nil {
+            log.Printf("[tools] postman generation failed: %v", err)
+            return nil
+        }
+        art := &models.ApiArtifact{
+            ID:          uuid.New().String(),
+            ApiID:       apiID,
+            Kind:        "postman",
+            Filename:    name,
+            ContentType: ct,
+            Data:        data,
+            CreatedAt:   time.Now(),
+        }
+        if err := s.repo.SaveArtifact(ctx, art); err != nil {
+            log.Printf("[tools] save postman artifact failed: %v", err)
+        } else {
+            log.Printf("[tools] saved postman artifact id=%s api=%s", art.ID, apiID)
+        }
+        return nil
+    })
+
+    _ = g.Wait()
+    return nil
 }
 
 func (s *APIsAPIService) ListOrganisations(ctx context.Context) ([]models.Organisation, int, error) {
-	return s.repo.GetOrganisations(ctx)
+    return s.repo.GetOrganisations(ctx)
 }
 
 // CreateOrganisation validates and stores a new organisation
@@ -355,4 +393,12 @@ func (s *APIsAPIService) CreateOrganisation(ctx context.Context, org *models.Org
 		return nil, err
 	}
 	return org, nil
+}
+
+// GetArtifact retrieves the latest artifact for an API and kind.
+func (s *APIsAPIService) GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error) {
+    if strings.TrimSpace(apiID) == "" || strings.TrimSpace(kind) == "" {
+        return nil, fmt.Errorf("apiID en kind zijn verplicht")
+    }
+    return s.repo.GetArtifact(ctx, apiID, kind)
 }

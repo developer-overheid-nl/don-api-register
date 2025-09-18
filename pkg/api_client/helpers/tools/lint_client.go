@@ -45,7 +45,7 @@ type LintResultDTO struct {
 }
 
 // LintGet calls the tools API to lint the given OAS URL and returns the result DTO.
-func LintGet(ctx context.Context, oasURL string) (*LintResultDTO, error) {
+func LintGet(ctx context.Context, oasUrl string) (*LintResultDTO, error) {
 	base := strings.TrimSpace(os.Getenv("TOOLS_API_ENDPOINT"))
 	if base == "" {
 		log.Printf("[LintGet] TOOLS_API_ENDPOINT is leeg")
@@ -62,20 +62,17 @@ func LintGet(ctx context.Context, oasURL string) (*LintResultDTO, error) {
 	dir := path.Dir(pu.Path)
 	pu.Path = path.Join(dir, "lint")
 
-	q := pu.Query()
-	q.Set("oasUrl", oasURL)
-	pu.RawQuery = q.Encode()
+	body := oasBody{OasUrl: oasUrl}
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
 	log.Printf("[LintGet] Opgebouwde lint-URL: %s", pu.String())
 
 	// Optional bearer token via client credentials, if configured
 	token, _ := fetchToken(ctx)
-	if token != "" {
-		log.Printf("[LintGet] Token opgehaald (ingekort): %.15s...", token)
-	} else {
-		log.Printf("[LintGet] Geen token opgehaald")
-	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pu.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, pu.String(), strings.NewReader(string(buf)))
 	if err != nil {
 		log.Printf("[LintGet] Fout bij aanmaken request: %v", err)
 		return nil, err
@@ -85,8 +82,6 @@ func LintGet(ctx context.Context, oasURL string) (*LintResultDTO, error) {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 	req.Header.Set("Accept", "application/json")
-
-	log.Printf("[LintGet] Request headers: %v", req.Header)
 
 	resp, err := httpclient.HTTPClient.Do(req)
 	if err != nil {

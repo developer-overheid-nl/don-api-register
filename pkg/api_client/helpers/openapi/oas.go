@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -20,36 +20,15 @@ type FetchOpts struct {
 
 type OASResult struct {
 	Spec *openapi3.T
-	Raw  []byte
 	Hash string
 }
 
 func FetchParseValidateAndHash(ctx context.Context, oasURL string, opts FetchOpts) (*OASResult, error) {
-	cli := opts.HTTPClient
-	if cli == nil {
-		cli = http.DefaultClient
-	}
-
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, oasURL, nil)
-	if opts.Origin != "" {
-		req.Header.Set("Origin", opts.Origin)
-	}
-	resp, err := cli.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("OAS download failed with status %d", resp.StatusCode)
-	}
-	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
 	loader := openapi3.NewLoader()
 	loader.IsExternalRefsAllowed = true
 
-	spec, err := loader.LoadFromData(raw)
+	u, _ := url.Parse(oasURL)
+	spec, err := loader.LoadFromURI(u)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +47,7 @@ func FetchParseValidateAndHash(ctx context.Context, oasURL string, opts FetchOpt
 		return nil, err
 	}
 
-	return &OASResult{Spec: spec, Raw: raw, Hash: h}, nil
+	return &OASResult{Spec: spec, Hash: h}, nil
 }
 
 func hashSpec(spec *openapi3.T) (string, error) {

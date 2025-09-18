@@ -61,7 +61,7 @@ func LintGet(ctx context.Context, oasURL string) (*LintResultDTO, error) {
 
 	// Optional bearer token via client credentials, if configured
 	token, _ := fetchToken(ctx)
-
+	fmt.Println(pu.String())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pu.String(), nil)
 	if err != nil {
 		return nil, err

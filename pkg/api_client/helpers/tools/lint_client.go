@@ -59,8 +59,7 @@ func LintGet(ctx context.Context, oasUrl string) (*LintResultDTO, error) {
 		return nil, fmt.Errorf("invalid TOOLS_API_ENDPOINT: %w", err)
 	}
 
-	dir := path.Dir(pu.Path)
-	pu.Path = path.Join(dir, "lint")
+	pu.Path = path.Join(pu.Path, "lint")
 
 	body := oasBody{OasUrl: oasUrl}
 	buf, err := json.Marshal(body)

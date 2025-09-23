@@ -43,8 +43,8 @@ func postBinary(ctx context.Context, oasUrl, endpoint, wantCT, defaultName strin
 	if err != nil {
 		return nil, "", "", fmt.Errorf("invalid TOOLS_API_ENDPOINT: %w", err)
 	}
-	dir := path.Dir(pu.Path)
-	pu.Path = path.Join(dir, endpoint)
+
+	pu.Path = path.Join(pu.Path, endpoint)
 
 	body := oasBody{OasUrl: oasUrl}
 	buf, err := json.Marshal(body)

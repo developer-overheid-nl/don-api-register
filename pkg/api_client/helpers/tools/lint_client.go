@@ -59,7 +59,7 @@ func LintGet(ctx context.Context, oasUrl string) (*LintResultDTO, error) {
 		return nil, fmt.Errorf("invalid TOOLS_API_ENDPOINT: %w", err)
 	}
 
-	pu.Path = path.Join(pu.Path, "lint")
+	pu.Path = path.Join(pu.Path, "oas/validate")
 
 	body := oasBody{OasUrl: oasUrl}
 	buf, err := json.Marshal(body)
@@ -69,7 +69,7 @@ func LintGet(ctx context.Context, oasUrl string) (*LintResultDTO, error) {
 	log.Printf("[LintGet] Opgebouwde lint-URL: %s", pu.String())
 
 	// Optional bearer token via client credentials, if configured
-	token, _ := fetchToken(ctx)
+	token := strings.TrimSpace(os.Getenv("X_API_KEY"))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, pu.String(), strings.NewReader(string(buf)))
 	if err != nil {
@@ -78,7 +78,7 @@ func LintGet(ctx context.Context, oasUrl string) (*LintResultDTO, error) {
 	}
 
 	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("X-api-key", token)
 	}
 	req.Header.Set("Accept", "application/json")
 
@@ -105,46 +105,4 @@ func LintGet(ctx context.Context, oasUrl string) (*LintResultDTO, error) {
 
 	log.Printf("[LintGet] Lint-resultaat succesvol ontvangen: %+v", out)
 	return &out, nil
-}
-
-// fetchToken tries to obtain a client credentials token using AUTH_* env vars.
-func fetchToken(ctx context.Context) (string, error) {
-	tokenURL := strings.TrimSpace(os.Getenv("AUTH_TOKEN_URL"))
-	clientID := strings.TrimSpace(os.Getenv("AUTH_CLIENT_ID"))
-	clientSecret := strings.TrimSpace(os.Getenv("AUTH_CLIENT_SECRET"))
-	if tokenURL == "" || clientID == "" || clientSecret == "" {
-		return "", errors.New("missing auth configuration")
-	}
-
-	form := url.Values{}
-	form.Set("grant_type", "client_credentials")
-	form.Set("client_id", clientID)
-	form.Set("client_secret", clientSecret)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, tokenURL, strings.NewReader(form.Encode()))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := httpclient.HTTPClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("token request failed: %s", resp.Status)
-	}
-	var tok struct {
-		AccessToken string `json:"access_token"`
-		TokenType   string `json:"token_type"`
-		ExpiresIn   int    `json:"expires_in"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tok); err != nil {
-		return "", err
-	}
-	if tok.AccessToken == "" {
-		return "", errors.New("empty access_token in response")
-	}
-	return tok.AccessToken, nil
 }

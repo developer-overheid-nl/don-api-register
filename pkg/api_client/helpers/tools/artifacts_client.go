@@ -33,6 +33,13 @@ func PostmanPost(ctx context.Context, oasURL string) ([]byte, string, string, er
 	return postBinary(ctx, oasURL, "postman/convert", "application/json", "postman-collection.json")
 }
 
+func OasConverterPost(ctx context.Context, oasURL string) ([]byte, string, string, error) {
+	return postBinary(ctx, oasURL, "oas/convert", "application/json", "converted-oas.json")
+}
+
+// postBinary is a helper to call the given tools endpoint with body {oasUrl}
+// and returns the raw bytes, filename (if any), and content type.
+
 func postBinary(ctx context.Context, oasUrl, endpoint, wantCT, defaultName string) ([]byte, string, string, error) {
 	base := strings.TrimSpace(os.Getenv("TOOLS_API_ENDPOINT"))
 	if base == "" {
@@ -51,7 +58,8 @@ func postBinary(ctx context.Context, oasUrl, endpoint, wantCT, defaultName strin
 	if err != nil {
 		return nil, "", "", err
 	}
-	token, _ := fetchToken(ctx)
+	token := strings.TrimSpace(os.Getenv("X_API_KEY"))
+
 	log.Println(pu.String())
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, pu.String(), strings.NewReader(string(buf)))
 	if err != nil {
@@ -60,7 +68,7 @@ func postBinary(ctx context.Context, oasUrl, endpoint, wantCT, defaultName strin
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", wantCT)
 	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("X-api-key", token)
 	}
 
 	resp, err := httpclient.HTTPClient.Do(req)

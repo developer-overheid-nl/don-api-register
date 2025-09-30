@@ -98,7 +98,10 @@ func isValidationErr(err error) bool {
 }
 
 func main() {
-	_ = godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file ", err)
+	}
 
 	version, err := util.LoadOASVersion("./api/openapi.json")
 	if err != nil {

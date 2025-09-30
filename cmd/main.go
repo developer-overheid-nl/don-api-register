@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"reflect"
 	"strings"
@@ -107,19 +108,29 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to load OAS version: %v", err)
 	}
+	host := os.Getenv("DB_HOSTNAME")
+	user := os.Getenv("DB_USERNAME")
+	pass := os.Getenv("DB_PASSWORD")
+	dbname := os.Getenv("DB_DBNAME")
+	schema := os.Getenv("DB_SCHEMA")
 
-	dbcon := "postgres://" +
-		os.Getenv("DB_USERNAME") + ":" +
-		os.Getenv("DB_PASSWORD") + "@" +
-		os.Getenv("DB_HOSTNAME") + "/" +
-		os.Getenv("DB_DBNAME") + "?search_path=" +
-		os.Getenv("DB_SCHEMA")
+	u := &url.URL{
+		Scheme: "postgres",
+		Host:   host + ":5432",
+		Path:   dbname,
+	}
+	u.User = url.UserPassword(user, pass)
+
+	q := u.Query()
+	q.Set("sslmode", "require")
+	q.Set("search_path", schema)
+	u.RawQuery = q.Encode()
+
+	dbcon := u.String()
 	db, err := database.Connect(dbcon)
 	if err != nil {
-		log.Printf("[WARN] Geen databaseverbinding: %v", err)
-		log.Println("[INFO] API wordt gestart zonder databasefunctionaliteit")
+		log.Fatalf("Geen databaseverbinding: %v", err)
 	}
-
 	apiRepo := repositories.NewApiRepository(db)
 	APIsAPIService := services.NewAPIsAPIService(apiRepo)
 	APIsAPIController := handler.NewAPIsAPIController(APIsAPIService)

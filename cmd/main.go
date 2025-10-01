@@ -140,6 +140,9 @@ func main() {
 	if _, err := APIsAPIService.CreateOrganisation(context.Background(), &models.Organisation{Uri: "https://developer.omgevingswet.overheid.nl", Label: "Digitaal Stelsel Omgevingswet (DSO)"}); err != nil {
 		fmt.Printf("[dso-import] create org warning: %v\n", err)
 	}
+	if _, err := APIsAPIService.CreateOrganisation(context.Background(), &models.Organisation{Uri: "https://www.vng.nl", Label: "VNG"}); err != nil {
+		fmt.Printf("[vng-import] create org warning: %v\n", err)
+	}
 
 	// Start server
 	router := api.NewRouter(version, APIsAPIController)

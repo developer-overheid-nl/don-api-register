@@ -38,7 +38,7 @@ type APIsAPIService struct {
 func NewAPIsAPIService(repo repositories.ApiRepository) *APIsAPIService {
 	return &APIsAPIService{
 		repo:    repo,
-		limiter: rate.NewLimiter(rate.Every(time.Second), 1), // 1 per seconde, burst 1
+		limiter: rate.NewLimiter(rate.Every(time.Second*5), 1), // 1 per 5 seconden, burst 1
 	}
 }
 

@@ -20,6 +20,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
+	"golang.org/x/time/rate"
 	"gorm.io/gorm"
 )
 
@@ -29,12 +30,20 @@ var ErrNeedsPost = errors.New(
 
 // APIsAPIService implementeert APIsAPIServicer met de benodigde repository
 type APIsAPIService struct {
-	repo repositories.ApiRepository
+	repo    repositories.ApiRepository
+	limiter *rate.Limiter
 }
 
 // NewAPIsAPIService Constructor-functie
 func NewAPIsAPIService(repo repositories.ApiRepository) *APIsAPIService {
-	return &APIsAPIService{repo: repo}
+	return &APIsAPIService{
+		repo:    repo,
+		limiter: rate.NewLimiter(rate.Every(time.Second), 1), // 1 per seconde, burst 1
+	}
+}
+
+func (s *APIsAPIService) withRateLimit(ctx context.Context) error {
+	return s.limiter.Wait(ctx)
 }
 
 func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateApiInput) (*models.ApiSummary, error) {
@@ -240,10 +249,12 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 	}
 
 	// Call external tools API for linting of the OAS URL
+	if err := s.withRateLimit(ctx); err != nil {
+		return err
+	}
 	log.Printf("[lint] calling tools lint for url=%s", oasURL)
 	dto, lintErr := toolslint.LintGet(ctx, oasURL)
 	if dto == nil {
-		// Avoid panic on nil; log and return error to caller
 		if lintErr != nil {
 			log.Printf("[lint] tools lint error: %v", lintErr)
 		}
@@ -326,6 +337,9 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL, 
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
+		if err := s.withRateLimit(ctx); err != nil {
+			return nil
+		}
 		data, name, ct, err := toolslint.BrunoPost(ctx, oasURL)
 		if err != nil {
 			log.Printf("[tools] bruno generation failed: %v", err)
@@ -349,6 +363,9 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL, 
 	})
 
 	g.Go(func() error {
+		if err := s.withRateLimit(ctx); err != nil {
+			return nil
+		}
 		data, name, ct, err := toolslint.PostmanPost(ctx, oasURL)
 		if err != nil {
 			log.Printf("[tools] postman generation failed: %v", err)
@@ -372,6 +389,9 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL, 
 	})
 
 	g.Go(func() error {
+		if err := s.withRateLimit(ctx); err != nil {
+			return nil
+		}
 		data, name, ct, err := toolslint.OasConverterPost(ctx, oasURL)
 		if err != nil {
 			log.Printf("[tools] oas converter failed: %v", err)

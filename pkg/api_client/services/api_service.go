@@ -16,7 +16,6 @@ import (
 	util "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/util"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
-	"github.com/developer-overheid-nl/don-api-register/pkg/tools"
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -78,7 +77,7 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 		return nil, err
 	}
 
-	tools.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
+	toolslint.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
 		return s.runToolsAndPersist(ctx, api.Id, body.OasUrl, res.Hash)
 	})
 
@@ -187,7 +186,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 		return nil, problem.NewInternalServerError("kan API hash niet opslaan: " + err.Error())
 	}
 
-	tools.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
+	toolslint.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
 		return s.runToolsAndPersist(ctx, api.Id, requestBody.OasUrl, resp.Hash)
 	})
 

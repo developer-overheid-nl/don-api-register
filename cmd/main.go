@@ -143,6 +143,9 @@ func main() {
 	if _, err := APIsAPIService.CreateOrganisation(context.Background(), &models.Organisation{Uri: "https://www.vng.nl", Label: "VNG"}); err != nil {
 		fmt.Printf("[vng-import] create org warning: %v\n", err)
 	}
+	if _, err := APIsAPIService.CreateOrganisation(context.Background(), &models.Organisation{Uri: "https://developer.overheid.nl/", Label: "Developer overheid"}); err != nil {
+		fmt.Printf("[developer-overheid-import] create org warning: %v\n", err)
+	}
 
 	// Start server
 	router := api.NewRouter(version, APIsAPIController)

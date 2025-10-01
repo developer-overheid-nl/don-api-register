@@ -1,0 +1,1445 @@
+[
+  {
+    "href":"https://api.don.apps.digilab.network/api-register/v1/openapi.json",
+    "organisationUri":"https://developer.overheid.nl"
+  },
+  {
+    "href":"https://api.don.apps.digilab.network/tools/v1/openapi.json",
+    "organisationUri":"https://developer.overheid.nl"
+  },
+  {
+    "href": "https://publiek.broservices.nl/gm/gld/v1/waterlevel/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/gu/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://developers.kvk.nl/cms/api/uploads/naamgeving.yaml",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000184",
+    "contact": {
+      "url": "https://developers.kvk.nl"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/sr/bhrg/v3/profile/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/woz/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://documenten-api.vng.cloud/api/v1/schema/openapi.json",
+    "organisationUri": "https://www.vng.nl",
+    "contact": {
+      "email": "standaarden.ondersteuning@vng.nl"
+    }
+  },
+  {
+    "href": "https://aandeslagmetdeomgevingswet.nl/publish/pages/166112/omgevingsdocumenten-presenteren-v7.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+  },
+  {
+    "href": "https://publiek.broservices.nl/sr/bhrg/v3/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/gm/gmn/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/schiphol/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/objectenopenbareruimte/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/evenementen/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/fietspaaltjes/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/sport/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://aandeslagmetdeomgevingswet.nl/publish/pages/168043/omgevingsdocumenten-ow-validatie-v2.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/meldingen/acc/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/aardgasvrijezones/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/gemeentelijk_vastgoed/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/benkagg/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://notificaties-api.vng.cloud/api/v1/schema/openapi.json",
+    "organisationUri": "https://www.vng.nl",
+    "contact": {
+      "email": "standaarden.ondersteuning@vng.nl"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/nap/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://developers.kvk.nl/cms/api/uploads/api_zoeken.yaml",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000184",
+    "contact": {
+      "url": "https://developers.kvk.nl"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/sr/cpt/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/referentiekalender/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://aandeslagmetdeomgevingswet.nl/publish/pages/167767/omgevingsdocumenten-geovalidatie-v1.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/bbga/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/uitvoeringsplan/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/bevatverblijfsobjecten/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/functionele_gebieden/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://opendata.ondernemersplein.nl/swagger/v1/swagger.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000184",
+    "contact": {
+      "email": "redactie@ondernemersplein.nl",
+      "url": "https://ondernemersplein.kvk.nl/ondernemersplein-api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/wior/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/rdw/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/parkeervakken/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/sq/sikb0101-converter/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/sr/bhrgt/v2/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://raw.githubusercontent.com/CommonGateway/WooBundle/main/docs/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0232",
+    "contact": {
+      "email": "samenwerken@conduction.nl",
+      "url": "https://openwoo.app/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/milieuzones/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/explosieven/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://www.bronhouderportaal-bro.nl/doc/openapi.yaml",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "url": "https://basisregistratieondergrond.nl/servicepagina/"
+    }
+  },
+  {
+    "href": "https://developer.overheid.nl/oo/api/v0/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "url": "https://gitlab.com/commonground/don/organizations-api/-/issues"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/verkiezingen/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://aandeslagmetdeomgevingswet.nl/publish/pages/183697/omgevingsdocumenten-verbeelden-v3.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/brt50/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/pandligtin/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/brt25/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://data.utrecht.nl/open-api-specification.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0344",
+    "contact": {
+      "url": "https://data.utrecht.nl"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/varen/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/bedrijveninvesteringszones/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/gm/frd/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/bagpandenm/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/meldingen/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://brt.basisregistraties.overheid.nl/api/v2",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/datakwaliteit/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/horeca/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/parkeerzones/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/primair_onderwijs_loopafstanden/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/bagzoekm/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/sr/cpt/v1/result/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/statistieken/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/gm/gld/v1/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://aandeslagmetdeomgevingswet.nl/publish/pages/166214/omgevingsdocumenten-toepasbaaropvragen-v7.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+  },
+  {
+    "href": "https://publiek.broservices.nl/sr/sfr/v2/profile/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/panorama/docs/?format=openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "datapunt@amsterdam.nl",
+      "url": "https://github.com/Amsterdam/panorama"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/ecologie/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/nieuwbouwplannen/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/sr/bhrp/v2/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://developer.overheid.nl/api/v0/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "url": "https://gitlab.com/commonground/don/developer.overheid.nl/-/issues"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/milieuzones2025/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.bag.kadaster.nl/lvbag/individuelebevragingen/v2/openapi.yaml",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195",
+    "contact": {
+      "email": "bag@kadaster.nl",
+      "url": "https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-api-individuele-bevragingen"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/aardgasverbruik/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://autorisaties-api.vng.cloud/api/v1/schema/openapi.json",
+    "organisationUri": "https://www.vng.nl",
+    "contact": {
+      "email": "standaarden.ondersteuning@vng.nl"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/sr/sfr/v2/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://developers.kvk.nl/cms/api/uploads/api_basisprofiel.yaml",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000184",
+    "contact": {
+      "url": "https://developers.kvk.nl"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/loopfietsnetwerk/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/kadastraleobject/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/uitstootvrije_zones/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/storingsmeldingen_ovl_en_klokken/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://raw.githubusercontent.com/VNG-Realisatie/Haal-Centraal-BRP-bevragen/master/specificatie/openapi.yaml",
+    "organisationUri": "https://www.vng.nl",
+    "contact": {
+      "url": "https://github.com/VNG-Realisatie/Haal-Centraal-BRP-bevragen"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/pandligtinm/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/water/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://developers.kvk.nl/cms/api/uploads/api_vestigingsprofiel.yaml",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000184",
+    "contact": {
+      "url": "https://developers.kvk.nl"
+    }
+  },
+  {
+    "href": "https://aandeslagmetdeomgevingswet.nl/publish/pages/155981/catalogus-opvragen-v3.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+  },
+  {
+    "href": "https://internationaal.ondernemen.overheid.nl/api/iio/v1/openapi.yaml",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10005",
+    "contact": {
+      "email": "informatiehuisio@rvo.nl",
+      "url": "https://www.rvo.nl/onderwerpen/over-ons/auteursrecht/open-data/informatiehuis"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/gm/gmw/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/sq/sad/v1/profile/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/brt10/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/sq/sad/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/huishoudelijkafval/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/sq/sld/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/energieverbruik_mra/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/civieleconstructies/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://gitlab.com/KNMI-OSS/KNMI-App/knmi-app-openapi-spec/-/raw/main/openapi.yml?ref_type=heads",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10116"
+  },
+  {
+    "href": "https://opendata.nederlandwereldwijd.nl/v2/sources/nederlandwereldwijd/openapi.yaml",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1013",
+    "contact": {
+      "email": "nederlandwereldwijd@minbuza.nl",
+      "url": "https://www.nederlandwereldwijd.nl/"
+    }
+  },
+  {
+    "href": "https://catalogi-api.vng.cloud/api/v1/schema/openapi.json",
+    "organisationUri": "https://www.vng.nl",
+    "contact": {
+      "email": "standaarden.ondersteuning@vng.nl"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/veiligeafstanden/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/bodem/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://cerberus.cbs.nl/v1/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000193",
+    "contact": {
+      "email": "cerberus@cbs.nl",
+      "url": "https://www.cbs.nl/nl-nl/over-ons/contact"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/winkelgebieden/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/vastgoed/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/bouwstroompunten/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://subsidieregister.zuid-holland.nl/api/?format=openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/provincie/pv28",
+    "contact": {
+      "email": "zuidholland@pzh.nl",
+      "url": "https://www.zuid-holland.nl"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/gu/guf/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/stroomstoringen/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/leidingeninfrastructuur/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/beschermdestadsdorpsgezichten/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/brk2/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/geluidszones/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/touringcars/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.kadaster.nl/tms/v2/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195",
+    "contact": {
+      "email": "terugmeldingapi@kadaster.nl",
+      "url": "https://zakelijk.kadaster.nl/klantenservice-verbeter-de-kaart"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/duurzaamheid/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/monumenten/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://besluiten-api.vng.cloud/api/v1/schema/openapi.json",
+    "organisationUri": "https://www.vng.nl",
+    "contact": {
+      "email": "standaarden.ondersteuning@vng.nl"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/sr/bhrp/v2/profile/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/wegenbestand/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.contenttoolsrijksoverheid.nl/v1/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1010",
+    "contact": {
+      "email": "productownerspro@minaz.nl"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/betrokkenbij/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://connect.aerius.nl/api/api-common.yaml",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10123",
+    "contact": {
+      "url": "https://www.bij12.nl/onderwerpen/stikstof-en-natura2000/helpdesk/"
+    }
+  },
+  {
+    "href": "https://api.kadaster.nl/tms/v2/terugmeldingbronhouder-apidoc",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195",
+    "contact": {
+      "email": "terugmeldingapi@kadaster.nl"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/bagzoek/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/bagadresinformatie/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://oinregister.logius.nl/api/v1/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10117",
+    "contact": {
+      "email": "servicecentrum@logius.nl",
+      "url": "https://www.logius.nl/contact"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/bagpanden/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://tyk-cdn.dataplatform.knmi.nl/open-data/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10116",
+    "contact": {
+      "email": "dataservices@knmi.nl",
+      "url": "https://developer.dataplatform.knmi.nl/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/afvalwijzer/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/betrokkenbijm/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/gebieden/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/wegenbestand/zone_zwaar_verkeer/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/gm/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/gu/gpd/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/overlastgebieden/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://cparegister.nl/api/v1/openapi.yaml",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10117",
+    "contact": {
+      "email": "servicecentrum@logius.nl",
+      "url": "https://www.logius.nl/contact"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/isontstaanuitm/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/ep/epl/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/bevatverblijfsobjectenm/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/crowdmonitor/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/ep/epc/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/ziekte_plagen_exoten_groen/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://pre.omgevingswet.overheid.nl/knooppunt/apistore/api-docs/Kadaster/Omgevingsdocumenten-Opvragen/v2",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/indicatoren/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/risicozones/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://rev-portaal.nl/oas/rev-v3-specification.yaml",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004",
+    "contact": {
+      "email": "fb.rev@rws.nl",
+      "url": "https://iplo.nl/formulieren/formulier-rev/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/grex/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/kadastraleobjectm/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/vergunningen/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/bag/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/bagadresinformatiem/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://data.eindhoven.nl/api/v2/swagger.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0772",
+    "contact": {
+      "url": "https://data.eindhoven.nl/pages/contact/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/bulk_data/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/cmsa/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/beheerkaart/basis/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/subsidies/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/beheerkaart/cbs_grid/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://referentie.test.datastelsel.nl/vwl/api/v0/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "url": "https://digilab.overheid.nl/chat/verwerkingenlogging/channels/feedback"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/bomen/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/meetbouten/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://financial-claim-request-api.cjib.vorijk-demo.blauweknop.app/v4/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10111",
+    "contact": {
+      "url": "https://vorijk.nl"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/historische_bodeminformatie/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://aandeslagmetdeomgevingswet.nl/publish/pages/204330/omgevingsdocumenten-downloaden-v1.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/zbo/zb000195"
+  },
+  {
+    "href": "https://api.nationaalwegenbestand.nl/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/oorg/oorg10004",
+    "contact": {
+      "email": "nwb@rws.nl",
+      "url": "https://www.nationaalwegenbestand.nl/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/bro/refcodes/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/sr/bhrgt/v2/profile/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/dataverkenner/isontstaanuit/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/standvastgoed/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/bgt/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/gm/gar/v1/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/precariobelasting/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://zaken-api.vng.cloud/api/v1/schema/openapi.json",
+    "organisationUri": "https://www.vng.nl",
+    "contact": {
+      "email": "standaarden.ondersteuning@vng.nl"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/belastingen/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/verkeersinformatiesystemen/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+  {
+    "href": "https://publiek.broservices.nl/gm/gmw/v1/material-history/openapi",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034",
+    "contact": {
+      "email": "support@broservicedesk.nl",
+      "url": "https://basisregistratieondergrond.nl/service-contact/formulieren/contactformulier/"
+    }
+  },
+  {
+    "href": "https://api.data.amsterdam.nl/v1/hoofdroutes/openapi.json",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0363",
+    "contact": {
+      "email": "dataplatform@amsterdam.nl",
+      "url": "https://api.data.amsterdam.nl/api/"
+    }
+  },
+   {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/165392/toepasbareregels-behandeldienstconfiguraties-v1.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/155981/catalogus-opvragen-v3.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/223711/toepasbareregels-conceptverzoekconfiguraties-v1.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/157268/knooppunt-aanbieden-cpa-v1.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/167490/toepasbareregels-crud-rtr-gegevens-v2.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/167767/omgevingsdocumenten-geovalidatie-v1.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/166214/omgevingsdocumenten-toepasbaaropvragen-v7.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/166112/omgevingsdocumenten-presenteren-v8.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/166112/omgevingsdocumenten-presenteren-v7.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/183697/omgevingsdocumenten-verbeelden-v3.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/204330/omgevingsdocumenten-downloaden-v1.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/236116/omgevingsdocumenten-geometrieopvragen-v1.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://ruimte.omgevingswet.overheid.nl/ruimtelijke-plannen/api/opvragen/v4/",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/165401/toepasbareregels-samengesteldertrservices-v2.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/185404/samenwerkingen-behandelen-overheid-v4.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/185404/samenwerkingen-behandelen-overheid-v5.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/155987/toepasbareregels-verifierenregels-v2.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/183874/toepasbareregels-uitvoerengegevens-v1.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/235013/toepasbareregels-zoekinterface-v2.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/235013/toepasbareregels-zoekinterface-v1.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/171046/toepasbareregels-uitvoerenservices-v3.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/171046/toepasbareregels-uitvoerenservices-v2.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/171058/toepasbareregels-verzoeksroutering-v2.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/162228/verzoeken-indienen-v5.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/162228/verzoeken-indienen-v4.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/196036/verzoeken-afhandelen-v3.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/196036/verzoeken-afhandelen-v2.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/238080/verzoekenoverzicht-raadplegen-v1.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/232859/verzoekconfiguratie-beheren-v1.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/232881/verzoekconfiguratie-opvragen-v1.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://developer.omgevingswet.overheid.nl/publish/pages/239140/toepasbareregels-opvragenwerkzaamheden-v1.json",
+    "organisationUri": "https://developer.omgevingswet.overheid.nl"
+  },
+  {
+    "href": "https://referentie.test.datastelsel.nl/rvva/api/v1/openapi.yaml",
+    "organisationUri": "https://identifier.overheid.nl/tooi/id/ministerie/mnre1034"
+  }
+]

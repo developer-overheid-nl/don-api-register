@@ -43,6 +43,7 @@ require (
 	golang.org/x/arch v0.20.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/time v0.13.0 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )

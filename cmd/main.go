@@ -122,7 +122,7 @@ func main() {
 	u.User = url.UserPassword(user, pass)
 
 	q := u.Query()
-	q.Set("sslmode", "require")
+	// q.Set("sslmode", "require")
 	q.Set("search_path", schema)
 	u.RawQuery = q.Encode()
 

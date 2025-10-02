@@ -102,7 +102,8 @@ func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Ap
 }
 
 func (s *APIsAPIService) ListApis(ctx context.Context, p *models.ListApisParams) ([]models.ApiSummary, models.Pagination, error) {
-	apis, pagination, err := s.repo.GetApis(ctx, p.Page, p.PerPage, p.Organisation, p.Ids)
+	idFilter := p.FilterIDs()
+	apis, pagination, err := s.repo.GetApis(ctx, p.Page, p.PerPage, p.Organisation, idFilter)
 	if err != nil {
 		return nil, models.Pagination{}, err
 	}

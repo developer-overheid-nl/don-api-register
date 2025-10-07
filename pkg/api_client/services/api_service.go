@@ -116,6 +116,28 @@ func (s *APIsAPIService) ListApis(ctx context.Context, p *models.ListApisParams)
 	return dtos, pagination, nil
 }
 
+func (s *APIsAPIService) SearchApis(ctx context.Context, query string, limit int) ([]models.ApiSummary, error) {
+	trimmed := strings.TrimSpace(query)
+	if trimmed == "" {
+		return []models.ApiSummary{}, nil
+	}
+	if limit <= 0 {
+		limit = models.DefaultSearchLimit
+	}
+	if limit > models.MaxSearchLimit {
+		limit = models.MaxSearchLimit
+	}
+	apis, err := s.repo.SearchApis(ctx, trimmed, limit)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]models.ApiSummary, len(apis))
+	for i := range apis {
+		results[i] = util.ToApiSummary(&apis[i])
+	}
+	return results, nil
+}
+
 func (s *APIsAPIService) UpdateApi(ctx context.Context, api models.Api) error {
 	return s.repo.UpdateApi(ctx, api)
 }

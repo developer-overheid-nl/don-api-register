@@ -39,6 +39,17 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, p *models.ListApisParams)
 	return apis, nil
 }
 
+// SearchApis handles GET /apis/search
+func (c *APIsAPIController) SearchApis(ctx *gin.Context, params *models.SearchApisParams) ([]models.ApiSummary, error) {
+	limit := params.EffectiveLimit()
+	query := params.NormalizedQuery()
+	results, err := c.Service.SearchApis(ctx.Request.Context(), query, limit)
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
 // RetrieveApi handles GET /apis/:id
 func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, params *models.ApiParams) (*models.ApiDetail, error) {
 	api, err := c.Service.RetrieveApi(ctx.Request.Context(), params.Id)

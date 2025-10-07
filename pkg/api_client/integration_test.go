@@ -22,12 +22,13 @@ import (
 // Each function can be optional; unused functions return zero values.
 type stubRepo struct {
 	getApis   func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
+	search    func(ctx context.Context, query string, limit int) ([]models.Api, error)
 	getByID   func(ctx context.Context, id string) (*models.Api, error)
 	findByOas func(ctx context.Context, url string) (*models.Api, error)
 	findOrg   func(ctx context.Context, uri string) (*models.Organisation, error)
 	saveApi   func(api *models.Api) error
 	saveSrv   func(server models.Server) error
-    saveOrg   func(org *models.Organisation) error
+	saveOrg   func(org *models.Organisation) error
 }
 
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
@@ -35,6 +36,12 @@ func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation 
 		return s.getApis(ctx, page, perPage, organisation, ids)
 	}
 	return nil, models.Pagination{}, nil
+}
+func (s *stubRepo) SearchApis(ctx context.Context, query string, limit int) ([]models.Api, error) {
+	if s.search != nil {
+		return s.search(ctx, query, limit)
+	}
+	return []models.Api{}, nil
 }
 func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, error) {
 	if s.getByID != nil {
@@ -79,11 +86,11 @@ func (s *stubRepo) GetLintResults(ctx context.Context, apiID string) ([]models.L
 	return nil, nil
 }
 func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, int, error) {
-    return nil, 0, nil
+	return nil, 0, nil
 }
 func (s *stubRepo) SaveArtifact(ctx context.Context, art *models.ApiArtifact) error { return nil }
 func (s *stubRepo) GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error) {
-    return nil, nil
+	return nil, nil
 }
 
 func newServer(repo repositories.ApiRepository) *httptest.Server {
@@ -172,22 +179,22 @@ func TestIntegration_CreateApiFromOas(t *testing.T) {
 }
 
 func TestIntegration_UpdateApi(t *testing.T) {
-    repo := &stubRepo{getByID: func(ctx context.Context, id string) (*models.Api, error) {
-        org := "https://org.example.com"
-        return &models.Api{Id: id, Organisation: &models.Organisation{Uri: org, Label: "l"}, OrganisationID: &org}, nil
-    }}
-    srv := newServer(repo)
-    defer srv.Close()
+	repo := &stubRepo{getByID: func(ctx context.Context, id string) (*models.Api, error) {
+		org := "https://org.example.com"
+		return &models.Api{Id: id, Organisation: &models.Organisation{Uri: org, Label: "l"}, OrganisationID: &org}, nil
+	}}
+	srv := newServer(repo)
+	defer srv.Close()
 
-    // serve a valid minimal OAS
-    spec := `{"openapi":"3.0.0","info":{"title":"T","version":"1.0.0","contact":{"name":"n","email":"e","url":"u"}},"paths":{}}`
-    oasSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Content-Type", "application/json")
-        _, _ = w.Write([]byte(spec))
-    }))
-    defer oasSrv.Close()
+	// serve a valid minimal OAS
+	spec := `{"openapi":"3.0.0","info":{"title":"T","version":"1.0.0","contact":{"name":"n","email":"e","url":"u"}},"paths":{}}`
+	oasSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(spec))
+	}))
+	defer oasSrv.Close()
 
-    body := fmt.Sprintf(`{"oasUrl":"%s","organisationUri":"%s"}`, oasSrv.URL, "https://org.example.com")
+	body := fmt.Sprintf(`{"oasUrl":"%s","organisationUri":"%s"}`, oasSrv.URL, "https://org.example.com")
 	req, _ := http.NewRequest(http.MethodPut, srv.URL+"/v1/apis/a1", strings.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+tokenWithScope("apis:write"))
 	req.Header.Set("Content-Type", "application/json")

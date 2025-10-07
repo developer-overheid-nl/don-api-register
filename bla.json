@@ -1,11 +1,11 @@
 [
   {
     "href":"https://api.don.apps.digilab.network/api-register/v1/openapi.json",
-    "organisationUri":"https://developer.overheid.nl"
+    "organisationUri":"https://developer.overheid.nl/"
   },
   {
     "href":"https://api.don.apps.digilab.network/tools/v1/openapi.json",
-    "organisationUri":"https://developer.overheid.nl"
+    "organisationUri":"https://developer.overheid.nl/"
   },
   {
     "href": "https://publiek.broservices.nl/gm/gld/v1/waterlevel/openapi",

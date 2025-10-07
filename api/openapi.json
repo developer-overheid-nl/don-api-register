@@ -23,6 +23,68 @@
     }
   ],
   "paths": {
+    "/apis/search": {
+      "get": {
+        "operationId": "searchApis",
+        "description": "Zoekt geregistreerde API's op basis van titel.",
+        "summary": "Zoek API's",
+        "tags": [
+          "API's"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Zoekterm voor de titel van de API",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximaal aantal resultaten (1-50)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "API-Version": {
+                "$ref": "https://static.developer.overheid.nl/adr/components.yaml#/headers/API-Version"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Api"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ongeldige zoekopdracht",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "https://static.developer.overheid.nl/adr/components.yaml#/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/apis": {
       "get": {
         "operationId": "listApis",
@@ -30,6 +92,53 @@
         "summary": "Alle API's ophalen",
         "tags": [
           "API's"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Huidige paginanummer (1-indexed)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "description": "Aantal resultaten per pagina",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 10
+            }
+          },
+          {
+            "name": "organisation",
+            "in": "query",
+            "description": "URI van de organisatie om op te filteren",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "apis",
+            "in": "query",
+            "description": "Komma-gescheiden lijst van API-ID's om exact op te filteren",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ids",
+            "in": "query",
+            "description": "Verouderde alias voor het `apis`-filter",
+            "deprecated": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {

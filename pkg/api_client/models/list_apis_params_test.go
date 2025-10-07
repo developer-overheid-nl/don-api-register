@@ -13,16 +13,14 @@ func TestListApisParams_FilterIDs(t *testing.T) {
 		{
 			name: "prefers apis query",
 			input: ListApisParams{
-				Apis: ptr(" 123,456 "),
-				Ids:  ptr("should not be used"),
+				Ids: ptr("should not be used"),
 			},
 			expect: ptr("123,456"),
 		},
 		{
 			name: "falls back to ids",
 			input: ListApisParams{
-				Apis: ptr("   "),
-				Ids:  ptr(" 789 , 012 "),
+				Ids: ptr(" 789 , 012 "),
 			},
 			expect: ptr("789 , 012"),
 		},

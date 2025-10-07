@@ -7,17 +7,13 @@ type ListApisParams struct {
 	PerPage      int     `query:"perPage"`
 	Organisation *string `query:"organisation"`
 	Ids          *string `query:"ids"`
-	Apis         *string `query:"apis"`
-	BaseURL      string  // not from query, set in handler
+	BaseURL      string
 }
 
 // FilterIDs returns the preferred ID list from either the legacy `ids` query or the new `apis` alias.
 func (p *ListApisParams) FilterIDs() *string {
 	if p == nil {
 		return nil
-	}
-	if trimmed := trimPointer(p.Apis); trimmed != nil {
-		return trimmed
 	}
 	return trimPointer(p.Ids)
 }

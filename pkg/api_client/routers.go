@@ -84,6 +84,19 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	root := f.Group("/v1", "API v1", "API Register V1 routes")
 
 	read := root.Group("", "Publieke endpoints", "Alleen lezen endpoints")
+	read.GET("/apis/search",
+		[]fizz.OperationOption{
+			fizz.ID("searchApis"),
+			fizz.Summary("Zoek API's"),
+			fizz.Description("Zoekt geregistreerde API's op basis van titel."),
+			fizz.Security(&openapi.SecurityRequirement{
+				"apiKey":            {},
+				"clientCredentials": {"apis:read"},
+			}),
+			apiVersionHeader,
+		},
+		tonic.Handler(controller.SearchApis, 200),
+	)
 	read.GET("/apis",
 		[]fizz.OperationOption{
 			fizz.ID("listApis"),

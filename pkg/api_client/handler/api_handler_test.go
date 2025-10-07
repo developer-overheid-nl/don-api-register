@@ -15,6 +15,7 @@ import (
 // stubRepo mocks ApiRepository for controller tests
 type stubRepo struct {
 	listFunc    func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
+	searchFunc  func(ctx context.Context, query string, limit int) ([]models.Api, error)
 	retrFunc    func(ctx context.Context, id string) (*models.Api, error)
 	lintResFunc func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	findOasFunc func(ctx context.Context, oasUrl string) (*models.Api, error)
@@ -25,6 +26,12 @@ type stubRepo struct {
 
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
 	return s.listFunc(ctx, page, perPage, organisation, ids)
+}
+func (s *stubRepo) SearchApis(ctx context.Context, query string, limit int) ([]models.Api, error) {
+	if s.searchFunc != nil {
+		return s.searchFunc(ctx, query, limit)
+	}
+	return []models.Api{}, nil
 }
 func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, error) {
 	if s.retrFunc != nil {
@@ -96,6 +103,38 @@ func TestListApis_Handler(t *testing.T) {
 	assert.NotNil(t, resp)
 	assert.Len(t, resp, 2)
 	assert.Equal(t, "2", w.Header().Get("X-Total-Count"))
+}
+
+func TestSearchApis_Handler(t *testing.T) {
+	repo := &stubRepo{
+		searchFunc: func(ctx context.Context, query string, limit int) ([]models.Api, error) {
+			assert.Equal(t, "title", query)
+			assert.Equal(t, models.DefaultSearchLimit, limit)
+			return []models.Api{{
+				Id:     "a1",
+				Title:  "Title",
+				OasUri: "https://example.com/openapi.json",
+				Organisation: &models.Organisation{
+					Uri:   "https://org.example",
+					Label: "Org",
+				},
+			}}, nil
+		},
+	}
+	svc := services.NewAPIsAPIService(repo)
+	ctrl := NewAPIsAPIController(svc)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	req := httptest.NewRequest("GET", "/v1/apis/search?q=title", nil)
+	req.Host = "host"
+	ctx.Request = req
+
+	resp, err := ctrl.SearchApis(ctx, &models.SearchApisParams{Query: "title"})
+	assert.NoError(t, err)
+	if assert.Len(t, resp, 1) {
+		assert.Equal(t, "a1", resp[0].Id)
+	}
 }
 
 func TestRetrieveApi_Handler(t *testing.T) {

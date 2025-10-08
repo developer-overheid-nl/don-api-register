@@ -84,7 +84,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	root := f.Group("/v1", "API v1", "API Register V1 routes")
 
 	read := root.Group("", "Publieke endpoints", "Alleen lezen endpoints")
-	read.GET("/apis/search",
+	read.GET("/apis/_search",
 		[]fizz.OperationOption{
 			fizz.ID("searchApis"),
 			fizz.Summary("Zoek API's"),

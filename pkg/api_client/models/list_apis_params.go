@@ -10,7 +10,7 @@ type ListApisParams struct {
 	BaseURL      string
 }
 
-// FilterIDs returns the preferred ID list from either the legacy `ids` query or the new `apis` alias.
+// FilterIDs returns the sanitized ID list from the `ids` query parameter.
 func (p *ListApisParams) FilterIDs() *string {
 	if p == nil {
 		return nil

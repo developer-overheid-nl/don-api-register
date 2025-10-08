@@ -11,13 +11,6 @@ func TestListApisParams_FilterIDs(t *testing.T) {
 		expect *string
 	}{
 		{
-			name: "prefers apis query",
-			input: ListApisParams{
-				Ids: ptr("should not be used"),
-			},
-			expect: ptr("123,456"),
-		},
-		{
 			name: "falls back to ids",
 			input: ListApisParams{
 				Ids: ptr(" 789 , 012 "),

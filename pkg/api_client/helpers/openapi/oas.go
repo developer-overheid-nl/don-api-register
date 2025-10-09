@@ -78,7 +78,7 @@ func FetchParseValidateAndHash(ctx context.Context, oasURL string, opts FetchOpt
 
 	// 5) Valideer OAS 3.0/3.1 met libopenapi-validator
 	docValidator, vErrs := validator.NewValidator(doc)
-	if vErrs != nil && len(vErrs) > 0 {
+	if len(vErrs) > 0 {
 		var parts []string
 		for _, e := range vErrs {
 			parts = append(parts, e.Error())

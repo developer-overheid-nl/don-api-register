@@ -148,7 +148,29 @@ func TestIntegration_RetrieveApi(t *testing.T) {
 }
 
 func TestIntegration_CreateApiFromOas(t *testing.T) {
-	spec := `{"openapi":"3.0.0","info":{"title":"T","version":"1.0.0","contact":{"name":"n","email":"e","url":"u"}},"paths":{}}`
+	spec := `{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "T",
+    "version": "1.0.0",
+    "contact": {
+      "name": "n",
+      "email": "test@example.org",
+      "url": "https://example.org"
+    }
+  },
+  "paths": {
+    "/ping": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "pong"
+          }
+        }
+      }
+    }
+  }
+}`
 	oasSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(spec))
@@ -188,7 +210,29 @@ func TestIntegration_UpdateApi(t *testing.T) {
 	defer srv.Close()
 
 	// serve a valid minimal OAS
-	spec := `{"openapi":"3.0.0","info":{"title":"T","version":"1.0.0","contact":{"name":"n","email":"e","url":"u"}},"paths":{}}`
+	spec := `{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "T",
+    "version": "1.0.0",
+    "contact": {
+      "name": "n",
+      "email": "test@example.org",
+      "url": "https://example.org"
+    }
+  },
+  "paths": {
+    "/ping": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "pong"
+          }
+        }
+      }
+    }
+  }
+}`
 	oasSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(spec))
@@ -226,7 +270,7 @@ func TestIntegration_CreateApiFromOas_Versions(t *testing.T) {
 	t.Run("accepts openapi 3.0", func(t *testing.T) {
 		valid300 := newMockOASServer(t, `{
 	  "openapi": "3.0.0",
-	  "info": {"title": "ok", "version": "1.0.0", "contact": {"name": "n", "email": "e", "url": "https://example.org"}},
+  "info": {"title": "ok", "version": "1.0.0", "contact": {"name": "n", "email": "test@example.org", "url": "https://example.org"}},
 	  "paths": {"/ping": {"get": {"responses": {"200": {"description": "pong"}}}}}
 	}`)
 		defer valid300.Close()
@@ -249,7 +293,7 @@ func TestIntegration_CreateApiFromOas_Versions(t *testing.T) {
 	t.Run("accepts openapi 3.1", func(t *testing.T) {
 		valid31 := newMockOASServer(t, `{
 	  "openapi": "3.1.0",
-	  "info": {"title": "ok", "version": "1.0.0", "contact": {"name": "n", "email": "e", "url": "https://example.org"}},
+  "info": {"title": "ok", "version": "1.0.0", "contact": {"name": "n", "email": "test@example.org", "url": "https://example.org"}},
 	  "paths": {"/ping": {"get": {"responses": {"200": {"description": "pong"}}}}}
 	}`)
 		defer valid31.Close()
@@ -310,7 +354,7 @@ func TestIntegration_CreateApiFromOas_Versions(t *testing.T) {
 	t.Run("rejects unsupported 3.2", func(t *testing.T) {
 		unsupported := newMockOASServer(t, `{
 	  "openapi": "3.2.0",
-	  "info": {"title": "n", "version": "1.0.0", "contact": {"name":"n","email":"e","url":"https://example.org"}},
+  "info": {"title": "n", "version": "1.0.0", "contact": {"name":"n","email":"test@example.org","url":"https://example.org"}},
 	  "paths": {"/ping": {"get": {"responses": {"200": {"description": "pong"}}}}}
 	}`)
 		defer unsupported.Close()
@@ -341,7 +385,7 @@ func newMockOASServer(t *testing.T, payload string) *httptest.Server {
 
 func postOAS(t *testing.T, serverURL, oasURL string, expected int) *http.Response {
 	t.Helper()
-	body := fmt.Sprintf(`{"oasUrl":"%s","organisationUri":"https://example.org","contact":{"name":"n","email":"e","url":"https://example.org"}}`, oasURL)
+	body := fmt.Sprintf(`{"oasUrl":"%s","organisationUri":"https://example.org","contact":{"name":"n","email":"test@example.org","url":"https://example.org"}}`, oasURL)
 	req, err := http.NewRequest(http.MethodPost, serverURL+"/v1/apis", strings.NewReader(body))
 	if err != nil {
 		t.Fatal(err)

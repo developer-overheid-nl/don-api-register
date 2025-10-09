@@ -219,7 +219,17 @@ func TestCreateApiFromOas_Success(t *testing.T) {
       "url": "https://example.com"
     }
   },
-  "paths": {}
+  "paths": {
+    "/ping": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "pong"
+          }
+        }
+      }
+    }
+  }
 }`
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

@@ -8,6 +8,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/pb33f/libopenapi"
@@ -25,6 +27,8 @@ type OASResult struct {
 	Spec *v3.Document // high-level v3 model
 	Hash string       // sha256 van de genormaliseerde spec
 }
+
+var versionPrefixPattern = regexp.MustCompile(`^(\d+)\.(\d+)`)
 
 func FetchParseValidateAndHash(ctx context.Context, oasURL string, opts FetchOpts) (*OASResult, error) {
 	cli := opts.HTTPClient
@@ -106,6 +110,19 @@ func FetchParseValidateAndHash(ctx context.Context, oasURL string, opts FetchOpt
 	sum := sha256.Sum256(rendered)
 
 	spec := model.Model
+	version := strings.TrimSpace(spec.Version)
+	if version == "" {
+		return nil, fmt.Errorf("invalid OAS: ontbrekende openapi versie")
+	}
+	match := versionPrefixPattern.FindStringSubmatch(version)
+	if len(match) != 3 {
+		return nil, fmt.Errorf("invalid OAS: ongeldige openapi versie %s", version)
+	}
+	major, _ := strconv.Atoi(match[1])
+	minor, _ := strconv.Atoi(match[2])
+	if major != 3 || minor > 1 {
+		return nil, fmt.Errorf("invalid OAS: unsupported OpenAPI version %s (alleen 3.0 en 3.1 worden ondersteund)", version)
+	}
 	return &OASResult{
 		Spec: &spec,
 		Hash: hex.EncodeToString(sum[:]),

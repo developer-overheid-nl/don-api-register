@@ -236,7 +236,29 @@ func TestUpdateApi_Handler(t *testing.T) {
 	ctx2.Params = gin.Params{{Key: "id", Value: "a1"}}
 
 	// serve a valid OAS so the update can succeed
-	spec := `{"openapi":"3.0.0","info":{"title":"T","version":"1.0.0","contact":{"name":"n","email":"e","url":"u"}},"paths":{}}`
+	spec := `{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "T",
+    "version": "1.0.0",
+    "contact": {
+      "name": "n",
+      "email": "test@example.org",
+      "url": "https://example.org"
+    }
+  },
+  "paths": {
+    "/ping": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "pong"
+          }
+        }
+      }
+    }
+  }
+}`
 	oasSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(spec))

@@ -6,9 +6,11 @@ import (
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/google/uuid"
+	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/teris-io/shortid"
+	"go.yaml.in/yaml/v4"
 )
 
 // CorsGet performs a GET request including an Origin header.
@@ -21,37 +23,58 @@ func CorsGet(c *http.Client, u string, corsurl string) (*http.Response, error) {
 	return c.Do(req)
 }
 
-// DeriveAuthType determines authentication type from security schemes.
-func DeriveAuthType(spec *openapi3.T) string {
-	for _, schemeRef := range spec.Components.SecuritySchemes {
-		scheme := schemeRef.Value
+// DeriveAuthType determines authentication type from security schemes (pb33f v3).
+func DeriveAuthType(spec *v3.Document) string {
+	if spec == nil || spec.Components == nil || spec.Components.SecuritySchemes == nil {
+		return "unknown"
+	}
+	for pair := spec.Components.SecuritySchemes.First(); pair != nil; pair = pair.Next() {
+		scheme := pair.Value()
 		if scheme == nil {
 			continue
 		}
-
-		switch scheme.Type {
-		case "apiKey":
+		typ := strings.ToLower(scheme.Type)
+		switch typ {
+		case "apikey", "api_key", "api-key":
 			return "api_key"
 		case "http":
-			return scheme.Scheme
+			if scheme.Scheme != "" {
+				return strings.ToLower(scheme.Scheme)
+			}
+			return "http"
 		case "oauth2":
 			return "oauth2"
-		case "openIdConnect":
+		case "openidconnect", "openid", "openIdConnect", "openid-connect":
 			return "openid"
 		}
 	}
 	return "unknown"
 }
 
-// BuildApi constructs a models.Api based on the OpenAPI spec and request body.
-func BuildApi(spec *openapi3.T, requestBody models.ApiPost, label string) *models.Api {
+// extString safely extracts a string extension (e.g. x-sunset) from pb33f YAML node map.
+func extString(m *orderedmap.Map[string, *yaml.Node], key string) string {
+	if m == nil {
+		return ""
+	}
+	if n, ok := m.Get(key); ok && n != nil {
+		// alleen simpele scalar strings teruggeven
+		if n.Kind == yaml.ScalarNode && (n.Tag == "" || n.Tag == "!!str") {
+			return n.Value
+		}
+	}
+	return ""
+}
+
+// BuildApi constructs a models.Api based on the OpenAPI spec (pb33f v3) and request body.
+func BuildApi(spec *v3.Document, requestBody models.ApiPost, label string) *models.Api {
 	api := &models.Api{
 		Id: shortid.MustGenerate(),
 	}
 
-	if spec.Info != nil {
+	if spec != nil && spec.Info != nil {
 		api.Title = spec.Info.Title
 		api.Description = spec.Info.Description
+
 		if spec.Info.Contact != nil {
 			api.ContactName = spec.Info.Contact.Name
 			api.ContactEmail = spec.Info.Contact.Email
@@ -60,12 +83,9 @@ func BuildApi(spec *openapi3.T, requestBody models.ApiPost, label string) *model
 		if spec.Info.Version != "" {
 			api.Version = spec.Info.Version
 		}
-		if v, ok := spec.Info.Extensions["x-sunset"].(string); ok && v != "" {
-			api.Sunset = v
-		}
-		if v, ok := spec.Info.Extensions["x-deprecated"].(string); ok && v != "" {
-			api.Deprecated = v
-		}
+		// x-sunset / x-deprecated uit Extensions (YAML nodes)
+		api.Sunset = extString(spec.Info.Extensions, "x-sunset")
+		api.Deprecated = extString(spec.Info.Extensions, "x-deprecated")
 	}
 
 	api.OasUri = requestBody.OasUrl
@@ -77,26 +97,42 @@ func BuildApi(spec *openapi3.T, requestBody models.ApiPost, label string) *model
 		}
 		api.OrganisationID = &requestBody.OrganisationUri
 	}
-	if spec.ExternalDocs != nil {
+
+	if spec != nil && spec.ExternalDocs != nil {
 		api.DocsUrl = spec.ExternalDocs.URL
 	}
 
-	if len(spec.Security) > 0 || (spec.Components != nil && len(spec.Components.SecuritySchemes) > 0) {
-		api.Auth = DeriveAuthType(spec)
-	}
-
-	var serversToSave []models.Server
-	for _, s := range spec.Servers {
-		if s.URL != "" {
-			server := models.Server{
-				Id:          uuid.New().String(),
-				Uri:         s.URL,
-				Description: s.Description,
-			}
-			serversToSave = append(serversToSave, server)
+	// Auth afleiden als er security is gedefinieerd
+	if spec != nil {
+		hasSecuritySchemes := false
+		if spec.Components != nil && spec.Components.SecuritySchemes != nil {
+			hasSecuritySchemes = orderedmap.Len(spec.Components.SecuritySchemes) > 0
+		}
+		if len(spec.Security) > 0 || hasSecuritySchemes {
+			api.Auth = DeriveAuthType(spec)
 		}
 	}
-	api.Servers = serversToSave
+
+	// Servers
+	if spec != nil && len(spec.Servers) > 0 {
+		var serversToSave []models.Server
+		for _, s := range spec.Servers {
+			if s == nil {
+				continue
+			}
+			if s.URL != "" {
+				server := models.Server{
+					Id:          uuid.New().String(),
+					Uri:         s.URL,
+					Description: s.Description,
+				}
+				serversToSave = append(serversToSave, server)
+			}
+		}
+		api.Servers = serversToSave
+	}
+
+	// Fallbacks vanaf request body als spec geen contact had
 	if api.ContactName == "" {
 		api.ContactName = requestBody.Contact.Name
 	}
@@ -106,6 +142,7 @@ func BuildApi(spec *openapi3.T, requestBody models.ApiPost, label string) *model
 	if api.ContactUrl == "" {
 		api.ContactUrl = requestBody.Contact.URL
 	}
+
 	return api
 }
 

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -219,6 +220,144 @@ func TestIntegration_CreateOrganisation(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 	resp.Body.Close()
 	assert.Equal(t, "https://example.org", saved.Uri)
+}
+
+func TestIntegration_CreateApiFromOas_Versions(t *testing.T) {
+	t.Run("accepts openapi 3.0", func(t *testing.T) {
+		valid300 := newMockOASServer(t, `{
+	  "openapi": "3.0.0",
+	  "info": {"title": "ok", "version": "1.0.0", "contact": {"name": "n", "email": "e", "url": "https://example.org"}},
+	  "paths": {"/ping": {"get": {"responses": {"200": {"description": "pong"}}}}}
+	}`)
+		defer valid300.Close()
+
+		repo := &stubRepo{
+			findByOas: func(ctx context.Context, url string) (*models.Api, error) { return nil, nil },
+			saveApi:   func(api *models.Api) error { return nil },
+			saveSrv:   func(server models.Server) error { return nil },
+			findOrg: func(ctx context.Context, uri string) (*models.Organisation, error) {
+				return &models.Organisation{Uri: uri, Label: "Org"}, nil
+			},
+		}
+		srv := newServer(repo)
+		defer srv.Close()
+
+		resp := postOAS(t, srv.URL, valid300.URL, http.StatusCreated)
+		resp.Body.Close()
+	})
+
+	t.Run("accepts openapi 3.1", func(t *testing.T) {
+		valid31 := newMockOASServer(t, `{
+	  "openapi": "3.1.0",
+	  "info": {"title": "ok", "version": "1.0.0", "contact": {"name": "n", "email": "e", "url": "https://example.org"}},
+	  "paths": {"/ping": {"get": {"responses": {"200": {"description": "pong"}}}}}
+	}`)
+		defer valid31.Close()
+
+		repo := &stubRepo{
+			findByOas: func(ctx context.Context, url string) (*models.Api, error) { return nil, nil },
+			saveApi:   func(api *models.Api) error { return nil },
+			saveSrv:   func(server models.Server) error { return nil },
+			findOrg: func(ctx context.Context, uri string) (*models.Organisation, error) {
+				return &models.Organisation{Uri: uri, Label: "Org"}, nil
+			},
+		}
+		srv := newServer(repo)
+		defer srv.Close()
+
+		resp := postOAS(t, srv.URL, valid31.URL, http.StatusCreated)
+		resp.Body.Close()
+	})
+
+	t.Run("rejects invalid 3.0", func(t *testing.T) {
+		broken := newMockOASServer(t, `{"openapi": "3.0.0", "info": {"title":"bad"}, "paths": {}}`)
+		defer broken.Close()
+
+		repo := &stubRepo{
+			findByOas: func(ctx context.Context, url string) (*models.Api, error) { return nil, nil },
+			saveApi:   func(api *models.Api) error { return nil },
+			saveSrv:   func(server models.Server) error { return nil },
+			findOrg: func(ctx context.Context, uri string) (*models.Organisation, error) {
+				return &models.Organisation{Uri: uri, Label: "Org"}, nil
+			},
+		}
+		srv := newServer(repo)
+		defer srv.Close()
+
+		resp := postOAS(t, srv.URL, broken.URL, http.StatusBadRequest)
+		resp.Body.Close()
+	})
+
+	t.Run("rejects invalid 3.1", func(t *testing.T) {
+		broken := newMockOASServer(t, `{"openapi": "3.1.0", "info": {"version":"1.0.0"}, "paths": {}}`)
+		defer broken.Close()
+
+		repo := &stubRepo{
+			findByOas: func(ctx context.Context, url string) (*models.Api, error) { return nil, nil },
+			saveApi:   func(api *models.Api) error { return nil },
+			saveSrv:   func(server models.Server) error { return nil },
+			findOrg: func(ctx context.Context, uri string) (*models.Organisation, error) {
+				return &models.Organisation{Uri: uri, Label: "Org"}, nil
+			},
+		}
+		srv := newServer(repo)
+		defer srv.Close()
+
+		resp := postOAS(t, srv.URL, broken.URL, http.StatusBadRequest)
+		resp.Body.Close()
+	})
+
+	t.Run("rejects unsupported 3.2", func(t *testing.T) {
+		unsupported := newMockOASServer(t, `{
+	  "openapi": "3.2.0",
+	  "info": {"title": "n", "version": "1.0.0", "contact": {"name":"n","email":"e","url":"https://example.org"}},
+	  "paths": {"/ping": {"get": {"responses": {"200": {"description": "pong"}}}}}
+	}`)
+		defer unsupported.Close()
+
+		repo := &stubRepo{
+			findByOas: func(ctx context.Context, url string) (*models.Api, error) { return nil, nil },
+			saveApi:   func(api *models.Api) error { return nil },
+			saveSrv:   func(server models.Server) error { return nil },
+			findOrg: func(ctx context.Context, uri string) (*models.Organisation, error) {
+				return &models.Organisation{Uri: uri, Label: "Org"}, nil
+			},
+		}
+		srv := newServer(repo)
+		defer srv.Close()
+
+		resp := postOAS(t, srv.URL, unsupported.URL, http.StatusBadRequest)
+		resp.Body.Close()
+	})
+}
+
+func newMockOASServer(t *testing.T, payload string) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(payload))
+	}))
+}
+
+func postOAS(t *testing.T, serverURL, oasURL string, expected int) *http.Response {
+	t.Helper()
+	body := fmt.Sprintf(`{"oasUrl":"%s","organisationUri":"https://example.org","contact":{"name":"n","email":"e","url":"https://example.org"}}`, oasURL)
+	req, err := http.NewRequest(http.MethodPost, serverURL+"/v1/apis", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+tokenWithScope("apis:write"))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != expected {
+		data, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		t.Fatalf("expected status %d, got %d: %s", expected, resp.StatusCode, string(data))
+	}
+	return resp
 }
 
 //func TestIntegration_forbidden_UpdateApi(t *testing.T) {

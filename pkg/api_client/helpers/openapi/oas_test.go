@@ -39,7 +39,7 @@ func TestFetchParseValidateAndHash_AllowsOpenAPI31(t *testing.T) {
 	if res == nil || res.Spec == nil {
 		t.Fatalf("expected parsed spec, got %#v", res)
 	}
-	if got := res.Spec.OpenAPI; got != "3.1.0" {
+	if got := res.Spec.Version; got != "3.1.0" {
 		t.Fatalf("expected version 3.1.0, got %s", got)
 	}
 	if res.Hash == "" {

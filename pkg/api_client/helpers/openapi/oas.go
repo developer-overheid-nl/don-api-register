@@ -36,26 +36,55 @@ func FetchParseValidateAndHash(ctx context.Context, oasURL string, opts FetchOpt
 		cli = http.DefaultClient
 	}
 
-	// 1) OAS bytes ophalen
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, oasURL, nil)
-	if err != nil {
-		return nil, err
+	// 1) OAS bytes ophalen (met optionele Origin, en fallback zonder)
+	type attempt struct {
+		origin string
 	}
+	attempts := []attempt{{origin: opts.Origin}}
 	if opts.Origin != "" {
-		req.Header.Set("Origin", opts.Origin)
+		attempts = append(attempts, attempt{origin: ""})
 	}
-	resp, err := cli.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("kan OAS niet ophalen: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("kan OAS niet ophalen: status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
-	}
-	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("kan OAS niet lezen: %w", err)
+	var raw []byte
+	for i, att := range attempts {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, oasURL, nil)
+		if err != nil {
+			return nil, err
+		}
+		if att.origin != "" {
+			req.Header.Set("Origin", att.origin)
+		}
+		resp, err := cli.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("kan OAS niet ophalen: %w", err)
+		}
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			return nil, fmt.Errorf("kan OAS niet ophalen: status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+		}
+		raw, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("kan OAS niet lezen: %w", err)
+		}
+		originLabel := "zonder Origin"
+		if att.origin != "" {
+			originLabel = "met Origin"
+		}
+		if n := len(raw); n == 0 {
+			log.Printf("[oas] fetched empty body %s from %s (status %d)", originLabel, oasURL, resp.StatusCode)
+			if att.origin != "" && i == 0 {
+				log.Printf("[oas] retrying fetch without Origin header for %s", oasURL)
+				continue
+			}
+		} else {
+			preview := raw
+			if n > 128 {
+				preview = raw[:128]
+			}
+			log.Printf("[oas] fetched %d bytes %s from %s (status %d): %.128q", n, originLabel, oasURL, resp.StatusCode, preview)
+		}
+		break
 	}
 
 	// 2) libopenapi config voor (remote) refs

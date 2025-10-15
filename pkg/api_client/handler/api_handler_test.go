@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
@@ -126,7 +127,7 @@ func TestSearchApis_Handler(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
-	req := httptest.NewRequest("GET", "/v1/apis/search?q=title", nil)
+	req := httptest.NewRequest("GET", "/v1/apis/_search?q=title", nil)
 	req.Host = "host"
 	ctx.Request = req
 
@@ -135,6 +136,15 @@ func TestSearchApis_Handler(t *testing.T) {
 	if assert.Len(t, resp, 1) {
 		assert.Equal(t, "a1", resp[0].Id)
 	}
+	assert.Equal(t, "1", w.Header().Get("X-Current-Page"))
+	assert.Equal(t, "1", w.Header().Get("X-Total-Pages"))
+	assert.Equal(t, "1", w.Header().Get("X-Total-Count"))
+	assert.Equal(t, strconv.Itoa(models.DefaultSearchLimit), w.Header().Get("X-Per-Page"))
+	limitStr := strconv.Itoa(models.DefaultSearchLimit)
+	expectedLink := "<http://host/v1/apis/_search?page=1&perPage=" + limitStr + "&q=title>; rel=\"first\", " +
+		"<http://host/v1/apis/_search?page=1&perPage=" + limitStr + "&q=title>; rel=\"self\", " +
+		"<http://host/v1/apis/_search?page=1&perPage=" + limitStr + "&q=title>; rel=\"last\""
+	assert.Equal(t, expectedLink, w.Header().Get("Link"))
 }
 
 func TestRetrieveApi_Handler(t *testing.T) {

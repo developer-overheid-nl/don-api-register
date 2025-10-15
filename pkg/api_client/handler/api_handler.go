@@ -47,6 +47,17 @@ func (c *APIsAPIController) SearchApis(ctx *gin.Context, params *models.SearchAp
 	if err != nil {
 		return nil, err
 	}
+	totalRecords := len(results)
+	totalPages := 0
+	if totalRecords > 0 {
+		totalPages = 1
+	}
+	util.SetPaginationHeaders(ctx.Request, ctx.Header, models.Pagination{
+		CurrentPage:    1,
+		RecordsPerPage: limit,
+		TotalPages:     totalPages,
+		TotalRecords:   totalRecords,
+	})
 	return results, nil
 }
 

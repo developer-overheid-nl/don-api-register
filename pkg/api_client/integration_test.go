@@ -288,6 +288,11 @@ func TestIntegration_SearchApis(t *testing.T) {
 		var body []models.ApiSummary
 		decodeJSONBody(t, resp, &body)
 		assert.Len(t, body, 1)
+		assert.Equal(t, "1", resp.Header.Get("X-Current-Page"))
+		assert.Equal(t, "1", resp.Header.Get("X-Total-Pages"))
+		assert.Equal(t, "1", resp.Header.Get("X-Total-Count"))
+		assert.Equal(t, "5", resp.Header.Get("X-Per-Page"))
+		assert.Contains(t, resp.Header.Get("Link"), "rel=\"self\"")
 	})
 
 	t.Run("backend error", func(t *testing.T) {

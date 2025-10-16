@@ -19,7 +19,7 @@ type stubRepo struct {
 	getByID    func(ctx context.Context, id string) (*models.Api, error)
 	getLintRes func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	getApis    func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
-	searchApis func(ctx context.Context, query string, limit int) ([]models.Api, error)
+	searchApis func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
 	saveServer func(server models.Server) error
 	saveApi    func(api *models.Api) error
 	saveOrg    func(org *models.Organisation) error
@@ -44,11 +44,11 @@ func (s *stubRepo) GetLintResults(ctx context.Context, apiID string) ([]models.L
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
 	return s.getApis(ctx, page, perPage, organisation, ids)
 }
-func (s *stubRepo) SearchApis(ctx context.Context, query string, limit int) ([]models.Api, error) {
+func (s *stubRepo) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
 	if s.searchApis != nil {
-		return s.searchApis(ctx, query, limit)
+		return s.searchApis(ctx, page, perPage, organisation, query)
 	}
-	return []models.Api{}, nil
+	return []models.Api{}, models.Pagination{}, nil
 }
 
 // unused methods
@@ -171,40 +171,46 @@ func TestListApis_UsesApisFilter(t *testing.T) {
 func TestSearchApis_TrimsQueryAndAppliesDefaultLimit(t *testing.T) {
 	called := false
 	repo := &stubRepo{
-		searchApis: func(ctx context.Context, query string, limit int) ([]models.Api, error) {
+		searchApis: func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
 			called = true
+			assert.Equal(t, 1, page)
+			assert.Equal(t, 0, perPage)
 			assert.Equal(t, "digid", query)
-			assert.Equal(t, models.DefaultSearchLimit, limit)
 			return []models.Api{{
-				Id:     "api-1",
-				OasUri: "https://example.com/openapi.json",
-				Title:  "DigiD API",
-				Organisation: &models.Organisation{
-					Uri:   "https://org.test",
-					Label: "Org",
-				},
-			}}, nil
+					Id:     "api-1",
+					OasUri: "https://example.com/openapi.json",
+					Title:  "DigiD API",
+					Organisation: &models.Organisation{
+						Uri:   "https://org.test",
+						Label: "Org",
+					},
+				}}, models.Pagination{
+					CurrentPage:    page,
+					RecordsPerPage: perPage,
+					TotalPages:     2,
+					TotalRecords:   12,
+				}, nil
 		},
 	}
 	service := services.NewAPIsAPIService(repo)
-	results, err := service.SearchApis(context.Background(), "  digid  ", 0)
+	params := &models.ListApisSearchParams{Query: "  digid  ", Page: 1}
+	results, pagination, err := service.SearchApis(context.Background(), params)
 	assert.NoError(t, err)
 	assert.True(t, called)
+	assert.Equal(t, 12, pagination.TotalRecords)
+	assert.Equal(t, 2, pagination.TotalPages)
 	assert.Len(t, results, 1)
 	assert.Equal(t, "api-1", results[0].Id)
 }
 
 func TestSearchApis_EmptyQueryReturnsNoResults(t *testing.T) {
-	repo := &stubRepo{
-		searchApis: func(ctx context.Context, query string, limit int) ([]models.Api, error) {
-			t.Fatalf("expected repository not to be called, got query=%q", query)
-			return nil, nil
-		},
-	}
+	repo := &stubRepo{}
 	service := services.NewAPIsAPIService(repo)
-	results, err := service.SearchApis(context.Background(), "   ", 5)
+	results, pagination, err := service.SearchApis(context.Background(), &models.ListApisSearchParams{Query: "   ", Page: 2, PerPage: 5})
 	assert.NoError(t, err)
 	assert.Len(t, results, 0)
+	assert.Equal(t, 0, pagination.TotalRecords)
+	assert.Equal(t, 0, pagination.TotalPages)
 }
 
 func TestCreateApiFromOas_Success(t *testing.T) {

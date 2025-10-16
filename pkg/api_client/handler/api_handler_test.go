@@ -16,7 +16,7 @@ import (
 // stubRepo mocks ApiRepository for controller tests
 type stubRepo struct {
 	listFunc    func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
-	searchFunc  func(ctx context.Context, query string, limit int) ([]models.Api, error)
+	searchFunc  func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
 	retrFunc    func(ctx context.Context, id string) (*models.Api, error)
 	lintResFunc func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	findOasFunc func(ctx context.Context, oasUrl string) (*models.Api, error)
@@ -28,11 +28,11 @@ type stubRepo struct {
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
 	return s.listFunc(ctx, page, perPage, organisation, ids)
 }
-func (s *stubRepo) SearchApis(ctx context.Context, query string, limit int) ([]models.Api, error) {
+func (s *stubRepo) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
 	if s.searchFunc != nil {
-		return s.searchFunc(ctx, query, limit)
+		return s.searchFunc(ctx, page, perPage, organisation, query)
 	}
-	return []models.Api{}, nil
+	return []models.Api{}, models.Pagination{}, nil
 }
 func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, error) {
 	if s.retrFunc != nil {
@@ -108,18 +108,25 @@ func TestListApis_Handler(t *testing.T) {
 
 func TestSearchApis_Handler(t *testing.T) {
 	repo := &stubRepo{
-		searchFunc: func(ctx context.Context, query string, limit int) ([]models.Api, error) {
+		searchFunc: func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
+			assert.Equal(t, 1, page)
+			assert.Equal(t, 10, perPage)
+			assert.Nil(t, organisation)
 			assert.Equal(t, "title", query)
-			assert.Equal(t, models.DefaultSearchLimit, limit)
 			return []models.Api{{
-				Id:     "a1",
-				Title:  "Title",
-				OasUri: "https://example.com/openapi.json",
-				Organisation: &models.Organisation{
-					Uri:   "https://org.example",
-					Label: "Org",
-				},
-			}}, nil
+					Id:     "a1",
+					Title:  "Title",
+					OasUri: "https://example.com/openapi.json",
+					Organisation: &models.Organisation{
+						Uri:   "https://org.example",
+						Label: "Org",
+					},
+				}}, models.Pagination{
+					CurrentPage:    page,
+					RecordsPerPage: perPage,
+					TotalPages:     1,
+					TotalRecords:   1,
+				}, nil
 		},
 	}
 	svc := services.NewAPIsAPIService(repo)
@@ -131,7 +138,7 @@ func TestSearchApis_Handler(t *testing.T) {
 	req.Host = "host"
 	ctx.Request = req
 
-	resp, err := ctrl.SearchApis(ctx, &models.SearchApisParams{Query: "title"})
+	resp, err := ctrl.SearchApis(ctx, &models.ListApisSearchParams{Query: "title"})
 	assert.NoError(t, err)
 	if assert.Len(t, resp, 1) {
 		assert.Equal(t, "a1", resp[0].Id)
@@ -139,8 +146,8 @@ func TestSearchApis_Handler(t *testing.T) {
 	assert.Equal(t, "1", w.Header().Get("X-Current-Page"))
 	assert.Equal(t, "1", w.Header().Get("X-Total-Pages"))
 	assert.Equal(t, "1", w.Header().Get("X-Total-Count"))
-	assert.Equal(t, strconv.Itoa(models.DefaultSearchLimit), w.Header().Get("X-Per-Page"))
-	limitStr := strconv.Itoa(models.DefaultSearchLimit)
+	assert.Equal(t, strconv.Itoa(10), w.Header().Get("X-Per-Page"))
+	limitStr := strconv.Itoa(10)
 	expectedLink := "<http://host/v1/apis/_search?page=1&perPage=" + limitStr + "&q=title>; rel=\"first\", " +
 		"<http://host/v1/apis/_search?page=1&perPage=" + limitStr + "&q=title>; rel=\"self\", " +
 		"<http://host/v1/apis/_search?page=1&perPage=" + limitStr + "&q=title>; rel=\"last\""

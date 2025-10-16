@@ -13,7 +13,7 @@ import (
 
 type ApiRepository interface {
 	GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
-	SearchApis(ctx context.Context, query string, limit int) ([]models.Api, error)
+	SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
 	GetApiByID(ctx context.Context, oasUrl string) (*models.Api, error)
 	Save(api *models.Api) error
 	UpdateApi(ctx context.Context, api models.Api) error
@@ -93,24 +93,75 @@ func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, organisa
 	return apis, pagination, nil
 }
 
-func (r *apiRepository) SearchApis(ctx context.Context, query string, limit int) ([]models.Api, error) {
+func (r *apiRepository) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
 	trimmed := strings.TrimSpace(query)
-	if trimmed == "" {
-		return []models.Api{}, nil
+	if page < 1 {
+		page = 1
 	}
-	pattern := fmt.Sprintf("%%%s%%", strings.ToLower(trimmed))
+	if perPage <= 0 {
+		perPage = 10
+	}
+	if trimmed == "" {
+		return []models.Api{}, models.Pagination{
+			CurrentPage:    page,
+			RecordsPerPage: perPage,
+		}, nil
+	}
+
+	base := r.db.WithContext(ctx)
+	if organisation != nil && strings.TrimSpace(*organisation) != "" {
+		base = base.Where("organisation_id = ?", strings.TrimSpace(*organisation))
+	}
+	var pattern string
+	if trimmed != "" {
+		pattern = fmt.Sprintf("%%%s%%", strings.ToLower(trimmed))
+		base = base.Where("LOWER(title) LIKE ?", pattern)
+	}
+
+	var totalRecords int64
+	if err := base.Model(&models.Api{}).Count(&totalRecords).Error; err != nil {
+		return nil, models.Pagination{}, err
+	}
+
+	queryDB := r.db.WithContext(ctx)
+	if organisation != nil && strings.TrimSpace(*organisation) != "" {
+		queryDB = queryDB.Where("organisation_id = ?", strings.TrimSpace(*organisation))
+	}
+	if pattern != "" {
+		queryDB = queryDB.Where("LOWER(title) LIKE ?", pattern)
+	}
+
 	var apis []models.Api
-	err := r.db.WithContext(ctx).
-		Where("LOWER(title) LIKE ?", pattern).
+	if err := queryDB.
 		Preload("Servers").
 		Preload("Organisation").
 		Order("title").
-		Limit(limit).
-		Find(&apis).Error
-	if err != nil {
-		return nil, err
+		Offset((page - 1) * perPage).
+		Limit(perPage).
+		Find(&apis).Error; err != nil {
+		return nil, models.Pagination{}, err
 	}
-	return apis, nil
+
+	totalPages := 0
+	if totalRecords > 0 {
+		totalPages = int(math.Ceil(float64(totalRecords) / float64(perPage)))
+	}
+	pagination := models.Pagination{
+		CurrentPage:    page,
+		RecordsPerPage: perPage,
+		TotalPages:     totalPages,
+		TotalRecords:   int(totalRecords),
+	}
+	if page < totalPages {
+		next := page + 1
+		pagination.Next = &next
+	}
+	if page > 1 && totalPages > 0 {
+		prev := page - 1
+		pagination.Previous = &prev
+	}
+
+	return apis, pagination, nil
 }
 
 func (r *apiRepository) GetApiByID(ctx context.Context, id string) (*models.Api, error) {

@@ -40,24 +40,19 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, p *models.ListApisParams)
 }
 
 // SearchApis handles GET /apis/search
-func (c *APIsAPIController) SearchApis(ctx *gin.Context, params *models.SearchApisParams) ([]models.ApiSummary, error) {
-	limit := params.EffectiveLimit()
-	query := params.NormalizedQuery()
-	results, err := c.Service.SearchApis(ctx.Request.Context(), query, limit)
+func (c *APIsAPIController) SearchApis(ctx *gin.Context, p *models.ListApisSearchParams) ([]models.ApiSummary, error) {
+	if p.Page < 1 {
+		p.Page = 1
+	}
+	if p.PerPage < 1 {
+		p.PerPage = 10
+	}
+	p.BaseURL = ctx.FullPath()
+	results, pagination, err := c.Service.SearchApis(ctx.Request.Context(), p)
 	if err != nil {
 		return nil, err
 	}
-	totalRecords := len(results)
-	totalPages := 0
-	if totalRecords > 0 {
-		totalPages = 1
-	}
-	util.SetPaginationHeaders(ctx.Request, ctx.Header, models.Pagination{
-		CurrentPage:    1,
-		RecordsPerPage: limit,
-		TotalPages:     totalPages,
-		TotalRecords:   totalRecords,
-	})
+	util.SetPaginationHeaders(ctx.Request, ctx.Header, pagination)
 	return results, nil
 }
 

@@ -42,11 +42,11 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 
 	f.Generator().SetServers([]*openapi.Server{
 		{
-			URL:         "https://api.developer.overheid.nl/api-register/v1",
+			URL:         "https://api.developer.overheid.nl/api-register",
 			Description: "Production",
 		},
 		{
-			URL:         "https://api-register.don.apps.digilab.network/api-register/v1",
+			URL:         "https://api.don.apps.digilab.network/api-register",
 			Description: "Test",
 		},
 	})

@@ -561,6 +561,53 @@ func (s *APIsAPIService) saveOASArtifact(ctx context.Context, apiID, version, fo
 	return nil
 }
 
+// BackfillOASArtifacts (éénmalig) genereert OAS-artifacts voor bestaande APIs
+// die zijn aangemaakt vóórdat de nieuwe artifact-structuur bestond.
+func (s *APIsAPIService) BackfillOASArtifacts(ctx context.Context) error {
+	apis, err := s.repo.AllApis(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, api := range apis {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		has, err := s.repo.HasArtifactOfKind(ctx, api.Id, "oas")
+		if err != nil {
+			return err
+		}
+		if has {
+			continue
+		}
+
+		if err := s.withRateLimit(ctx); err != nil {
+			return err
+		}
+		res, err := openapi.FetchParseValidateAndHash(ctx, api.OasUri, openapi.FetchOpts{
+			Origin: "https://developer.overheid.nl",
+		})
+		if err != nil {
+			log.Printf("[backfill] skip api=%s uri=%s: %v", api.Id, api.OasUri, err)
+			continue
+		}
+		if err := s.persistOASArtifacts(ctx, api.Id, res); err != nil {
+			log.Printf("[backfill] persist failed api=%s: %v", api.Id, err)
+		}
+		if api.OasHash != res.Hash {
+			api.OasHash = res.Hash
+			if err := s.repo.UpdateApi(ctx, api); err != nil {
+				log.Printf("[backfill] update hash failed api=%s: %v", api.Id, err)
+			}
+		}
+	}
+
+	return nil
+}
+
 func detectOASFormat(raw []byte, contentType string) (string, error) {
 	ct := strings.ToLower(contentType)
 	switch {

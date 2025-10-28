@@ -26,6 +26,7 @@ type ApiRepository interface {
 	GetOrganisations(ctx context.Context) ([]models.Organisation, int, error)
 	FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error)
 	SaveArtifact(ctx context.Context, art *models.ApiArtifact) error
+	HasArtifactOfKind(ctx context.Context, apiID, kind string) (bool, error)
 	GetOasArtifact(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error)
 	GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error)
 }
@@ -262,6 +263,20 @@ func (r *apiRepository) FindOrganisationByURI(ctx context.Context, uri string) (
 
 func (r *apiRepository) SaveArtifact(ctx context.Context, art *models.ApiArtifact) error {
 	return r.db.WithContext(ctx).Create(art).Error
+}
+
+func (r *apiRepository) HasArtifactOfKind(ctx context.Context, apiID, kind string) (bool, error) {
+	if strings.TrimSpace(apiID) == "" || strings.TrimSpace(kind) == "" {
+		return false, fmt.Errorf("apiID en kind zijn verplicht")
+	}
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&models.ApiArtifact{}).
+		Where("api_id = ? AND kind = ?", apiID, kind).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func (r *apiRepository) GetOasArtifact(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error) {

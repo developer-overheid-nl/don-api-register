@@ -74,6 +74,9 @@ func (s *stubRepo) GetOasArtifact(ctx context.Context, apiID, version, format st
 	}
 	return nil, nil
 }
+func (s *stubRepo) HasArtifactOfKind(ctx context.Context, apiID, kind string) (bool, error) {
+	return false, nil
+}
 func (s *stubRepo) GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error) {
 	return nil, nil
 }

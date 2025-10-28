@@ -67,6 +67,9 @@ func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation,
 	return s.getOrgs(ctx)
 }
 func (s *stubRepo) SaveArtifact(ctx context.Context, art *models.ApiArtifact) error { return nil }
+func (s *stubRepo) HasArtifactOfKind(ctx context.Context, apiID, kind string) (bool, error) {
+	return false, nil
+}
 func (s *stubRepo) GetOasArtifact(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error) {
 	return nil, nil
 }

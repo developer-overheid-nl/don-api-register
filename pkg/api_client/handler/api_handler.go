@@ -3,6 +3,8 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/util"
@@ -161,13 +163,17 @@ func (c *APIsAPIController) GetPostman(ctx *gin.Context, params *models.ApiParam
 	return nil
 }
 
-func (c *APIsAPIController) GetOas31(ctx *gin.Context, params *models.ApiParams) error {
-	art, err := c.Service.GetArtifact(ctx.Request.Context(), params.Id, "oas-converted")
+func (c *APIsAPIController) GetOas(ctx *gin.Context, params *models.ApiOasParams) error {
+	version, format, err := parseOASVersionAndFormat(strings.TrimSpace(params.Version))
+	if err != nil {
+		return problem.NewBadRequest(params.Version, err.Error())
+	}
+	art, err := c.Service.GetOasDocument(ctx.Request.Context(), params.Id, version, format)
 	if err != nil {
 		return err
 	}
 	if art == nil {
-		return problem.NewNotFound(params.Id, "OAS 3.1 artifact not found")
+		return problem.NewNotFound(params.Id, "OAS artifact not found")
 	}
 	if art.ContentType != "" {
 		ctx.Header("Content-Type", art.ContentType)
@@ -175,6 +181,81 @@ func (c *APIsAPIController) GetOas31(ctx *gin.Context, params *models.ApiParams)
 	if art.Filename != "" {
 		ctx.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", art.Filename))
 	}
+	if art.Version != "" {
+		ctx.Header("X-OAS-Version", art.Version)
+	}
+	if art.Source != "" {
+		ctx.Header("X-OAS-Source", art.Source)
+	}
 	ctx.Data(200, art.ContentType, art.Data)
 	return nil
+}
+
+func parseOASVersionAndFormat(raw string) (string, string, error) {
+	const (
+		jsonSuffix = ".json"
+		yamlSuffix = ".yaml"
+		ymlSuffix  = ".yml"
+	)
+	if raw == "" {
+		return "", "", fmt.Errorf("verwacht pad-formaat {version}.{ext} met json of yaml")
+	}
+	lower := strings.ToLower(raw)
+
+	switch {
+	case strings.HasSuffix(lower, jsonSuffix):
+		version := strings.TrimSpace(raw[:len(raw)-len(jsonSuffix)])
+		if version == "" {
+			return "", "", fmt.Errorf("versie mag niet leeg zijn")
+		}
+		norm, err := normalizeOASVersion(version)
+		if err != nil {
+			return "", "", err
+		}
+		return norm, "json", nil
+	case strings.HasSuffix(lower, yamlSuffix):
+		version := strings.TrimSpace(raw[:len(raw)-len(yamlSuffix)])
+		if version == "" {
+			return "", "", fmt.Errorf("versie mag niet leeg zijn")
+		}
+		norm, err := normalizeOASVersion(version)
+		if err != nil {
+			return "", "", err
+		}
+		return norm, "yaml", nil
+	case strings.HasSuffix(lower, ymlSuffix):
+		version := strings.TrimSpace(raw[:len(raw)-len(ymlSuffix)])
+		if version == "" {
+			return "", "", fmt.Errorf("versie mag niet leeg zijn")
+		}
+		norm, err := normalizeOASVersion(version)
+		if err != nil {
+			return "", "", err
+		}
+		return norm, "yaml", nil
+	default:
+		return "", "", fmt.Errorf("verwacht pad-formaat {version}.{ext} met json of yaml")
+	}
+}
+
+func normalizeOASVersion(version string) (string, error) {
+	segments := strings.Split(version, ".")
+	if len(segments) < 2 {
+		return "", fmt.Errorf("ondersteunde versies zijn 3.0 en 3.1")
+	}
+	major := strings.TrimSpace(segments[0])
+	minor := strings.TrimSpace(segments[1])
+
+	majorInt, err := strconv.Atoi(major)
+	if err != nil || majorInt != 3 {
+		return "", fmt.Errorf("ondersteunde versies zijn 3.0 en 3.1")
+	}
+	minorInt, err := strconv.Atoi(minor)
+	if err != nil {
+		return "", fmt.Errorf("ondersteunde versies zijn 3.0 en 3.1")
+	}
+	if minorInt != 0 && minorInt != 1 {
+		return "", fmt.Errorf("ondersteunde versies zijn 3.0 en 3.1")
+	}
+	return fmt.Sprintf("3.%d", minorInt), nil
 }

@@ -24,8 +24,14 @@ type FetchOpts struct {
 }
 
 type OASResult struct {
-	Spec *v3.Document // high-level v3 model
-	Hash string       // sha256 van de genormaliseerde spec
+	Spec        *v3.Document // high-level v3 model
+	Hash        string       // sha256 van de genormaliseerde spec
+	Raw         []byte       // oorspronkelijke bytes zoals opgehaald
+	ContentType string       // content-type header van de response (kan leeg zijn)
+	Version     string       // volledige openapi versiestring, bv. 3.0.3
+	Major       int
+	Minor       int
+	Patch       int
 }
 
 var versionPrefixPattern = regexp.MustCompile(`^(\d+)\.(\d+)`)
@@ -45,6 +51,7 @@ func FetchParseValidateAndHash(ctx context.Context, oasURL string, opts FetchOpt
 		attempts = append(attempts, attempt{origin: ""})
 	}
 	var raw []byte
+	var contentType string
 	for i, att := range attempts {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, oasURL, nil)
 		if err != nil {
@@ -62,6 +69,7 @@ func FetchParseValidateAndHash(ctx context.Context, oasURL string, opts FetchOpt
 			resp.Body.Close()
 			return nil, fmt.Errorf("kan OAS niet ophalen: status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 		}
+		contentType = resp.Header.Get("Content-Type")
 		raw, err = io.ReadAll(resp.Body)
 		resp.Body.Close()
 		if err != nil {
@@ -149,11 +157,23 @@ func FetchParseValidateAndHash(ctx context.Context, oasURL string, opts FetchOpt
 	}
 	major, _ := strconv.Atoi(match[1])
 	minor, _ := strconv.Atoi(match[2])
+	var patch int
+	if parts := strings.SplitN(version, ".", 3); len(parts) == 3 {
+		if v, err := strconv.Atoi(parts[2]); err == nil {
+			patch = v
+		}
+	}
 	if major != 3 || minor > 1 {
 		return nil, fmt.Errorf("invalid OAS: unsupported OpenAPI version %s (alleen 3.0 en 3.1 worden ondersteund)", version)
 	}
 	return &OASResult{
-		Spec: &spec,
-		Hash: hex.EncodeToString(sum[:]),
+		Spec:        &spec,
+		Hash:        hex.EncodeToString(sum[:]),
+		Raw:         raw,
+		ContentType: contentType,
+		Version:     version,
+		Major:       major,
+		Minor:       minor,
+		Patch:       patch,
 	}, nil
 }

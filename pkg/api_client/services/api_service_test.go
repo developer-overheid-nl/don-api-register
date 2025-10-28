@@ -67,8 +67,19 @@ func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation,
 	return s.getOrgs(ctx)
 }
 func (s *stubRepo) SaveArtifact(ctx context.Context, art *models.ApiArtifact) error { return nil }
+func (s *stubRepo) GetOasArtifact(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error) {
+	return nil, nil
+}
 func (s *stubRepo) GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error) {
 	return nil, nil
+}
+
+func TestGetOasDocument_InvalidVersion(t *testing.T) {
+	repo := &stubRepo{}
+	service := services.NewAPIsAPIService(repo)
+	art, err := service.GetOasDocument(context.Background(), "api-1", "3.2", "json")
+	assert.Nil(t, art)
+	assert.Error(t, err)
 }
 
 func TestUpdateOasUri_NotFound(t *testing.T) {

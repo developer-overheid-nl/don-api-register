@@ -1,7 +1,9 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -21,6 +23,7 @@ import (
 	"golang.org/x/sync/semaphore"
 	"golang.org/x/time/rate"
 	"gorm.io/gorm"
+	"sigs.k8s.io/yaml"
 )
 
 var ErrNeedsPost = errors.New(
@@ -78,7 +81,7 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 	}
 
 	toolslint.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
-		return s.runToolsAndPersist(ctx, api.Id, body.OasUrl, res.Hash)
+		return s.runToolsAndPersist(ctx, api.Id, body.OasUrl, res)
 	})
 
 	updated := util.ToApiSummary(api)
@@ -204,7 +207,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 	}
 
 	toolslint.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
-		return s.runToolsAndPersist(ctx, api.Id, requestBody.OasUrl, resp.Hash)
+		return s.runToolsAndPersist(ctx, api.Id, requestBody.OasUrl, resp)
 	})
 
 	created := util.ToApiSummary(api)
@@ -343,10 +346,20 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 // runToolsAndPersist runs lint, bruno and postman generation
 // and persists their outputs. Lint result + ADR score are stored as before;
 // Bruno and Postman artifacts are stored as blobs linked to the API.
-func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL, expectedHash string) error {
+func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL string, result *openapi.OASResult) error {
+	var expectedHash string
+	if result != nil {
+		expectedHash = result.Hash
+	}
 	// Lint first; do not abort the rest if lint fails
 	if err := s.lintAndPersist(ctx, apiID, oasURL, expectedHash); err != nil {
 		log.Printf("[tools] lint failed: %v", err)
+	}
+
+	if result != nil {
+		if err := s.persistOASArtifacts(ctx, apiID, result); err != nil {
+			log.Printf("[tools] persist oas artifacts failed: %v", err)
+		}
 	}
 
 	// Generate artifacts in parallel, but do not fail the whole job if one fails
@@ -404,32 +417,6 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL, 
 		return nil
 	})
 
-	g.Go(func() error {
-		if err := s.withRateLimit(ctx); err != nil {
-			return nil
-		}
-		data, name, ct, err := toolslint.OasConverterPost(ctx, oasURL)
-		if err != nil {
-			log.Printf("[tools] oas converter failed: %v", err)
-			return nil
-		}
-		art := &models.ApiArtifact{
-			ID:          uuid.New().String(),
-			ApiID:       apiID,
-			Kind:        "oas-converted",
-			Filename:    name,
-			ContentType: ct,
-			Data:        data,
-			CreatedAt:   time.Now(),
-		}
-		if err := s.repo.SaveArtifact(ctx, art); err != nil {
-			log.Printf("[tools] save oas-converted artifact failed: %v", err)
-		} else {
-			log.Printf("[tools] saved oas-converted artifact id=%s api=%s", art.ID, apiID)
-		}
-		return nil
-	})
-
 	_ = g.Wait()
 	return nil
 }
@@ -460,4 +447,221 @@ func (s *APIsAPIService) GetArtifact(ctx context.Context, apiID, kind string) (*
 		return nil, fmt.Errorf("apiID en kind zijn verplicht")
 	}
 	return s.repo.GetArtifact(ctx, apiID, kind)
+}
+
+func (s *APIsAPIService) GetOasDocument(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error) {
+	if strings.TrimSpace(apiID) == "" {
+		return nil, fmt.Errorf("apiID is verplicht")
+	}
+	version = strings.TrimSpace(version)
+	if version != "3.0" && version != "3.1" {
+		return nil, problem.NewBadRequest(version, "ondersteunde versies zijn 3.0 en 3.1")
+	}
+	format = strings.ToLower(strings.TrimSpace(format))
+	if format == "yml" {
+		format = "yaml"
+	}
+	if format != "json" && format != "yaml" {
+		return nil, problem.NewBadRequest(format, "ondersteunde extensies zijn json en yaml")
+	}
+	art, err := s.repo.GetOasArtifact(ctx, apiID, version, format)
+	if err != nil {
+		return nil, err
+	}
+	return art, nil
+}
+
+func (s *APIsAPIService) persistOASArtifacts(ctx context.Context, apiID string, res *openapi.OASResult) error {
+	if res == nil {
+		return errors.New("leeg OAS resultaat")
+	}
+	if len(res.Raw) == 0 {
+		return errors.New("OAS bytes ontbreken")
+	}
+
+	originalVersion := fmt.Sprintf("%d.%d", res.Major, res.Minor)
+	originalFormat, err := detectOASFormat(res.Raw, res.ContentType)
+	if err != nil {
+		return fmt.Errorf("kan formaat niet bepalen: %w", err)
+	}
+
+	canonicalJSON, err := renderCanonicalJSON(res, originalFormat)
+	if err != nil {
+		return fmt.Errorf("kan canonical JSON renderen: %w", err)
+	}
+
+	var errs []error
+	// Bewaar ongewijzigde originele spec
+	if err := s.saveOASArtifact(ctx, apiID, originalVersion, originalFormat, "original", res.Raw); err != nil {
+		errs = append(errs, err)
+	}
+
+	// Zorg dat dezelfde versie ook in de andere representatie beschikbaar is
+	if originalFormat != "json" {
+		if err := s.saveOASArtifact(ctx, apiID, originalVersion, "json", "converted", canonicalJSON); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if originalFormat != "yaml" {
+		yamlData, yErr := yaml.JSONToYAML(canonicalJSON)
+		if yErr != nil {
+			errs = append(errs, fmt.Errorf("kan YAML renderen voor versie %s: %w", originalVersion, yErr))
+		} else if err := s.saveOASArtifact(ctx, apiID, originalVersion, "yaml", "converted", yamlData); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	// Converteer naar de andere OpenAPI versie indien ondersteund (3.0 <-> 3.1)
+	if targetShort, targetFull, ok := targetVersion(res); ok {
+		convertedJSON, convErr := updateOpenAPIVersion(canonicalJSON, targetFull)
+		if convErr != nil {
+			errs = append(errs, fmt.Errorf("kan OAS versie converteren naar %s: %w", targetFull, convErr))
+		} else {
+			if err := s.saveOASArtifact(ctx, apiID, targetShort, "json", "converted", convertedJSON); err != nil {
+				errs = append(errs, err)
+			}
+			yamlData, yErr := yaml.JSONToYAML(convertedJSON)
+			if yErr != nil {
+				errs = append(errs, fmt.Errorf("kan YAML renderen voor versie %s: %w", targetShort, yErr))
+			} else if err := s.saveOASArtifact(ctx, apiID, targetShort, "yaml", "converted", yamlData); err != nil {
+				errs = append(errs, err)
+			}
+		}
+	} else {
+		log.Printf("[oas] skip conversie: versie %s niet ondersteund voor automatische omzetting", res.Version)
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
+}
+
+func (s *APIsAPIService) saveOASArtifact(ctx context.Context, apiID, version, format, source string, data []byte) error {
+	if len(data) == 0 {
+		return fmt.Errorf("artifact data is leeg voor versie %s (%s)", version, format)
+	}
+	format = strings.ToLower(format)
+	art := &models.ApiArtifact{
+		ID:          uuid.New().String(),
+		ApiID:       apiID,
+		Kind:        "oas",
+		Version:     version,
+		Format:      format,
+		Source:      source,
+		Filename:    oasFilename(version, source, format),
+		ContentType: formatContentType(format),
+		Data:        data,
+		CreatedAt:   time.Now(),
+	}
+	if err := s.repo.SaveArtifact(ctx, art); err != nil {
+		return fmt.Errorf("kan artifact %s opslaan: %w", art.Filename, err)
+	}
+	log.Printf("[oas] saved artifact id=%s api=%s version=%s format=%s source=%s", art.ID, apiID, version, format, source)
+	return nil
+}
+
+func detectOASFormat(raw []byte, contentType string) (string, error) {
+	ct := strings.ToLower(contentType)
+	switch {
+	case strings.Contains(ct, "json"):
+		return "json", nil
+	case strings.Contains(ct, "yaml"), strings.Contains(ct, "yml"):
+		return "yaml", nil
+	}
+	sample := raw
+	if len(sample) > 256 {
+		sample = sample[:256]
+	}
+	trimmed := strings.TrimSpace(string(sample))
+	if trimmed == "" {
+		return "", errors.New("leeg document")
+	}
+	switch trimmed[0] {
+	case '{', '[':
+		return "json", nil
+	}
+	if strings.HasPrefix(strings.ToLower(trimmed), "openapi:") || strings.HasPrefix(trimmed, "---") {
+		return "yaml", nil
+	}
+	return "", fmt.Errorf("onbekend formaat")
+}
+
+func formatContentType(format string) string {
+	switch strings.ToLower(format) {
+	case "json":
+		return "application/json"
+	case "yaml", "yml":
+		return "application/yaml"
+	default:
+		return "application/octet-stream"
+	}
+}
+
+func oasFilename(version, source, format string) string {
+	return fmt.Sprintf("oas-%s-%s.%s", version, source, format)
+}
+
+func renderCanonicalJSON(res *openapi.OASResult, originalFormat string) ([]byte, error) {
+	if res.Spec != nil {
+		if rendered, err := res.Spec.RenderJSON("  "); err == nil && len(rendered) > 0 {
+			if pretty, perr := prettyJSON(rendered); perr == nil {
+				return pretty, nil
+			}
+			return rendered, nil
+		}
+	}
+	return toPrettyJSON(res.Raw, originalFormat)
+}
+
+func prettyJSON(data []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, data, "", "  "); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func toPrettyJSON(raw []byte, format string) ([]byte, error) {
+	switch strings.ToLower(format) {
+	case "json":
+		return prettyJSON(raw)
+	case "yaml", "yml":
+		jsonData, err := yaml.YAMLToJSON(raw)
+		if err != nil {
+			return nil, err
+		}
+		return prettyJSON(jsonData)
+	default:
+		return nil, fmt.Errorf("onbekend formaat %s", format)
+	}
+}
+
+func targetVersion(res *openapi.OASResult) (short string, full string, ok bool) {
+	switch res.Minor {
+	case 0:
+		return "3.1", "3.1.0", true
+	case 1:
+		return "3.0", "3.0.3", true
+	default:
+		return "", "", false
+	}
+}
+
+func updateOpenAPIVersion(jsonData []byte, targetVersion string) ([]byte, error) {
+	var doc map[string]any
+	if err := json.Unmarshal(jsonData, &doc); err != nil {
+		return nil, err
+	}
+	doc["openapi"] = targetVersion
+	if strings.HasPrefix(targetVersion, "3.0") {
+		delete(doc, "webhooks")
+		delete(doc, "jsonSchemaDialect")
+		delete(doc, "$self")
+	}
+	out, err := json.MarshalIndent(doc, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }

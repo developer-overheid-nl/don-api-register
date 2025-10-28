@@ -26,6 +26,7 @@ type ApiRepository interface {
 	GetOrganisations(ctx context.Context) ([]models.Organisation, int, error)
 	FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error)
 	SaveArtifact(ctx context.Context, art *models.ApiArtifact) error
+	GetOasArtifact(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error)
 	GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error)
 }
 
@@ -261,6 +262,24 @@ func (r *apiRepository) FindOrganisationByURI(ctx context.Context, uri string) (
 
 func (r *apiRepository) SaveArtifact(ctx context.Context, art *models.ApiArtifact) error {
 	return r.db.WithContext(ctx).Create(art).Error
+}
+
+func (r *apiRepository) GetOasArtifact(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error) {
+	if strings.TrimSpace(apiID) == "" || strings.TrimSpace(version) == "" || strings.TrimSpace(format) == "" {
+		return nil, fmt.Errorf("apiID, version en format zijn verplicht")
+	}
+	var art models.ApiArtifact
+	query := r.db.WithContext(ctx).
+		Where("api_id = ? AND kind = ? AND version = ? AND format = ?", apiID, "oas", version, strings.ToLower(format)).
+		Order("CASE WHEN source = 'original' THEN 0 ELSE 1 END").
+		Order("created_at desc")
+	if err := query.First(&art).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &art, nil
 }
 
 func (r *apiRepository) GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error) {

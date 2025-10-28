@@ -158,11 +158,11 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.GetPostman, 200),
 	)
 
-	read.GET("/apis/:id/oas31",
+	read.GET("/apis/:id/oas/:version",
 		[]fizz.OperationOption{
-			fizz.ID("getOas31"),
-			fizz.Summary("Download OAS 3.1 documentatie"),
-			fizz.Description("Geeft de gegenereerde OAS 3.1 JSON terug."),
+			fizz.ID("getOasVersion"),
+			fizz.Summary("Download OAS document"),
+			fizz.Description("Geeft de OAS 3.0 of 3.1 specificatie in JSON of YAML terug."),
 			fizz.Security(&openapi.SecurityRequirement{
 				"apiKey":            {},
 				"clientCredentials": {"apis:read"},
@@ -170,7 +170,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 			apiVersionHeader,
 			notFoundResponse,
 		},
-		tonic.Handler(controller.GetOas31, 200),
+		tonic.Handler(controller.GetOas, 200),
 	)
 
 	readOrg := root.Group("", "Private endpoints", "Alleen lezen endpoints")

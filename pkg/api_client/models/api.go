@@ -121,6 +121,11 @@ type ApiParams struct {
 	Id string `path:"id"`
 }
 
+type ApiOasParams struct {
+	Id      string `path:"id"`
+	Version string `path:"version"`
+}
+
 type UpdateApiInput struct {
 	Id              string  `path:"id"` // <-- uit path param
 	OasUrl          string  `json:"oasUrl" binding:"required,url"`

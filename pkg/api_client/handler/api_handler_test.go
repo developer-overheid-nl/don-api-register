@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"testing"
 
+	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,7 @@ type stubRepo struct {
 	getOrgs     func(ctx context.Context) ([]models.Organisation, int, error)
 	findOrg     func(ctx context.Context, uri string) (*models.Organisation, error)
 	saveOrg     func(org *models.Organisation) error
+	getOasArt   func(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error)
 }
 
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
@@ -66,10 +68,106 @@ func (s *stubRepo) SaveServer(server models.Server) error                       
 func (s *stubRepo) AllApis(ctx context.Context) ([]models.Api, error)                { return nil, nil }
 func (s *stubRepo) SaveLintResult(ctx context.Context, res *models.LintResult) error { return nil }
 func (s *stubRepo) SaveArtifact(ctx context.Context, art *models.ApiArtifact) error  { return nil }
+func (s *stubRepo) GetOasArtifact(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error) {
+	if s.getOasArt != nil {
+		return s.getOasArt(ctx, apiID, version, format)
+	}
+	return nil, nil
+}
 func (s *stubRepo) GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error) {
 	return nil, nil
 }
 
+func TestGetOas_Handler(t *testing.T) {
+	repo := &stubRepo{
+		getOasArt: func(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error) {
+			assert.Equal(t, "api-1", apiID)
+			assert.Equal(t, "3.1", version)
+			assert.Equal(t, "json", format)
+			return &models.ApiArtifact{
+				ApiID:       apiID,
+				Kind:        "oas",
+				Version:     version,
+				Format:      format,
+				Source:      "converted",
+				ContentType: "application/json",
+				Filename:    "oas-3.1-converted.json",
+				Data:        []byte(`{"openapi":"3.1.0"}`),
+			}, nil
+		},
+	}
+	svc := services.NewAPIsAPIService(repo)
+	ctrl := NewAPIsAPIController(svc)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	req := httptest.NewRequest("GET", "/v1/apis/api-1/oas/3.1.json", nil)
+	ctx.Request = req
+
+	err := ctrl.GetOas(ctx, &models.ApiOasParams{
+		Id:      "api-1",
+		Version: "3.1.json",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+	assert.Equal(t, "converted", w.Header().Get("X-OAS-Source"))
+	assert.Equal(t, "3.1", w.Header().Get("X-OAS-Version"))
+	assert.Equal(t, `{"openapi":"3.1.0"}`, w.Body.String())
+}
+
+func TestGetOas_AllowsPatchVersion(t *testing.T) {
+	var capturedVersion, capturedFormat string
+	repo := &stubRepo{
+		getOasArt: func(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error) {
+			capturedVersion = version
+			capturedFormat = format
+			return &models.ApiArtifact{
+				ApiID:       apiID,
+				Kind:        "oas",
+				Version:     version,
+				Format:      format,
+				ContentType: "application/yaml",
+				Data:        []byte("openapi: 3.0.3"),
+			}, nil
+		},
+	}
+	svc := services.NewAPIsAPIService(repo)
+	ctrl := NewAPIsAPIController(svc)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	req := httptest.NewRequest("GET", "/v1/apis/api-1/oas/3.0.3.yaml", nil)
+	ctx.Request = req
+
+	err := ctrl.GetOas(ctx, &models.ApiOasParams{
+		Id:      "api-1",
+		Version: "3.0.3.yaml",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "3.0", capturedVersion)
+	assert.Equal(t, "yaml", capturedFormat)
+}
+
+func TestGetOas_InvalidFormat(t *testing.T) {
+	repo := &stubRepo{}
+	svc := services.NewAPIsAPIService(repo)
+	ctrl := NewAPIsAPIController(svc)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	req := httptest.NewRequest("GET", "/v1/apis/api-1/oas/3.0", nil)
+	ctx.Request = req
+
+	err := ctrl.GetOas(ctx, &models.ApiOasParams{
+		Id:      "api-1",
+		Version: "3.0",
+	})
+	apiErr, ok := err.(problem.APIError)
+	assert.True(t, ok)
+	assert.Equal(t, 400, apiErr.Status)
+	assert.Contains(t, apiErr.Detail, "json of yaml")
+}
 func TestListApis_Handler(t *testing.T) {
 	repo := &stubRepo{
 		listFunc: func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {

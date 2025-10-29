@@ -133,18 +133,6 @@ func main() {
 	}
 	apiRepo := repositories.NewApiRepository(db)
 	APIsAPIService := services.NewAPIsAPIService(apiRepo)
-
-	if len(os.Args) > 1 {
-		switch os.Args[1] {
-		case "backfill-oas":
-			if err := APIsAPIService.BackfillOASArtifacts(context.Background()); err != nil {
-				log.Fatalf("backfill-oas failed: %v", err)
-			}
-			log.Println("backfill-oas completed successfully")
-			return
-		}
-	}
-
 	APIsAPIController := handler.NewAPIsAPIController(APIsAPIService)
 	if _, err := APIsAPIService.CreateOrganisation(context.Background(), &models.Organisation{Uri: "https://www.pdok.nl", Label: "PDOK"}); err != nil {
 		fmt.Printf("[pdok-import] create org warning: %v\n", err)
@@ -158,6 +146,7 @@ func main() {
 	if _, err := APIsAPIService.CreateOrganisation(context.Background(), &models.Organisation{Uri: "https://developer.overheid.nl/", Label: "Developer overheid"}); err != nil {
 		fmt.Printf("[developer-overheid-import] create org warning: %v\n", err)
 	}
+	APIsAPIService.BackfillOASArtifacts(context.Background())
 
 	// Start server
 	router := api.NewRouter(version, APIsAPIController)

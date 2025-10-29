@@ -146,7 +146,10 @@ func main() {
 	if _, err := APIsAPIService.CreateOrganisation(context.Background(), &models.Organisation{Uri: "https://developer.overheid.nl/", Label: "Developer overheid"}); err != nil {
 		fmt.Printf("[developer-overheid-import] create org warning: %v\n", err)
 	}
-	APIsAPIService.BackfillOASArtifacts(context.Background())
+	err = APIsAPIService.BackfillOASArtifacts(context.Background())
+	if err != nil {
+		log.Fatalf("Failed to backfill OAS artifacts: %v", err)
+	}
 
 	// Start server
 	router := api.NewRouter(version, APIsAPIController)

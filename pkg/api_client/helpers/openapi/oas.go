@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/pb33f/libopenapi"
-	validator "github.com/pb33f/libopenapi-validator"
 	"github.com/pb33f/libopenapi/datamodel"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 )
@@ -115,26 +114,6 @@ func FetchParseValidateAndHash(ctx context.Context, oasURL string, opts FetchOpt
 		var parts []string
 		parts = append(parts, buildErrs.Error())
 		return nil, fmt.Errorf("invalid OAS (model): %s", strings.Join(parts, "; "))
-	}
-
-	// 5) Valideer OAS 3.0/3.1 met libopenapi-validator
-	docValidator, vErrs := validator.NewValidator(doc)
-	if len(vErrs) > 0 {
-		var parts []string
-		for _, e := range vErrs {
-			parts = append(parts, e.Error())
-		}
-		return nil, fmt.Errorf("validator init error: %s", strings.Join(parts, "; "))
-	}
-	ok, validationErrs := docValidator.ValidateDocument()
-	if !ok {
-		// maak nette, compacte foutmelding
-		var parts []string
-		for _, e := range validationErrs {
-			// e.Message bevat de essentie; evt. kun je e.Locator ook tonen
-			parts = append(parts, e.Message)
-		}
-		return nil, fmt.Errorf("invalid OAS: %s", strings.Join(parts, "; "))
 	}
 
 	// 6) Hash over de genormaliseerde weergave

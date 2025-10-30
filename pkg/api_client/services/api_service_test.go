@@ -6,8 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	httpclient "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
+	typesense "github.com/developer-overheid-nl/don-api-register/pkg/api_client/services/typesense"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -24,6 +26,7 @@ type stubRepo struct {
 	saveApi    func(api *models.Api) error
 	saveOrg    func(org *models.Organisation) error
 	getOrgs    func(ctx context.Context) ([]models.Organisation, int, error)
+	allApis    func(ctx context.Context) ([]models.Api, error)
 }
 
 func (s *stubRepo) FindByOasUrl(ctx context.Context, url string) (*models.Api, error) {
@@ -61,7 +64,12 @@ func (s *stubRepo) SaveOrganisatie(org *models.Organisation) error {
 	}
 	return nil
 }
-func (s *stubRepo) AllApis(ctx context.Context) ([]models.Api, error)                   { return nil, nil }
+func (s *stubRepo) AllApis(ctx context.Context) ([]models.Api, error) {
+	if s.allApis != nil {
+		return s.allApis(ctx)
+	}
+	return nil, nil
+}
 func (s *stubRepo) SaveLintResult(ctx context.Context, result *models.LintResult) error { return nil }
 func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation, int, error) {
 	return s.getOrgs(ctx)
@@ -311,4 +319,43 @@ func TestCreateOrganisation_Service(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "Org", res.Label)
 	assert.Equal(t, saved.Uri, res.Uri)
+}
+
+func TestPublishAllApisToTypesense_Disabled(t *testing.T) {
+	t.Setenv("TYPESENSE_ENDPOINT", "")
+	repo := &stubRepo{
+		allApis: func(ctx context.Context) ([]models.Api, error) {
+			return []models.Api{{Id: "api-1"}}, nil
+		},
+	}
+	service := services.NewAPIsAPIService(repo)
+	err := service.PublishAllApisToTypesense(context.Background())
+	assert.ErrorIs(t, err, typesense.ErrDisabled)
+}
+
+func TestPublishAllApisToTypesense_SendsDocuments(t *testing.T) {
+	var calls int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer server.Close()
+
+	t.Setenv("TYPESENSE_ENDPOINT", server.URL)
+	t.Setenv("TYPESENSE_API_KEY", "secret")
+	t.Setenv("TYPESENSE_COLLECTION", "apis")
+
+	prevClient := httpclient.HTTPClient
+	httpclient.HTTPClient = server.Client()
+	t.Cleanup(func() { httpclient.HTTPClient = prevClient })
+
+	repo := &stubRepo{
+		allApis: func(ctx context.Context) ([]models.Api, error) {
+			return []models.Api{{Id: "api-1"}, {Id: "api-2"}}, nil
+		},
+	}
+	service := services.NewAPIsAPIService(repo)
+	err := service.PublishAllApisToTypesense(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, 2, calls)
 }

@@ -18,6 +18,7 @@ import (
 	util "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/util"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
+	typesense "github.com/developer-overheid-nl/don-api-register/pkg/api_client/services/typesense"
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -209,6 +210,9 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 	toolslint.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
 		return s.runToolsAndPersist(ctx, api.Id, requestBody.OasUrl, resp)
 	})
+
+	apiCopy := *api
+	go s.publishToTypesense(apiCopy)
 
 	created := util.ToApiSummary(api)
 	return &created, nil
@@ -421,8 +425,45 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL s
 	return nil
 }
 
+func (s *APIsAPIService) publishToTypesense(api models.Api) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := typesense.PublishApi(ctx, &api); err != nil {
+		if errors.Is(err, typesense.ErrDisabled) {
+			return
+		}
+		log.Printf("[typesense] indexing failed for api=%s: %v", api.Id, err)
+	}
+}
+
 func (s *APIsAPIService) ListOrganisations(ctx context.Context) ([]models.Organisation, int, error) {
 	return s.repo.GetOrganisations(ctx)
+}
+
+// PublishAllApisToTypesense pushes every stored API to Typesense. Intended as a one-off helper.
+func (s *APIsAPIService) PublishAllApisToTypesense(ctx context.Context) error {
+	apis, err := s.repo.AllApis(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, api := range apis {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		apiCopy := api
+		itemCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		err := typesense.PublishApi(itemCtx, &apiCopy)
+		cancel()
+		if err != nil {
+			if errors.Is(err, typesense.ErrDisabled) {
+				return err
+			}
+			log.Printf("[typesense] bulk indexing failed for api=%s: %v", apiCopy.Id, err)
+		}
+	}
+	return nil
 }
 
 // CreateOrganisation validates and stores a new organisation

@@ -146,6 +146,9 @@ func main() {
 	if _, err := APIsAPIService.CreateOrganisation(context.Background(), &models.Organisation{Uri: "https://developer.overheid.nl/", Label: "Developer overheid"}); err != nil {
 		fmt.Printf("[developer-overheid-import] create org warning: %v\n", err)
 	}
+	if err := APIsAPIService.PublishAllApisToTypesense(context.Background()); err != nil {
+		log.Fatalf("[typesense-sync] bulk publish failed: %v", err)
+	}
 
 	// Start server
 	router := api.NewRouter(version, APIsAPIController)

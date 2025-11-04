@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -134,18 +133,6 @@ func main() {
 	apiRepo := repositories.NewApiRepository(db)
 	APIsAPIService := services.NewAPIsAPIService(apiRepo)
 	APIsAPIController := handler.NewAPIsAPIController(APIsAPIService)
-	if _, err := APIsAPIService.CreateOrganisation(context.Background(), &models.Organisation{Uri: "https://www.pdok.nl", Label: "PDOK"}); err != nil {
-		fmt.Printf("[pdok-import] create org warning: %v\n", err)
-	}
-	if _, err := APIsAPIService.CreateOrganisation(context.Background(), &models.Organisation{Uri: "https://developer.omgevingswet.overheid.nl", Label: "Digitaal Stelsel Omgevingswet (DSO)"}); err != nil {
-		fmt.Printf("[dso-import] create org warning: %v\n", err)
-	}
-	if _, err := APIsAPIService.CreateOrganisation(context.Background(), &models.Organisation{Uri: "https://www.vng.nl", Label: "VNG"}); err != nil {
-		fmt.Printf("[vng-import] create org warning: %v\n", err)
-	}
-	if _, err := APIsAPIService.CreateOrganisation(context.Background(), &models.Organisation{Uri: "https://developer.overheid.nl/", Label: "Developer overheid"}); err != nil {
-		fmt.Printf("[developer-overheid-import] create org warning: %v\n", err)
-	}
 	if err := APIsAPIService.PublishAllApisToTypesense(context.Background()); err != nil {
 		log.Fatalf("[typesense-sync] bulk publish failed: %v", err)
 	}

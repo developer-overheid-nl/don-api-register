@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	httpclient "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
+	openapihelper "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/openapi"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	typesense "github.com/developer-overheid-nl/don-api-register/pkg/api_client/services/typesense"
@@ -27,6 +28,7 @@ type stubRepo struct {
 	saveOrg    func(org *models.Organisation) error
 	getOrgs    func(ctx context.Context) ([]models.Organisation, int, error)
 	allApis    func(ctx context.Context) ([]models.Api, error)
+	updateApi  func(ctx context.Context, api models.Api) error
 }
 
 func (s *stubRepo) FindByOasUrl(ctx context.Context, url string) (*models.Api, error) {
@@ -55,9 +57,14 @@ func (s *stubRepo) SearchApis(ctx context.Context, page, perPage int, organisati
 }
 
 // unused methods
-func (s *stubRepo) SaveServer(server models.Server) error               { return s.saveServer(server) }
-func (s *stubRepo) Save(api *models.Api) error                          { return s.saveApi(api) }
-func (s *stubRepo) UpdateApi(ctx context.Context, api models.Api) error { return nil }
+func (s *stubRepo) SaveServer(server models.Server) error { return s.saveServer(server) }
+func (s *stubRepo) Save(api *models.Api) error            { return s.saveApi(api) }
+func (s *stubRepo) UpdateApi(ctx context.Context, api models.Api) error {
+	if s.updateApi != nil {
+		return s.updateApi(ctx, api)
+	}
+	return nil
+}
 func (s *stubRepo) SaveOrganisatie(org *models.Organisation) error {
 	if s.saveOrg != nil {
 		return s.saveOrg(org)
@@ -113,6 +120,215 @@ func TestUpdateOasUri_NotFound(t *testing.T) {
 	assert.Nil(t, result)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), services.ErrNeedsPost.Error())
+}
+
+func TestCreateApiFromOas_UsesSpecContactOverBody(t *testing.T) {
+	spec := `{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Contact Spec",
+    "version": "1.1.0",
+    "contact": {
+      "name": "Spec Contact",
+      "email": "spec@example.com",
+      "url": "https://spec.example.com"
+    }
+  },
+  "paths": {
+    "/ping": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "pong"
+          }
+        }
+      }
+    }
+  }
+}`
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(spec))
+	}))
+	defer srv.Close()
+
+	orgURI := "https://identifier.overheid.nl/tooi/id/0000"
+
+	var updated models.Api
+	repo := &stubRepo{
+		findByOas: func(ctx context.Context, url string) (*models.Api, error) { return nil, nil },
+		findOrg: func(ctx context.Context, uri string) (*models.Organisation, error) {
+			return &models.Organisation{Uri: orgURI, Label: "Org Label"}, nil
+		},
+		saveServer: func(server models.Server) error { return nil },
+		saveApi: func(api *models.Api) error {
+			return nil
+		},
+		updateApi: func(ctx context.Context, api models.Api) error {
+			updated = api
+			return nil
+		},
+	}
+
+	service := services.NewAPIsAPIService(repo)
+	input := models.ApiPost{
+		OasUrl:          srv.URL,
+		OrganisationUri: orgURI,
+		Contact: models.Contact{
+			Name:  "Body Contact",
+			Email: "body@example.com",
+			URL:   "https://body.example.com",
+		},
+	}
+
+	summary, err := service.CreateApiFromOas(input)
+	assert.NoError(t, err)
+	assert.NotNil(t, summary)
+
+	assert.Equal(t, "Spec Contact", summary.Contact.Name)
+	assert.Equal(t, "spec@example.com", summary.Contact.Email)
+	assert.Equal(t, "https://spec.example.com", summary.Contact.URL)
+
+	assert.Equal(t, "Spec Contact", updated.ContactName)
+	assert.Equal(t, "spec@example.com", updated.ContactEmail)
+	assert.Equal(t, "https://spec.example.com", updated.ContactUrl)
+}
+
+func TestUpdateOasUri_PersistsUpdatedFields(t *testing.T) {
+	spec := `{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Nieuwe API",
+    "version": "2.0.0",
+    "description": "Nieuwe beschrijving",
+    "contact": {
+      "name": "Nieuw Contact",
+      "email": "nieuw@example.com",
+      "url": "https://nieuw.example.com"
+    },
+    "x-sunset": "2026-01-01",
+    "x-deprecated": "2025-01-01"
+  },
+  "externalDocs": {
+    "url": "https://docs.nieuw.example.com"
+  },
+  "servers": [
+    {
+      "url": "https://api.nieuw.example.com",
+      "description": "Production"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "name": "X-API-Key",
+        "in": "header"
+      }
+    }
+  },
+  "paths": {
+    "/ping": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "pong"
+          }
+        }
+      }
+    }
+  }
+}`
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(spec))
+	}))
+	defer srv.Close()
+
+	res, err := openapihelper.FetchParseValidateAndHash(context.Background(), srv.URL, openapihelper.FetchOpts{})
+	assert.NoError(t, err)
+
+	orgURI := "https://example.org/org"
+	existing := &models.Api{
+		Id:           "api-123",
+		OasUri:       "https://old.example.com/openapi.json",
+		OasHash:      res.Hash,
+		Title:        "Oude titel",
+		Description:  "Oude beschrijving",
+		Version:      "1.0.0",
+		Sunset:       "2024-01-01",
+		Deprecated:   "2023-01-01",
+		DocsUrl:      "https://docs.oud.example.com",
+		ContactName:  "Oud Contact",
+		ContactEmail: "oud@example.com",
+		ContactUrl:   "https://oud.example.com",
+		Auth:         "http",
+		Organisation: &models.Organisation{Uri: orgURI, Label: "Org Label"},
+		AdrScore:     nil,
+	}
+	existing.OrganisationID = &orgURI
+
+	var saved models.Api
+	var updateCalled bool
+	repo := &stubRepo{
+		getByID: func(ctx context.Context, id string) (*models.Api, error) {
+			assert.Equal(t, "api-123", id)
+			return existing, nil
+		},
+		updateApi: func(ctx context.Context, api models.Api) error {
+			updateCalled = true
+			saved = api
+			return nil
+		},
+	}
+
+	service := services.NewAPIsAPIService(repo)
+	input := &models.UpdateApiInput{
+		Id:              "api-123",
+		OasUrl:          srv.URL,
+		OrganisationUri: orgURI,
+		Contact: models.Contact{
+			Name:  "Fallback Naam",
+			Email: "fallback@example.com",
+			URL:   "https://fallback.example.com",
+		},
+	}
+
+	summary, err := service.UpdateOasUri(context.Background(), input)
+	assert.NoError(t, err)
+	assert.NotNil(t, summary)
+	assert.True(t, updateCalled)
+
+	assert.Equal(t, srv.URL, saved.OasUri)
+	assert.Equal(t, "Nieuwe API", saved.Title)
+	assert.Equal(t, "Nieuwe beschrijving", saved.Description)
+	assert.Equal(t, "2.0.0", saved.Version)
+	assert.Equal(t, "2026-01-01", saved.Sunset)
+	assert.Equal(t, "2025-01-01", saved.Deprecated)
+	assert.Equal(t, "https://docs.nieuw.example.com", saved.DocsUrl)
+	assert.Equal(t, "Nieuw Contact", saved.ContactName)
+	assert.Equal(t, "nieuw@example.com", saved.ContactEmail)
+	assert.Equal(t, "https://nieuw.example.com", saved.ContactUrl)
+	assert.Equal(t, res.Hash, saved.OasHash)
+	assert.Equal(t, "api_key", saved.Auth)
+	if assert.NotNil(t, saved.OrganisationID) {
+		assert.Equal(t, orgURI, *saved.OrganisationID)
+	}
+	if assert.NotNil(t, saved.Organisation) {
+		assert.Equal(t, orgURI, saved.Organisation.Uri)
+		assert.Equal(t, "Org Label", saved.Organisation.Label)
+	}
+	assert.Len(t, saved.Servers, 1)
+	assert.Equal(t, srv.URL, summary.OasUrl)
+	assert.Equal(t, "Nieuwe API", summary.Title)
+	assert.Equal(t, "2.0.0", summary.Lifecycle.Version)
 }
 
 func TestRetrieveApi_Success(t *testing.T) {

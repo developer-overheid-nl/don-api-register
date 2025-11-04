@@ -40,47 +40,6 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	g.Use(APIVersionMiddleware(apiVersion))
 	f := fizz.NewFromEngine(g)
 
-	f.Generator().SetServers([]*openapi.Server{
-		{
-			URL:         "https://api.developer.overheid.nl/api-register",
-			Description: "Production",
-		},
-		{
-			URL:         "https://api.don.apps.digilab.network/api-register",
-			Description: "Test",
-		},
-	})
-
-	gen := f.Generator()
-	gen.API().Components.Responses["404"] = &openapi.ResponseOrRef{
-		Reference: &openapi.Reference{
-			Ref: "https://static.developer.overheid.nl/adr/components.yaml#/responses/404",
-		},
-	}
-
-	gen.API().Components.Headers["API-Version"] = &openapi.HeaderOrRef{
-		Header: &openapi.Header{
-			Description: "De API-versie van de response",
-			Schema: &openapi.SchemaOrRef{
-				Schema: &openapi.Schema{
-					Type:    "string",
-					Example: "1.0.0",
-				},
-			},
-		},
-	}
-
-	info := &openapi.Info{
-		Title:       "API register API v1",
-		Description: "API van het API register (apis.developer.overheid.nl)",
-		Version:     apiVersion,
-		Contact: &openapi.Contact{
-			Name:  "Team developer.overheid.nl",
-			Email: "developer.overheid@geonovum.nl",
-			URL:   "https://github.com/developer-overheid-nl/don-api-register/issues",
-		},
-	}
-
 	root := f.Group("/v1", "API v1", "API Register V1 routes")
 
 	read := root.Group("", "Publieke endpoints", "Alleen lezen endpoints")
@@ -236,7 +195,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	)
 
 	// 6) OpenAPI documentatie
-	f.GET("/v1/openapi.json", []fizz.OperationOption{}, f.OpenAPI(info, "json"))
+	g.StaticFile("/v1/openapi.json", "./api/openapi.json")
 
 	return f
 }

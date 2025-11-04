@@ -137,6 +137,63 @@ paths: {}
 	assert.Equal(t, "application/yaml", artifacts["3.1-yaml"].ContentType)
 }
 
+func TestPersistOASArtifacts_AcceptsJSONOriginal(t *testing.T) {
+	repo := &artifactRepoStub{}
+	service := NewAPIsAPIService(repo)
+
+	raw := []byte(`{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Demo JSON",
+    "version": "2.0"
+  },
+  "paths": {}
+}`)
+
+	doc, err := libopenapi.NewDocument(raw)
+	require.NoError(t, err)
+	model, err := doc.BuildV3Model()
+	require.NoError(t, err)
+	spec := model.Model
+	sum := sha256.Sum256(raw)
+
+	res := &openapihelper.OASResult{
+		Spec:        &spec,
+		Hash:        hex.EncodeToString(sum[:]),
+		Raw:         raw,
+		ContentType: "application/json",
+		Version:     "3.1.1",
+		Major:       3,
+		Minor:       1,
+		Patch:       1,
+	}
+
+	err = service.persistOASArtifacts(context.Background(), "api-json", res)
+	require.NoError(t, err)
+	require.Len(t, repo.saved, 4)
+
+	artifacts := map[string]*models.ApiArtifact{}
+	for _, art := range repo.saved {
+		key := art.Version + "-" + art.Format
+		artifacts[key] = art
+	}
+
+	require.Contains(t, artifacts, "3.1-json")
+	require.Contains(t, artifacts, "3.1-yaml")
+	require.Contains(t, artifacts, "3.0-json")
+	require.Contains(t, artifacts, "3.0-yaml")
+
+	assert.Equal(t, "original", artifacts["3.1-json"].Source)
+	assert.Equal(t, "converted", artifacts["3.1-yaml"].Source)
+	assert.Equal(t, "converted", artifacts["3.0-json"].Source)
+	assert.Equal(t, "converted", artifacts["3.0-yaml"].Source)
+
+	assert.Equal(t, "application/json", artifacts["3.1-json"].ContentType)
+	assert.Equal(t, "application/yaml", artifacts["3.1-yaml"].ContentType)
+	assert.Equal(t, "application/json", artifacts["3.0-json"].ContentType)
+	assert.Equal(t, "application/yaml", artifacts["3.0-yaml"].ContentType)
+}
+
 func TestBackfillOASArtifacts_GeneratesWhenMissing(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/yaml")

@@ -69,21 +69,36 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 		return nil, problem.NewBadRequest(body.OasUrl, err.Error())
 	}
 
-	// Niks veranderd? Klaar.
-	if res.Hash == api.OasHash {
-		updated := util.ToApiSummary(api)
-		return &updated, nil
+	originalHash := api.OasHash
+	orgLabel := ""
+	if api.Organisation != nil {
+		orgLabel = api.Organisation.Label
 	}
-
-	// Hash gewijzigd → opslaan en linten
+	openapi.UpdateApiFromSpec(api, res.Spec, models.ApiPost{
+		OasUrl:          body.OasUrl,
+		OrganisationUri: body.OrganisationUri,
+		Contact:         body.Contact,
+	}, orgLabel)
+	if api.Organisation == nil && strings.TrimSpace(body.OrganisationUri) != "" {
+		api.Organisation = &models.Organisation{
+			Uri:   body.OrganisationUri,
+			Label: orgLabel,
+		}
+	}
+	if api.Organisation != nil && api.OrganisationID == nil {
+		api.OrganisationID = &api.Organisation.Uri
+	}
 	api.OasHash = res.Hash
+
 	if err := s.repo.UpdateApi(ctx, *api); err != nil {
 		return nil, err
 	}
 
-	toolslint.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
-		return s.runToolsAndPersist(ctx, api.Id, body.OasUrl, res)
-	})
+	if res.Hash != originalHash {
+		toolslint.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
+			return s.runToolsAndPersist(ctx, api.Id, body.OasUrl, res)
+		})
+	}
 
 	updated := util.ToApiSummary(api)
 	return &updated, nil

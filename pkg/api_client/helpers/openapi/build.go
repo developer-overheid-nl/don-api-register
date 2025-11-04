@@ -65,16 +65,18 @@ func extString(m *orderedmap.Map[string, *yaml.Node], key string) string {
 	return ""
 }
 
-// BuildApi constructs a models.Api based on the OpenAPI spec (pb33f v3) and request body.
-func BuildApi(spec *v3.Document, requestBody models.ApiPost, label string) *models.Api {
-	api := &models.Api{
-		Id: shortid.MustGenerate(),
+func populateApiFromSpec(api *models.Api, spec *v3.Document, requestBody models.ApiPost, label string) {
+	if api == nil {
+		return
 	}
 
 	if spec != nil && spec.Info != nil {
 		api.Title = spec.Info.Title
 		api.Description = spec.Info.Description
 
+		api.ContactName = ""
+		api.ContactEmail = ""
+		api.ContactUrl = ""
 		if spec.Info.Contact != nil {
 			api.ContactName = spec.Info.Contact.Name
 			api.ContactEmail = spec.Info.Contact.Email
@@ -82,27 +84,41 @@ func BuildApi(spec *v3.Document, requestBody models.ApiPost, label string) *mode
 		}
 		if spec.Info.Version != "" {
 			api.Version = spec.Info.Version
+		} else {
+			api.Version = ""
 		}
-		// x-sunset / x-deprecated uit Extensions (YAML nodes)
 		api.Sunset = extString(spec.Info.Extensions, "x-sunset")
 		api.Deprecated = extString(spec.Info.Extensions, "x-deprecated")
+	} else {
+		api.Title = ""
+		api.Description = ""
+		api.ContactName = ""
+		api.ContactEmail = ""
+		api.ContactUrl = ""
+		api.Version = ""
+		api.Sunset = ""
+		api.Deprecated = ""
 	}
 
 	api.OasUri = requestBody.OasUrl
 
-	if requestBody.OrganisationUri != "" {
+	if strings.TrimSpace(requestBody.OrganisationUri) != "" {
 		api.Organisation = &models.Organisation{
 			Uri:   requestBody.OrganisationUri,
 			Label: label,
 		}
 		api.OrganisationID = &requestBody.OrganisationUri
+	} else {
+		api.Organisation = nil
+		api.OrganisationID = nil
 	}
 
 	if spec != nil && spec.ExternalDocs != nil {
 		api.DocsUrl = spec.ExternalDocs.URL
+	} else {
+		api.DocsUrl = ""
 	}
 
-	// Auth afleiden als er security is gedefinieerd
 	if spec != nil {
 		hasSecuritySchemes := false
 		if spec.Components != nil && spec.Components.SecuritySchemes != nil {
@@ -110,12 +126,15 @@ func BuildApi(spec *v3.Document, requestBody models.ApiPost, label string) *mode
 		}
 		if len(spec.Security) > 0 || hasSecuritySchemes {
 			api.Auth = DeriveAuthType(spec)
+		} else {
+			api.Auth = ""
 		}
+	} else {
+		api.Auth = ""
 	}
 
-	// Servers
 	if spec != nil && len(spec.Servers) > 0 {
-		var serversToSave []models.Server
+		serversToSave := make([]models.Server, 0, len(spec.Servers))
 		for _, s := range spec.Servers {
 			if s == nil {
 				continue
@@ -130,20 +149,35 @@ func BuildApi(spec *v3.Document, requestBody models.ApiPost, label string) *mode
 			}
 		}
 		api.Servers = serversToSave
+	} else {
+		api.Servers = []models.Server{}
 	}
 
-	// Fallbacks vanaf request body als spec geen contact had
-	if api.ContactName == "" {
+	if strings.TrimSpace(api.ContactName) == "" {
 		api.ContactName = requestBody.Contact.Name
 	}
-	if api.ContactEmail == "" {
+	if strings.TrimSpace(api.ContactEmail) == "" {
 		api.ContactEmail = requestBody.Contact.Email
 	}
-	if api.ContactUrl == "" {
+	if strings.TrimSpace(api.ContactUrl) == "" {
 		api.ContactUrl = requestBody.Contact.URL
 	}
+}
+
+// BuildApi constructs a models.Api based on the OpenAPI spec (pb33f v3) and request body.
+func BuildApi(spec *v3.Document, requestBody models.ApiPost, label string) *models.Api {
+	api := &models.Api{
+		Id: shortid.MustGenerate(),
+	}
+
+	populateApiFromSpec(api, spec, requestBody, label)
 
 	return api
+}
+
+// UpdateApiFromSpec mutates an existing models.Api with values derived from the OpenAPI spec.
+func UpdateApiFromSpec(api *models.Api, spec *v3.Document, requestBody models.ApiPost, label string) {
+	populateApiFromSpec(api, spec, requestBody, label)
 }
 
 // ValidateApi fills missing fields from the request body and collects missing errors.

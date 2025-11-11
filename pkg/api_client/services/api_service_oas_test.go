@@ -81,6 +81,25 @@ func (a *artifactRepoStub) HasArtifactOfKind(ctx context.Context, apiID, kind st
 	}
 	return false, nil
 }
+func (a *artifactRepoStub) DeleteArtifactsByKind(ctx context.Context, apiID, kind string, keep []string) error {
+	keepSet := make(map[string]struct{}, len(keep))
+	for _, id := range keep {
+		keepSet[id] = struct{}{}
+	}
+	filtered := a.saved[:0]
+	for _, art := range a.saved {
+		if art.ApiID == apiID && art.Kind == kind {
+			if _, ok := keepSet[art.ID]; ok {
+				filtered = append(filtered, art)
+				continue
+			}
+			continue
+		}
+		filtered = append(filtered, art)
+	}
+	a.saved = filtered
+	return nil
+}
 
 func TestPersistOASArtifacts_StoresOriginalAndConverted(t *testing.T) {
 	repo := &artifactRepoStub{}

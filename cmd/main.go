@@ -137,6 +137,13 @@ func main() {
 		log.Fatalf("[typesense-sync] bulk publish failed: %v", err)
 	}
 
+	refreshSvc := services.NewOASRefreshService(APIsAPIService, context.Background())
+	defer func() {
+		if refreshSvc != nil {
+			refreshSvc.Stop()
+		}
+	}()
+
 	// Start server
 	router := api.NewRouter(version, APIsAPIController)
 

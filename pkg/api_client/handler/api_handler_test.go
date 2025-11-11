@@ -80,6 +80,9 @@ func (s *stubRepo) HasArtifactOfKind(ctx context.Context, apiID, kind string) (b
 func (s *stubRepo) GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error) {
 	return nil, nil
 }
+func (s *stubRepo) DeleteArtifactsByKind(ctx context.Context, apiID, kind string, keep []string) error {
+	return nil
+}
 
 func TestGetOas_Handler(t *testing.T) {
 	repo := &stubRepo{

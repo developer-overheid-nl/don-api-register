@@ -29,6 +29,7 @@ type ApiRepository interface {
 	HasArtifactOfKind(ctx context.Context, apiID, kind string) (bool, error)
 	GetOasArtifact(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error)
 	GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error)
+	DeleteArtifactsByKind(ctx context.Context, apiID, kind string, keepIDs []string) error
 }
 
 type apiRepository struct {
@@ -309,4 +310,16 @@ func (r *apiRepository) GetArtifact(ctx context.Context, apiID, kind string) (*m
 		return nil, err
 	}
 	return &a, nil
+}
+
+func (r *apiRepository) DeleteArtifactsByKind(ctx context.Context, apiID, kind string, keepIDs []string) error {
+	if strings.TrimSpace(apiID) == "" || strings.TrimSpace(kind) == "" {
+		return fmt.Errorf("apiID en kind zijn verplicht voor verwijderen")
+	}
+	query := r.db.WithContext(ctx).
+		Where("api_id = ? AND kind = ?", apiID, kind)
+	if len(keepIDs) > 0 {
+		query = query.Where("id NOT IN ?", keepIDs)
+	}
+	return query.Delete(&models.ApiArtifact{}).Error
 }

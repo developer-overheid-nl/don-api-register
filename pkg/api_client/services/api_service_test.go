@@ -10,25 +10,25 @@ import (
 	openapihelper "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/openapi"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
-	typesense "github.com/developer-overheid-nl/don-api-register/pkg/api_client/services/typesense"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
 
 // stubRepo implements repositories.ApiRepository for testing
 type stubRepo struct {
-	findByOas  func(ctx context.Context, oasUrl string) (*models.Api, error)
-	findOrg    func(ctx context.Context, uri string) (*models.Organisation, error)
-	getByID    func(ctx context.Context, id string) (*models.Api, error)
-	getLintRes func(ctx context.Context, apiID string) ([]models.LintResult, error)
-	getApis    func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
-	searchApis func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
-	saveServer func(server models.Server) error
-	saveApi    func(api *models.Api) error
-	saveOrg    func(org *models.Organisation) error
-	getOrgs    func(ctx context.Context) ([]models.Organisation, int, error)
-	allApis    func(ctx context.Context) ([]models.Api, error)
-	updateApi  func(ctx context.Context, api models.Api) error
+	findByOas    func(ctx context.Context, oasUrl string) (*models.Api, error)
+	findOrg      func(ctx context.Context, uri string) (*models.Organisation, error)
+	getByID      func(ctx context.Context, id string) (*models.Api, error)
+	getLintRes   func(ctx context.Context, apiID string) ([]models.LintResult, error)
+	getApis      func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
+	searchApis   func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
+	saveServer   func(server models.Server) error
+	saveApi      func(api *models.Api) error
+	saveOrg      func(org *models.Organisation) error
+	getOrgs      func(ctx context.Context) ([]models.Organisation, int, error)
+	allApis      func(ctx context.Context) ([]models.Api, error)
+	updateApi    func(ctx context.Context, api models.Api) error
+	delArtifacts func(ctx context.Context, apiID, kind string, keep []string) error
 }
 
 func (s *stubRepo) FindByOasUrl(ctx context.Context, url string) (*models.Api, error) {
@@ -90,6 +90,12 @@ func (s *stubRepo) GetOasArtifact(ctx context.Context, apiID, version, format st
 }
 func (s *stubRepo) GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error) {
 	return nil, nil
+}
+func (s *stubRepo) DeleteArtifactsByKind(ctx context.Context, apiID, kind string, keep []string) error {
+	if s.delArtifacts != nil {
+		return s.delArtifacts(ctx, apiID, kind, keep)
+	}
+	return nil
 }
 
 func TestGetOasDocument_InvalidVersion(t *testing.T) {
@@ -331,6 +337,112 @@ func TestUpdateOasUri_PersistsUpdatedFields(t *testing.T) {
 	assert.Equal(t, "2.0.0", summary.Lifecycle.Version)
 }
 
+func TestRefreshChangedApis_UpdatesWhenHashDiffers(t *testing.T) {
+	spec := `{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Dagelijkse refresh",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Spec Contact",
+      "email": "spec@example.com",
+      "url": "https://spec.example.com"
+    }
+  },
+  "paths": {
+    "/ping": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "pong"
+          }
+        }
+      }
+    }
+  }
+}`
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(spec))
+	}))
+	defer srv.Close()
+
+	orgURI := "https://org.example.com"
+	var updated models.Api
+	repo := &stubRepo{
+		allApis: func(ctx context.Context) ([]models.Api, error) {
+			return []models.Api{
+				{
+					Id:      "api-refresh",
+					OasUri:  srv.URL,
+					OasHash: "outdated",
+				},
+			}, nil
+		},
+		getByID: func(ctx context.Context, id string) (*models.Api, error) {
+			if id != "api-refresh" {
+				return nil, gorm.ErrRecordNotFound
+			}
+			return &models.Api{
+				Id:           "api-refresh",
+				OasUri:       srv.URL,
+				OasHash:      "outdated",
+				Organisation: &models.Organisation{Uri: orgURI, Label: "Org"},
+				OrganisationID: func() *string {
+					return &orgURI
+				}(),
+			}, nil
+		},
+		updateApi: func(ctx context.Context, api models.Api) error {
+			updated = api
+			return nil
+		},
+	}
+
+	service := services.NewAPIsAPIService(repo)
+	count, err := service.RefreshChangedApis(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, 1, count)
+	assert.Equal(t, srv.URL, updated.OasUri)
+	assert.NotEmpty(t, updated.OasHash)
+	assert.Equal(t, "Dagelijkse refresh", updated.Title)
+}
+
+func TestRefreshChangedApis_SkipsWhenHashUnchanged(t *testing.T) {
+	spec := `{
+  "openapi": "3.0.0",
+  "info": { "title": "Ongewijzigd", "version": "1" },
+  "paths": { "/ping": { "get": { "responses": { "200": { "description": "ok" } } } } }
+}`
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(spec))
+	}))
+	defer srv.Close()
+
+	res, err := openapihelper.FetchParseValidateAndHash(context.Background(), srv.URL, openapihelper.FetchOpts{})
+	assert.NoError(t, err)
+
+	repo := &stubRepo{
+		allApis: func(ctx context.Context) ([]models.Api, error) {
+			return []models.Api{
+				{Id: "api-static", OasUri: srv.URL, OasHash: res.Hash},
+			}, nil
+		},
+		getByID: func(ctx context.Context, id string) (*models.Api, error) {
+			t.Fatalf("GetApiByID zou niet aangeroepen moeten worden, maar is aangeroepen met %s", id)
+			return nil, nil
+		},
+	}
+
+	service := services.NewAPIsAPIService(repo)
+	count, err := service.RefreshChangedApis(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, count)
+}
+
 func TestRetrieveApi_Success(t *testing.T) {
 	api := &models.Api{
 		Id: "1234",
@@ -538,15 +650,16 @@ func TestCreateOrganisation_Service(t *testing.T) {
 }
 
 func TestPublishAllApisToTypesense_Disabled(t *testing.T) {
-	t.Setenv("TYPESENSE_ENDPOINT", "")
+	t.Setenv("ENABLE_TYPESENSE", "false")
 	repo := &stubRepo{
 		allApis: func(ctx context.Context) ([]models.Api, error) {
-			return []models.Api{{Id: "api-1"}}, nil
+			t.Fatalf("AllApis should not be called when Typesense is disabled")
+			return nil, nil
 		},
 	}
 	service := services.NewAPIsAPIService(repo)
 	err := service.PublishAllApisToTypesense(context.Background())
-	assert.ErrorIs(t, err, typesense.ErrDisabled)
+	assert.NoError(t, err)
 }
 
 func TestPublishAllApisToTypesense_SendsDocuments(t *testing.T) {
@@ -560,6 +673,7 @@ func TestPublishAllApisToTypesense_SendsDocuments(t *testing.T) {
 	t.Setenv("TYPESENSE_ENDPOINT", server.URL)
 	t.Setenv("TYPESENSE_API_KEY", "secret")
 	t.Setenv("TYPESENSE_COLLECTION", "apis")
+	t.Setenv("ENABLE_TYPESENSE", "true")
 
 	prevClient := httpclient.HTTPClient
 	httpclient.HTTPClient = server.Client()

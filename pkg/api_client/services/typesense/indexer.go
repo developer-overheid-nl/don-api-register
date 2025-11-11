@@ -27,13 +27,14 @@ const (
 var ErrDisabled = errors.New("typesense indexing disabled: missing endpoint, api key or collection name")
 
 type config struct {
-	endpoint      string
-	apiKey        string
-	collection    string
-	detailBaseURL string
-	language      string
-	itemPriority  int
-	defaultTags   []string
+	endpoint       string
+	apiKey         string
+	collection     string
+	detailBaseURL  string
+	language       string
+	itemPriority   int
+	defaultTags    []string
+	featureEnabled bool
 }
 
 func loadConfigFromEnv() config {
@@ -45,7 +46,7 @@ func loadConfigFromEnv() config {
 	apiKey := strings.TrimSpace(os.Getenv("TYPESENSE_API_KEY"))
 	collection := strings.TrimSpace(os.Getenv("TYPESENSE_COLLECTION"))
 	if collection == "" {
-		collection = "developer_overheid"
+		collection = "api_register"
 	}
 
 	detailBase := strings.TrimSpace(os.Getenv("TYPESENSE_DETAIL_BASE_URL"))
@@ -65,32 +66,58 @@ func loadConfigFromEnv() config {
 		}
 	}
 
-	tags := make([]string, 0)
-	if raw := os.Getenv("TYPESENSE_DEFAULT_TAGS"); raw != "" {
-		for _, tag := range strings.Split(raw, ",") {
-			tag = strings.TrimSpace(tag)
-			if tag != "" {
-				tags = append(tags, tag)
-			}
-		}
-	}
-	if len(tags) == 0 {
-		tags = []string{"api-register", "api"}
-	}
+	tags := parseDefaultTags()
 
 	return config{
-		endpoint:      endpoint,
-		apiKey:        apiKey,
-		collection:    collection,
-		detailBaseURL: detailBase,
-		language:      language,
-		itemPriority:  itemPriority,
-		defaultTags:   tags,
+		endpoint:       endpoint,
+		apiKey:         apiKey,
+		collection:     collection,
+		detailBaseURL:  detailBase,
+		language:       language,
+		itemPriority:   itemPriority,
+		defaultTags:    tags,
+		featureEnabled: isFeatureEnabled(),
 	}
 }
 
 func (c config) enabled() bool {
-	return c.endpoint != "" && c.apiKey != "" && c.collection != ""
+	return c.featureEnabled && c.endpoint != "" && c.apiKey != "" && c.collection != ""
+}
+
+func isFeatureEnabled() bool {
+	raw := strings.TrimSpace(os.Getenv("ENABLE_TYPESENSE"))
+	if raw == "" {
+		return true
+	}
+	switch strings.ToLower(raw) {
+	case "0", "false", "no", "off":
+		return false
+	default:
+		return true
+	}
+}
+
+// Enabled reports whether Typesense indexing is active based on env vars.
+func Enabled() bool {
+	return loadConfigFromEnv().enabled()
+}
+
+func parseDefaultTags() []string {
+	raw := os.Getenv("TYPESENSE_DEFAULT_TAGS")
+	if strings.TrimSpace(raw) == "" {
+		return []string{"api-register", "api"}
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	if len(out) == 0 {
+		return []string{"api-register", "api"}
+	}
+	return out
 }
 
 // PublishApi pushes the provided API to Typesense for full-text search.

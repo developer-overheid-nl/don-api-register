@@ -61,7 +61,6 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 		return nil, problem.NewForbidden(body.OasUrl, "organisationUri komt niet overeen met eigenaar van deze API")
 	}
 
-	// → nieuwe OAS strict valideren + hash
 	res, err := openapi.FetchParseValidateAndHash(ctx, body.OasUrl, openapi.FetchOpts{
 		Origin: "https://developer.overheid.nl",
 	})
@@ -69,19 +68,35 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 		return nil, problem.NewBadRequest(body.OasUrl, err.Error())
 	}
 
+	return s.applyOASUpdate(ctx, api, models.ApiPost{
+		OasUrl:          body.OasUrl,
+		OrganisationUri: body.OrganisationUri,
+		Contact:         body.Contact,
+	}, res, true)
+}
+
+func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, request models.ApiPost, res *openapi.OASResult, asyncTools bool) (*models.ApiSummary, error) {
+	if api == nil {
+		return nil, fmt.Errorf("api ontbreekt")
+	}
+	if res == nil {
+		return nil, fmt.Errorf("OAS resultaat ontbreekt")
+	}
+
 	originalHash := api.OasHash
 	orgLabel := ""
 	if api.Organisation != nil {
 		orgLabel = api.Organisation.Label
+	} else if trimmed := strings.TrimSpace(request.OrganisationUri); trimmed != "" {
+		if org, err := s.repo.FindOrganisationByURI(ctx, trimmed); err == nil && org != nil {
+			orgLabel = org.Label
+		}
 	}
-	openapi.UpdateApiFromSpec(api, res.Spec, models.ApiPost{
-		OasUrl:          body.OasUrl,
-		OrganisationUri: body.OrganisationUri,
-		Contact:         body.Contact,
-	}, orgLabel)
-	if api.Organisation == nil && strings.TrimSpace(body.OrganisationUri) != "" {
+
+	openapi.UpdateApiFromSpec(api, res.Spec, request, orgLabel)
+	if api.Organisation == nil && strings.TrimSpace(request.OrganisationUri) != "" {
 		api.Organisation = &models.Organisation{
-			Uri:   body.OrganisationUri,
+			Uri:   request.OrganisationUri,
 			Label: orgLabel,
 		}
 	}
@@ -95,9 +110,16 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 	}
 
 	if res.Hash != originalHash {
-		toolslint.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
-			return s.runToolsAndPersist(ctx, api.Id, body.OasUrl, res)
-		})
+		run := func(runCtx context.Context) error {
+			return s.runToolsAndPersist(runCtx, api.Id, request.OasUrl, res)
+		}
+		if asyncTools {
+			toolslint.Dispatch(context.Background(), "tools", run)
+		} else {
+			if err := run(ctx); err != nil {
+				log.Printf("[tools] sync run failed for api=%s: %v", api.Id, err)
+			}
+		}
 	}
 
 	updated := util.ToApiSummary(api)
@@ -231,6 +253,63 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 
 	created := util.ToApiSummary(api)
 	return &created, nil
+}
+
+// RefreshChangedApis haalt alle geregistreerde APIs op, vergelijkt de OAS-hash en
+// voert dezelfde stappen uit als een POST wanneer de remote OAS gewijzigd is.
+func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
+	apis, err := s.repo.AllApis(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	var updated int
+	for _, candidate := range apis {
+		if err := ctx.Err(); err != nil {
+			return updated, err
+		}
+
+		res, err := openapi.FetchParseValidateAndHash(ctx, candidate.OasUri, openapi.FetchOpts{
+			Origin: "https://developer.overheid.nl",
+		})
+		if err != nil {
+			log.Printf("[oas-refresh] skip api=%s url=%s: %v", candidate.Id, candidate.OasUri, err)
+			continue
+		}
+		if res.Hash == candidate.OasHash {
+			continue
+		}
+
+		full, err := s.repo.GetApiByID(ctx, candidate.Id)
+		if err != nil || full == nil {
+			log.Printf("[oas-refresh] kan api=%s niet laden: %v", candidate.Id, err)
+			continue
+		}
+
+		orgURI := deriveOrganisationURI(full)
+		if orgURI == "" {
+			log.Printf("[oas-refresh] sla api=%s over: organisationUri ontbreekt", candidate.Id)
+			continue
+		}
+
+		req := models.ApiPost{
+			OasUrl:          full.OasUri,
+			OrganisationUri: orgURI,
+			Contact: models.Contact{
+				Name:  full.ContactName,
+				Email: full.ContactEmail,
+				URL:   full.ContactUrl,
+			},
+		}
+
+		if _, err := s.applyOASUpdate(ctx, full, req, res, false); err != nil {
+			log.Printf("[oas-refresh] update van api=%s mislukt: %v", full.Id, err)
+			continue
+		}
+		updated++
+	}
+
+	return updated, nil
 }
 
 // LintAllApis runs the linter for every registered API and stores
@@ -406,6 +485,9 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL s
 			log.Printf("[tools] save bruno artifact failed: %v", err)
 		} else {
 			log.Printf("[tools] saved bruno artifact id=%s api=%s", art.ID, apiID)
+			if err := s.repo.DeleteArtifactsByKind(ctx, apiID, "bruno", []string{art.ID}); err != nil {
+				log.Printf("[tools] cleanup oude bruno artifacts mislukt api=%s: %v", apiID, err)
+			}
 		}
 		return nil
 	})
@@ -432,6 +514,9 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL s
 			log.Printf("[tools] save postman artifact failed: %v", err)
 		} else {
 			log.Printf("[tools] saved postman artifact id=%s api=%s", art.ID, apiID)
+			if err := s.repo.DeleteArtifactsByKind(ctx, apiID, "postman", []string{art.ID}); err != nil {
+				log.Printf("[tools] cleanup oude postman artifacts mislukt api=%s: %v", apiID, err)
+			}
 		}
 		return nil
 	})
@@ -458,6 +543,11 @@ func (s *APIsAPIService) ListOrganisations(ctx context.Context) ([]models.Organi
 
 // PublishAllApisToTypesense pushes every stored API to Typesense. Intended as a one-off helper.
 func (s *APIsAPIService) PublishAllApisToTypesense(ctx context.Context) error {
+	if !typesense.Enabled() {
+		log.Printf("[typesense] indexing disabled; skip bulk publish")
+		return nil
+	}
+
 	apis, err := s.repo.AllApis(ctx)
 	if err != nil {
 		return err
@@ -473,7 +563,8 @@ func (s *APIsAPIService) PublishAllApisToTypesense(ctx context.Context) error {
 		cancel()
 		if err != nil {
 			if errors.Is(err, typesense.ErrDisabled) {
-				return err
+				log.Printf("[typesense] indexing disabled tijdens bulk run; stop")
+				return nil
 			}
 			log.Printf("[typesense] bulk indexing failed for api=%s: %v", apiCopy.Id, err)
 		}
@@ -546,24 +637,33 @@ func (s *APIsAPIService) persistOASArtifacts(ctx context.Context, apiID string, 
 		return fmt.Errorf("kan canonical JSON renderen: %w", err)
 	}
 
-	var errs []error
+	var (
+		errs []error
+		keep []string
+	)
 	// Bewaar ongewijzigde originele spec
-	if err := s.saveOASArtifact(ctx, apiID, originalVersion, originalFormat, "original", res.Raw); err != nil {
+	if id, err := s.saveOASArtifact(ctx, apiID, originalVersion, originalFormat, "original", res.Raw); err != nil {
 		errs = append(errs, err)
+	} else {
+		keep = append(keep, id)
 	}
 
 	// Zorg dat dezelfde versie ook in de andere representatie beschikbaar is
 	if originalFormat != "json" {
-		if err := s.saveOASArtifact(ctx, apiID, originalVersion, "json", "converted", canonicalJSON); err != nil {
+		if id, err := s.saveOASArtifact(ctx, apiID, originalVersion, "json", "converted", canonicalJSON); err != nil {
 			errs = append(errs, err)
+		} else {
+			keep = append(keep, id)
 		}
 	}
 	if originalFormat != "yaml" {
 		yamlData, yErr := yaml.JSONToYAML(canonicalJSON)
 		if yErr != nil {
 			errs = append(errs, fmt.Errorf("kan YAML renderen voor versie %s: %w", originalVersion, yErr))
-		} else if err := s.saveOASArtifact(ctx, apiID, originalVersion, "yaml", "converted", yamlData); err != nil {
+		} else if id, err := s.saveOASArtifact(ctx, apiID, originalVersion, "yaml", "converted", yamlData); err != nil {
 			errs = append(errs, err)
+		} else {
+			keep = append(keep, id)
 		}
 	}
 
@@ -573,18 +673,28 @@ func (s *APIsAPIService) persistOASArtifacts(ctx context.Context, apiID string, 
 		if convErr != nil {
 			errs = append(errs, fmt.Errorf("kan OAS versie converteren naar %s: %w", targetFull, convErr))
 		} else {
-			if err := s.saveOASArtifact(ctx, apiID, targetShort, "json", "converted", convertedJSON); err != nil {
+			if id, err := s.saveOASArtifact(ctx, apiID, targetShort, "json", "converted", convertedJSON); err != nil {
 				errs = append(errs, err)
+			} else {
+				keep = append(keep, id)
 			}
 			yamlData, yErr := yaml.JSONToYAML(convertedJSON)
 			if yErr != nil {
 				errs = append(errs, fmt.Errorf("kan YAML renderen voor versie %s: %w", targetShort, yErr))
-			} else if err := s.saveOASArtifact(ctx, apiID, targetShort, "yaml", "converted", yamlData); err != nil {
+			} else if id, err := s.saveOASArtifact(ctx, apiID, targetShort, "yaml", "converted", yamlData); err != nil {
 				errs = append(errs, err)
+			} else {
+				keep = append(keep, id)
 			}
 		}
 	} else {
 		log.Printf("[oas] skip conversie: versie %s niet ondersteund voor automatische omzetting", res.Version)
+	}
+
+	if len(errs) == 0 && len(keep) > 0 {
+		if err := s.repo.DeleteArtifactsByKind(ctx, apiID, "oas", keep); err != nil {
+			errs = append(errs, fmt.Errorf("kan oude OAS artifacts niet verwijderen: %w", err))
+		}
 	}
 
 	if len(errs) > 0 {
@@ -593,9 +703,9 @@ func (s *APIsAPIService) persistOASArtifacts(ctx context.Context, apiID string, 
 	return nil
 }
 
-func (s *APIsAPIService) saveOASArtifact(ctx context.Context, apiID, version, format, source string, data []byte) error {
+func (s *APIsAPIService) saveOASArtifact(ctx context.Context, apiID, version, format, source string, data []byte) (string, error) {
 	if len(data) == 0 {
-		return fmt.Errorf("artifact data is leeg voor versie %s (%s)", version, format)
+		return "", fmt.Errorf("artifact data is leeg voor versie %s (%s)", version, format)
 	}
 	format = strings.ToLower(format)
 	art := &models.ApiArtifact{
@@ -611,10 +721,10 @@ func (s *APIsAPIService) saveOASArtifact(ctx context.Context, apiID, version, fo
 		CreatedAt:   time.Now(),
 	}
 	if err := s.repo.SaveArtifact(ctx, art); err != nil {
-		return fmt.Errorf("kan artifact %s opslaan: %w", art.Filename, err)
+		return "", fmt.Errorf("kan artifact %s opslaan: %w", art.Filename, err)
 	}
 	log.Printf("[oas] saved artifact id=%s api=%s version=%s format=%s source=%s", art.ID, apiID, version, format, source)
-	return nil
+	return art.ID, nil
 }
 
 // BackfillOASArtifacts (éénmalig) genereert OAS-artifacts voor bestaande APIs
@@ -662,6 +772,19 @@ func (s *APIsAPIService) BackfillOASArtifacts(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func deriveOrganisationURI(api *models.Api) string {
+	if api == nil {
+		return ""
+	}
+	if api.OrganisationID != nil && strings.TrimSpace(*api.OrganisationID) != "" {
+		return strings.TrimSpace(*api.OrganisationID)
+	}
+	if api.Organisation != nil && strings.TrimSpace(api.Organisation.Uri) != "" {
+		return strings.TrimSpace(api.Organisation.Uri)
+	}
+	return ""
 }
 
 func detectOASFormat(raw []byte, contentType string) (string, error) {

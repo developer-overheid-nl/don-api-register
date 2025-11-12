@@ -102,7 +102,6 @@ func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, re
 	if api.Organisation != nil && api.OrganisationID == nil {
 		api.OrganisationID = &api.Organisation.Uri
 	}
-	api.OasHash = res.Hash
 
 	if err := s.repo.UpdateApi(ctx, *api); err != nil {
 		return nil, err

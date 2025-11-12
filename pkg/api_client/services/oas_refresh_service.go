@@ -9,7 +9,7 @@ import (
 
 const (
 	refreshHour   = 12
-	refreshMinute = 15
+	refreshMinute = 30
 	runTimeout    = 120 * time.Minute
 	refreshPeriod = 24 * time.Hour
 )

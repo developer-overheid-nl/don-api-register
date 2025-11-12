@@ -441,10 +441,8 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL s
 		log.Printf("[tools] lint failed: %v", err)
 	}
 
-	if result != nil {
-		if err := s.persistOASArtifacts(ctx, apiID, result); err != nil {
-			log.Printf("[tools] persist oas artifacts failed: %v", err)
-		}
+	if err := s.persistOASArtifacts(ctx, apiID, result); err != nil {
+		log.Printf("[tools] persist oas artifacts failed: %v", err)
 	}
 
 	// Generate artifacts in parallel, but do not fail the whole job if one fails

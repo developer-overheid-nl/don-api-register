@@ -83,7 +83,6 @@ func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, re
 		return nil, fmt.Errorf("OAS resultaat ontbreekt")
 	}
 
-	originalHash := api.OasHash
 	orgLabel := ""
 	if api.Organisation != nil {
 		orgLabel = api.Organisation.Label
@@ -109,16 +108,14 @@ func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, re
 		return nil, err
 	}
 
-	if res.Hash != originalHash {
-		run := func(runCtx context.Context) error {
-			return s.runToolsAndPersist(runCtx, api.Id, request.OasUrl, res)
-		}
-		if asyncTools {
-			toolslint.Dispatch(context.Background(), "tools", run)
-		} else {
-			if err := run(ctx); err != nil {
-				log.Printf("[tools] sync run failed for api=%s: %v", api.Id, err)
-			}
+	run := func(runCtx context.Context) error {
+		return s.runToolsAndPersist(runCtx, api.Id, request.OasUrl, res)
+	}
+	if asyncTools {
+		toolslint.Dispatch(context.Background(), "tools", run)
+	} else {
+		if err := run(ctx); err != nil {
+			log.Printf("[tools] sync run failed for api=%s: %v", api.Id, err)
 		}
 	}
 
@@ -325,28 +322,24 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	for _, api := range apis {
-		api := api // capture
-
 		// Bereken hash alvast (en respecteer job-context)
 		resp, err := openapi.FetchParseValidateAndHash(ctx, api.OasUri, openapi.FetchOpts{Origin: "https://developer.overheid.nl"})
 		if err != nil {
-			// Loggen en doorgaan – één kapotte API mag de rest niet blokkeren
 			log.Printf("[lint] skip api=%s: hash fetch failed: %v", api.Id, err)
-			continue
+		} else {
+			if err := sem.Acquire(ctx, 1); err != nil {
+				return err
+			}
+			g.Go(func() error {
+				defer sem.Release(1)
+
+				// Per-lint timeout (overschrijft niet je job-timeout)
+				lintCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+				defer cancel()
+
+				return s.lintAndPersist(lintCtx, api.Id, api.OasUri, resp.Hash)
+			})
 		}
-
-		if err := sem.Acquire(ctx, 1); err != nil {
-			return err
-		}
-		g.Go(func() error {
-			defer sem.Release(1)
-
-			// Per-lint timeout (overschrijft niet je job-timeout)
-			lintCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-			defer cancel()
-
-			return s.lintAndPersist(lintCtx, api.Id, api.OasUri, resp.Hash)
-		})
 	}
 
 	return g.Wait()
@@ -361,83 +354,81 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 	}
 
 	log.Printf("[lint] api=%s expectedHash=%s currentHash=%s", apiID, expectedHash, current.OasHash)
-	if current.OasHash == expectedHash || current.AdrScore == nil {
-		log.Printf("[lint] hash unchanged; proceeding to fetch tools lint for score update")
-	}
-
 	// Call external tools API for linting of the OAS URL
 	if err := s.withRateLimit(ctx); err != nil {
 		return err
 	}
-	log.Printf("[lint] calling tools lint for url=%s", oasURL)
-	dto, lintErr := toolslint.LintGet(ctx, oasURL)
-	if dto == nil {
-		if lintErr != nil {
-			log.Printf("[lint] tools lint error: %v", lintErr)
+	if current.OasHash != expectedHash || current.AdrScore == nil {
+		log.Printf("[lint] calling tools lint for url=%s", oasURL)
+		dto, lintErr := toolslint.LintGet(ctx, oasURL)
+		if dto == nil {
+			if lintErr != nil {
+				log.Printf("[lint] tools lint error: %v", lintErr)
+			}
+			return lintErr
 		}
-		return lintErr
-	}
 
-	// Map DTO to our persistence model
-	msgs := make([]models.LintMessage, 0, len(dto.Messages))
-	var errCount, warnCount int
-	for _, m := range dto.Messages {
-		if strings.ToLower(m.Severity) == "error" {
-			errCount++
-		} else if strings.ToLower(m.Severity) == "warning" {
-			warnCount++
-		}
-		infos := make([]models.LintMessageInfo, 0, len(m.Infos))
-		for _, i := range m.Infos {
-			infos = append(infos, models.LintMessageInfo{
-				ID:            i.ID,
-				LintMessageID: i.LintMessageID,
-				Message:       i.Message,
-				Path:          i.Path,
+		// Map DTO to our persistence model
+		msgs := make([]models.LintMessage, 0, len(dto.Messages))
+		var errCount, warnCount int
+		for _, m := range dto.Messages {
+			if strings.ToLower(m.Severity) == "error" {
+				errCount++
+			} else if strings.ToLower(m.Severity) == "warning" {
+				warnCount++
+			}
+			infos := make([]models.LintMessageInfo, 0, len(m.Infos))
+			for _, i := range m.Infos {
+				infos = append(infos, models.LintMessageInfo{
+					ID:            i.ID,
+					LintMessageID: i.LintMessageID,
+					Message:       i.Message,
+					Path:          i.Path,
+				})
+			}
+			id := m.ID
+			if strings.TrimSpace(id) == "" {
+				id = uuid.New().String()
+			}
+			msgs = append(msgs, models.LintMessage{
+				ID:        id,
+				Severity:  m.Severity,
+				Code:      m.Code,
+				Infos:     infos,
+				CreatedAt: m.CreatedAt,
 			})
 		}
-		id := m.ID
-		if strings.TrimSpace(id) == "" {
-			id = uuid.New().String()
+		score := dto.Score
+		log.Printf("[lint] messages=%d errors=%d warnings=%d score=%d", len(msgs), errCount, warnCount, score)
+
+		rid := dto.ID
+		if strings.TrimSpace(rid) == "" {
+			rid = uuid.New().String()
 		}
-		msgs = append(msgs, models.LintMessage{
-			ID:        id,
-			Severity:  m.Severity,
-			Code:      m.Code,
-			Infos:     infos,
-			CreatedAt: m.CreatedAt,
-		})
-	}
-	score := dto.Score
-	log.Printf("[lint] messages=%d errors=%d warnings=%d score=%d", len(msgs), errCount, warnCount, score)
+		res := &models.LintResult{
+			ID:        rid,
+			ApiID:     apiID,
+			Successes: dto.Successes,
+			Failures:  dto.Failures,
+			Warnings:  dto.Warnings,
+			Messages:  msgs,
+			CreatedAt: dto.CreatedAt,
+		}
+		if err := s.repo.SaveLintResult(ctx, res); err != nil {
+			log.Printf("[lint] save result failed: %v", err)
+			return err
+		}
+		log.Printf("[lint] saved lint result id=%s", res.ID)
 
-	rid := dto.ID
-	if strings.TrimSpace(rid) == "" {
-		rid = uuid.New().String()
+		// ✅ Hash en score wegschrijven
+		current.AdrScore = &score
+		current.OasHash = expectedHash
+		if err := s.repo.UpdateApi(ctx, *current); err != nil {
+			log.Printf("[lint] update api failed: %v", err)
+			return err
+		}
+		log.Printf("[lint] updated AdrScore=%d & OasHash=%s api=%s", score, expectedHash, apiID)
 	}
-	res := &models.LintResult{
-		ID:        rid,
-		ApiID:     apiID,
-		Successes: dto.Successes,
-		Failures:  dto.Failures,
-		Warnings:  dto.Warnings,
-		Messages:  msgs,
-		CreatedAt: dto.CreatedAt,
-	}
-	if err := s.repo.SaveLintResult(ctx, res); err != nil {
-		log.Printf("[lint] save result failed: %v", err)
-		return err
-	}
-	log.Printf("[lint] saved lint result id=%s", res.ID)
-
-	// ✅ Hash en score wegschrijven
-	current.AdrScore = &score
-	current.OasHash = expectedHash
-	if err := s.repo.UpdateApi(ctx, *current); err != nil {
-		log.Printf("[lint] update api failed: %v", err)
-		return err
-	}
-	log.Printf("[lint] updated AdrScore=%d & OasHash=%s api=%s", score, expectedHash, apiID)
 	return nil
 }
 
@@ -445,12 +436,8 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 // and persists their outputs. Lint result + ADR score are stored as before;
 // Bruno and Postman artifacts are stored as blobs linked to the API.
 func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL string, result *openapi.OASResult) error {
-	var expectedHash string
-	if result != nil {
-		expectedHash = result.Hash
-	}
 	// Lint first; do not abort the rest if lint fails
-	if err := s.lintAndPersist(ctx, apiID, oasURL, expectedHash); err != nil {
+	if err := s.lintAndPersist(ctx, apiID, oasURL, result.Hash); err != nil {
 		log.Printf("[tools] lint failed: %v", err)
 	}
 

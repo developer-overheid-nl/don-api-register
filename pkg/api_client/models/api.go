@@ -112,7 +112,10 @@ type ApiDetail struct {
 
 type ApiPost struct {
 	Id              string  `json:"id,omitempty"`
-	OasUrl          string  `json:"oasUrl" binding:"required,url"`
+	OasUrl          string  `json:"oasUrl" binding:"required_without=OasBody,omitempty,url"`
+	OasBody         string  `json:"oasBody,omitempty" binding:"required_without=OasUrl"`
+	ArazzoUrl       string  `json:"arazzoUrl,omitempty"`
+	ArazzoBody      string  `json:"arazzoBody,omitempty"`
 	OrganisationUri string  `json:"organisationUri" binding:"required,url"`
 	Contact         Contact `json:"contact"`
 }
@@ -128,7 +131,10 @@ type ApiOasParams struct {
 
 type UpdateApiInput struct {
 	Id              string  `path:"id"` // <-- uit path param
-	OasUrl          string  `json:"oasUrl" binding:"required,url"`
+	OasUrl          string  `json:"oasUrl" binding:"required_without=OasBody,omitempty,url"`
+	OasBody         string  `json:"oasBody,omitempty" binding:"required_without=OasUrl"`
+	ArazzoUrl       string  `json:"arazzoUrl,omitempty"`
+	ArazzoBody      string  `json:"arazzoBody,omitempty"`
 	OrganisationUri string  `json:"organisationUri" binding:"required,url"`
 	Contact         Contact `json:"contact"`
 }

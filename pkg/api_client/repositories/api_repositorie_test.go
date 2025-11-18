@@ -15,7 +15,14 @@ import (
 func setupDB(t *testing.T) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&models.Api{}, &models.Organisation{}, &models.Server{}, &models.LintResult{}, &models.LintMessage{}, &models.LintMessageInfo{}))
+	require.NoError(t, db.AutoMigrate(
+		&models.Api{},
+		&models.Organisation{},
+		&models.Server{},
+		&models.LintResult{},
+		&models.LintMessage{},
+		&models.LintMessageInfo{},
+	))
 	return db
 }
 

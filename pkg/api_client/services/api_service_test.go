@@ -8,6 +8,7 @@ import (
 
 	httpclient "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
 	openapihelper "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/openapi"
+	toolslint "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	"github.com/stretchr/testify/assert"
@@ -258,7 +259,7 @@ func TestUpdateOasUri_PersistsUpdatedFields(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	res, err := openapihelper.FetchParseValidateAndHash(context.Background(), srv.URL, openapihelper.FetchOpts{})
+	res, err := openapihelper.FetchParseValidateAndHash(context.Background(), toolslint.OASInput{OasUrl: srv.URL}, openapihelper.FetchOpts{})
 	assert.NoError(t, err)
 
 	orgURI := "https://example.org/org"
@@ -422,7 +423,7 @@ func TestRefreshChangedApis_SkipsWhenHashUnchanged(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	res, err := openapihelper.FetchParseValidateAndHash(context.Background(), srv.URL, openapihelper.FetchOpts{})
+	res, err := openapihelper.FetchParseValidateAndHash(context.Background(), toolslint.OASInput{OasUrl: srv.URL}, openapihelper.FetchOpts{})
 	assert.NoError(t, err)
 
 	repo := &stubRepo{

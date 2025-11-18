@@ -61,7 +61,11 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 		return nil, problem.NewForbidden(body.OasUrl, "organisationUri komt niet overeen met eigenaar van deze API")
 	}
 
-	res, err := openapi.FetchParseValidateAndHash(ctx, body.OasUrl, openapi.FetchOpts{
+	oasInput := toolslint.OASInput{
+		OasUrl:  body.OasUrl,
+		OasBody: body.OasBody,
+	}
+	res, err := openapi.FetchParseValidateAndHash(ctx, oasInput, openapi.FetchOpts{
 		Origin: "https://developer.overheid.nl",
 	})
 	if err != nil {
@@ -69,7 +73,11 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 	}
 
 	return s.applyOASUpdate(ctx, api, models.ApiPost{
+		Id:              body.Id,
 		OasUrl:          body.OasUrl,
+		OasBody:         body.OasBody,
+		ArazzoUrl:       body.ArazzoUrl,
+		ArazzoBody:      body.ArazzoBody,
 		OrganisationUri: body.OrganisationUri,
 		Contact:         body.Contact,
 	}, res, true)
@@ -107,8 +115,10 @@ func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, re
 		return nil, err
 	}
 
+	oasInput := toOASInput(request)
+	arazzoInput := toArazzoInput(request)
 	run := func(runCtx context.Context) error {
-		return s.runToolsAndPersist(runCtx, api.Id, request.OasUrl, res)
+		return s.runToolsAndPersist(runCtx, api.Id, oasInput, arazzoInput, res)
 	}
 	if asyncTools {
 		toolslint.Dispatch(context.Background(), "tools", run)
@@ -177,7 +187,12 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 	ctx := context.Background()
 
 	// 1) Strict validate + hash
-	resp, err := openapi.FetchParseValidateAndHash(ctx, requestBody.OasUrl, openapi.FetchOpts{
+	oasInput := toolslint.OASInput{
+		OasUrl:  requestBody.OasUrl,
+		OasBody: requestBody.OasBody,
+	}
+	arazzoInput := toArazzoInput(requestBody)
+	resp, err := openapi.FetchParseValidateAndHash(ctx, oasInput, openapi.FetchOpts{
 		Origin: "https://developer.overheid.nl",
 	})
 	if err != nil {
@@ -241,7 +256,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 	}
 
 	toolslint.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
-		return s.runToolsAndPersist(ctx, api.Id, requestBody.OasUrl, resp)
+		return s.runToolsAndPersist(ctx, api.Id, oasInput, arazzoInput, resp)
 	})
 
 	apiCopy := *api
@@ -265,7 +280,8 @@ func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
 			return updated, err
 		}
 
-		res, err := openapi.FetchParseValidateAndHash(ctx, candidate.OasUri, openapi.FetchOpts{
+		oasInput := toolslint.OASInput{OasUrl: candidate.OasUri}
+		res, err := openapi.FetchParseValidateAndHash(ctx, oasInput, openapi.FetchOpts{
 			Origin: "https://developer.overheid.nl",
 		})
 		if err != nil {
@@ -322,7 +338,8 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 
 	for _, api := range apis {
 		// Bereken hash alvast (en respecteer job-context)
-		resp, err := openapi.FetchParseValidateAndHash(ctx, api.OasUri, openapi.FetchOpts{Origin: "https://developer.overheid.nl"})
+		oasInput := toolslint.OASInput{OasUrl: api.OasUri}
+		resp, err := openapi.FetchParseValidateAndHash(ctx, oasInput, openapi.FetchOpts{Origin: "https://developer.overheid.nl"})
 		if err != nil {
 			log.Printf("[lint] skip api=%s: hash fetch failed: %v", api.Id, err)
 		} else {
@@ -336,7 +353,7 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 				lintCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 				defer cancel()
 
-				return s.lintAndPersist(lintCtx, api.Id, api.OasUri, resp.Hash)
+				return s.lintAndPersist(lintCtx, api.Id, toolslint.OASInput{OasUrl: api.OasUri}, resp.Hash)
 			})
 		}
 	}
@@ -346,7 +363,7 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 
 // lintAndPersist runs the linter when the OAS has changed and stores
 // both the lint result and updated hash.
-func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expectedHash string) error {
+func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID string, input toolslint.OASInput, expectedHash string) error {
 	current, err := s.repo.GetApiByID(ctx, apiID)
 	if err != nil || current == nil {
 		return err
@@ -358,8 +375,8 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 		return err
 	}
 	if current.OasHash != expectedHash || current.AdrScore == nil {
-		log.Printf("[lint] calling tools lint for url=%s", oasURL)
-		dto, lintErr := toolslint.LintGet(ctx, oasURL)
+		log.Printf("[lint] calling tools lint for api=%s", apiID)
+		dto, lintErr := toolslint.LintGet(ctx, input)
 		if dto == nil {
 			if lintErr != nil {
 				log.Printf("[lint] tools lint error: %v", lintErr)
@@ -434,9 +451,8 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID, oasURL, expe
 // runToolsAndPersist runs lint, bruno and postman generation
 // and persists their outputs. Lint result + ADR score are stored as before;
 // Bruno and Postman artifacts are stored as blobs linked to the API.
-func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL string, result *openapi.OASResult) error {
-	// Lint first; do not abort the rest if lint fails
-	if err := s.lintAndPersist(ctx, apiID, oasURL, result.Hash); err != nil {
+func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, oasInput toolslint.OASInput, arazzoInput toolslint.ArazzoInput, result *openapi.OASResult) error {
+	if err := s.lintAndPersist(ctx, apiID, oasInput, result.Hash); err != nil {
 		log.Printf("[tools] lint failed: %v", err)
 	}
 
@@ -444,14 +460,13 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL s
 		log.Printf("[tools] persist oas artifacts failed: %v", err)
 	}
 
-	// Generate artifacts in parallel, but do not fail the whole job if one fails
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
 		if err := s.withRateLimit(ctx); err != nil {
 			return nil
 		}
-		data, name, ct, err := toolslint.BrunoPost(ctx, oasURL)
+		data, name, ct, err := toolslint.BrunoPost(ctx, oasInput)
 		if err != nil {
 			log.Printf("[tools] bruno generation failed: %v", err)
 			return nil
@@ -480,7 +495,7 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL s
 		if err := s.withRateLimit(ctx); err != nil {
 			return nil
 		}
-		data, name, ct, err := toolslint.PostmanPost(ctx, oasURL)
+		data, name, ct, err := toolslint.PostmanPost(ctx, oasInput)
 		if err != nil {
 			log.Printf("[tools] postman generation failed: %v", err)
 			return nil
@@ -504,6 +519,65 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID, oasURL s
 		}
 		return nil
 	})
+
+	if !arazzoInput.IsEmpty() {
+		arazzoInput.Normalize()
+		g.Go(func() error {
+			if err := s.withRateLimit(ctx); err != nil {
+				return nil
+			}
+			data, ct, err := toolslint.ArazzoMarkdown(ctx, arazzoInput)
+			if err != nil {
+				log.Printf("[tools] arazzo markdown failed: %v", err)
+				return nil
+			}
+			art := &models.ApiArtifact{
+				ID:          uuid.New().String(),
+				ApiID:       apiID,
+				Kind:        "arazzo_markdown",
+				Format:      "markdown",
+				Source:      "tools",
+				Filename:    "arazzo.md",
+				ContentType: ct,
+				Data:        data,
+				CreatedAt:   time.Now(),
+			}
+			if err := s.repo.SaveArtifact(ctx, art); err != nil {
+				log.Printf("[tools] save arazzo markdown failed: %v", err)
+			} else {
+				log.Printf("[tools] saved arazzo markdown artifact id=%s api=%s", art.ID, apiID)
+			}
+			return nil
+		})
+
+		g.Go(func() error {
+			if err := s.withRateLimit(ctx); err != nil {
+				return nil
+			}
+			data, ct, err := toolslint.ArazzoMermaid(ctx, arazzoInput)
+			if err != nil {
+				log.Printf("[tools] arazzo mermaid failed: %v", err)
+				return nil
+			}
+			art := &models.ApiArtifact{
+				ID:          uuid.New().String(),
+				ApiID:       apiID,
+				Kind:        "arazzo_mermaid",
+				Format:      "mermaid",
+				Source:      "tools",
+				Filename:    "arazzo.mmd",
+				ContentType: ct,
+				Data:        data,
+				CreatedAt:   time.Now(),
+			}
+			if err := s.repo.SaveArtifact(ctx, art); err != nil {
+				log.Printf("[tools] save arazzo mermaid failed: %v", err)
+			} else {
+				log.Printf("[tools] saved arazzo mermaid artifact id=%s api=%s", art.ID, apiID)
+			}
+			return nil
+		})
+	}
 
 	_ = g.Wait()
 	return nil
@@ -737,7 +811,8 @@ func (s *APIsAPIService) BackfillOASArtifacts(ctx context.Context) error {
 		if err := s.withRateLimit(ctx); err != nil {
 			return err
 		}
-		res, err := openapi.FetchParseValidateAndHash(ctx, api.OasUri, openapi.FetchOpts{
+		oasInput := toolslint.OASInput{OasUrl: api.OasUri}
+		res, err := openapi.FetchParseValidateAndHash(ctx, oasInput, openapi.FetchOpts{
 			Origin: "https://developer.overheid.nl",
 		})
 		if err != nil {
@@ -769,6 +844,20 @@ func deriveOrganisationURI(api *models.Api) string {
 		return strings.TrimSpace(api.Organisation.Uri)
 	}
 	return ""
+}
+
+func toOASInput(post models.ApiPost) toolslint.OASInput {
+	return toolslint.OASInput{
+		OasUrl:  strings.TrimSpace(post.OasUrl),
+		OasBody: post.OasBody,
+	}
+}
+
+func toArazzoInput(post models.ApiPost) toolslint.ArazzoInput {
+	return toolslint.ArazzoInput{
+		ArazzoUrl:  strings.TrimSpace(post.ArazzoUrl),
+		ArazzoBody: post.ArazzoBody,
+	}
 }
 
 func detectOASFormat(raw []byte, contentType string) (string, error) {

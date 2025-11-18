@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
@@ -35,63 +36,19 @@ type OASResult struct {
 
 var versionPrefixPattern = regexp.MustCompile(`^(\d+)\.(\d+)`)
 
-func FetchParseValidateAndHash(ctx context.Context, oasURL string, opts FetchOpts) (*OASResult, error) {
-	cli := opts.HTTPClient
-	if cli == nil {
-		cli = http.DefaultClient
+func FetchParseValidateAndHash(ctx context.Context, input tools.OASInput, opts FetchOpts) (*OASResult, error) {
+	input.Normalize()
+	if input.IsEmpty() {
+		return nil, fmt.Errorf("OAS input ontbreekt")
 	}
 
-	// 1) OAS bytes ophalen (met optionele Origin, en fallback zonder)
-	type attempt struct {
-		origin string
-	}
-	attempts := []attempt{{origin: opts.Origin}}
-	if opts.Origin != "" {
-		attempts = append(attempts, attempt{origin: ""})
-	}
-	var raw []byte
-	var contentType string
-	for i, att := range attempts {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, oasURL, nil)
+	raw, contentType, err := bundleOAS(ctx, input)
+	if err != nil {
+		log.Printf("[oas] bundle failed (%v), fallback naar directe fetch", err)
+		raw, contentType, err = fetchRawOAS(ctx, input, opts)
 		if err != nil {
 			return nil, err
 		}
-		if att.origin != "" {
-			req.Header.Set("Origin", att.origin)
-		}
-		resp, err := cli.Do(req)
-		if err != nil {
-			return nil, fmt.Errorf("kan OAS niet ophalen: %w", err)
-		}
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			body, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
-			return nil, fmt.Errorf("kan OAS niet ophalen: status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
-		}
-		contentType = resp.Header.Get("Content-Type")
-		raw, err = io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			return nil, fmt.Errorf("kan OAS niet lezen: %w", err)
-		}
-		originLabel := "zonder Origin"
-		if att.origin != "" {
-			originLabel = "met Origin"
-		}
-		if n := len(raw); n == 0 {
-			log.Printf("[oas] fetched empty body %s from %s (status %d)", originLabel, oasURL, resp.StatusCode)
-			if att.origin != "" && i == 0 {
-				log.Printf("[oas] retrying fetch without Origin header for %s", oasURL)
-				continue
-			}
-		} else {
-			preview := raw
-			if n > 128 {
-				preview = raw[:128]
-			}
-			log.Printf("[oas] fetched %d bytes %s from %s (status %d): %.128q", n, originLabel, oasURL, resp.StatusCode, preview)
-		}
-		break
 	}
 
 	// 2) libopenapi config voor (remote) refs
@@ -155,4 +112,77 @@ func FetchParseValidateAndHash(ctx context.Context, oasURL string, opts FetchOpt
 		Minor:       minor,
 		Patch:       patch,
 	}, nil
+}
+
+func bundleOAS(ctx context.Context, input tools.OASInput) ([]byte, string, error) {
+	data, contentType, err := tools.BundleOAS(ctx, input)
+	if err != nil {
+		return nil, "", err
+	}
+	log.Printf("[oas] bundle succeeded (len=%d, ct=%s)", len(data), contentType)
+	return data, contentType, nil
+}
+
+func fetchRawOAS(ctx context.Context, input tools.OASInput, opts FetchOpts) ([]byte, string, error) {
+	if body := strings.TrimSpace(input.OasBody); body != "" {
+		raw := []byte(body)
+		log.Printf("[oas] using inline body (%d bytes) for hashing", len(raw))
+		return raw, "", nil
+	}
+	oasURL := strings.TrimSpace(input.OasUrl)
+	if oasURL == "" {
+		return nil, "", fmt.Errorf("geen oasUrl opgegeven")
+	}
+	cli := opts.HTTPClient
+	if cli == nil {
+		cli = http.DefaultClient
+	}
+	type attempt struct {
+		origin string
+	}
+	attempts := []attempt{{origin: opts.Origin}}
+	if opts.Origin != "" {
+		attempts = append(attempts, attempt{origin: ""})
+	}
+	for i, att := range attempts {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, oasURL, nil)
+		if err != nil {
+			return nil, "", err
+		}
+		if att.origin != "" {
+			req.Header.Set("Origin", att.origin)
+		}
+		resp, err := cli.Do(req)
+		if err != nil {
+			return nil, "", fmt.Errorf("kan OAS niet ophalen: %w", err)
+		}
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, "", fmt.Errorf("kan OAS niet lezen: %w", err)
+		}
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			return nil, "", fmt.Errorf("kan OAS niet ophalen: status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+		}
+		contentType := resp.Header.Get("Content-Type")
+		originLabel := "zonder Origin"
+		if att.origin != "" {
+			originLabel = "met Origin"
+		}
+		if n := len(body); n == 0 {
+			log.Printf("[oas] fetched empty body %s from %s (status %d)", originLabel, oasURL, resp.StatusCode)
+			if att.origin != "" && i == 0 {
+				log.Printf("[oas] retrying fetch without Origin header for %s", oasURL)
+				continue
+			}
+		} else {
+			preview := body
+			if n > 128 {
+				preview = body[:128]
+			}
+			log.Printf("[oas] fetched %d bytes %s from %s (status %d): %.128q", n, originLabel, oasURL, resp.StatusCode, preview)
+		}
+		return body, contentType, nil
+	}
+	return nil, "", fmt.Errorf("kan OAS niet ophalen: geen geldige response")
 }

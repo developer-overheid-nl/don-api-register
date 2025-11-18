@@ -86,22 +86,6 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.RetrieveApi, 200),
 	)
 
-	// Artifacts download endpoints
-	read.GET("/apis/:id/bruno",
-		[]fizz.OperationOption{
-			fizz.ID("getBruno"),
-			fizz.Summary("Download Bruno project"),
-			fizz.Description("Geeft de gegenereerde Bruno ZIP terug."),
-			fizz.Security(&openapi.SecurityRequirement{
-				"apiKey":            {},
-				"clientCredentials": {"apis:read"},
-			}),
-			apiVersionHeader,
-			notFoundResponse,
-		},
-		tonic.Handler(controller.GetBruno, 200),
-	)
-
 	read.GET("/apis/:id/postman",
 		[]fizz.OperationOption{
 			fizz.ID("getPostman"),

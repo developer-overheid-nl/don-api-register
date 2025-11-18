@@ -125,25 +125,6 @@ func (c *APIsAPIController) CreateOrganisation(ctx *gin.Context, body *models.Or
 	return created, nil
 }
 
-// GetBruno handles GET /apis/:id/bruno
-func (c *APIsAPIController) GetBruno(ctx *gin.Context, params *models.ApiParams) error {
-	art, err := c.Service.GetArtifact(ctx.Request.Context(), params.Id, "bruno")
-	if err != nil {
-		return err
-	}
-	if art == nil {
-		return problem.NewNotFound(params.Id, "Bruno artifact not found")
-	}
-	if art.ContentType != "" {
-		ctx.Header("Content-Type", art.ContentType)
-	}
-	if art.Filename != "" {
-		ctx.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", art.Filename))
-	}
-	ctx.Data(200, art.ContentType, art.Data)
-	return nil
-}
-
 // GetPostman handles GET /apis/:id/postman
 func (c *APIsAPIController) GetPostman(ctx *gin.Context, params *models.ApiParams) error {
 	art, err := c.Service.GetArtifact(ctx.Request.Context(), params.Id, "postman")

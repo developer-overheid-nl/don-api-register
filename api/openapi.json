@@ -368,7 +368,8 @@
       },
       "ApiPost": {
         "type": "object",
-        "required": ["id", "oasUrl", "organisationUri"],
+        "required": ["id", "organisationUri"],
+        "anyOf": [{ "required": ["oasUrl"] }, { "required": ["oasBody"] }],
         "properties": {
           "id": {
             "type": "string",
@@ -379,6 +380,21 @@
             "type": "string",
             "format": "uri",
             "example": "https://api.developer.overheid.nl/api-register/v1/openapi.json"
+          },
+          "oasBody": {
+            "type": "string",
+            "description": "Inline OpenAPI spec (JSON of YAML)",
+            "writeOnly": true
+          },
+          "arazzoUrl": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://api.developer.overheid.nl/api-register/v1/arazzo.yaml"
+          },
+          "arazzoBody": {
+            "type": "string",
+            "description": "Inline Arazzo spec (JSON of YAML)",
+            "writeOnly": true
           },
           "organisationUri": {
             "type": "string",

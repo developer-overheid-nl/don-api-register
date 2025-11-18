@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	toolslint "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
 )
 
 func TestFetchParseValidateAndHash_AllowsOpenAPI31(t *testing.T) {
@@ -32,7 +34,8 @@ func TestFetchParseValidateAndHash_AllowsOpenAPI31(t *testing.T) {
 	}))
 	t.Cleanup(server.Close)
 
-	res, err := FetchParseValidateAndHash(context.Background(), server.URL, FetchOpts{})
+	input := toolslint.OASInput{OasUrl: server.URL}
+	res, err := FetchParseValidateAndHash(context.Background(), input, FetchOpts{})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -68,7 +71,8 @@ func TestFetchParseValidateAndHash_RetriesWithoutOriginOnEmptyBody(t *testing.T)
 	}))
 	t.Cleanup(server.Close)
 
-	res, err := FetchParseValidateAndHash(context.Background(), server.URL, FetchOpts{Origin: "https://developer.overheid.nl"})
+	input := toolslint.OASInput{OasUrl: server.URL}
+	res, err := FetchParseValidateAndHash(context.Background(), input, FetchOpts{Origin: "https://developer.overheid.nl"})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

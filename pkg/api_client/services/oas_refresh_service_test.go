@@ -17,7 +17,7 @@ func TestNextRunAt_BeforeTarget(t *testing.T) {
 
 func TestNextRunAt_AfterTarget(t *testing.T) {
 	loc := time.FixedZone("CET", 3600)
-	now := time.Date(2025, 4, 10, 8, 0, 0, 0, loc)
+	now := time.Date(2025, 4, 10, 13, 0, 0, 0, loc)
 	next := nextRunAt(now, refreshHour, refreshMinute)
 	expected := time.Date(2025, 4, 11, 12, 30, 0, 0, loc)
 	assert.Equal(t, expected, next)

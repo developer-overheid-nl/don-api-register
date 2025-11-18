@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -175,8 +176,10 @@ func decodeBody[T any](t *testing.T, resp *http.Response) T {
 	defer resp.Body.Close()
 
 	var out T
-	decoder := json.NewDecoder(resp.Body)
-	require.NoError(t, decoder.Decode(&out))
+	data, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(data, &out)
+	require.NoErrorf(t, err, "body=%s", string(data))
 	return out
 }
 
@@ -309,12 +312,12 @@ func TestRealtimeApplicationRun(t *testing.T) {
 	})
 
 	t.Run("missing artifact returns problem json", func(t *testing.T) {
-		resp := env.doRequest(t, http.MethodGet, fmt.Sprintf("/v1/apis/%s/bruno", apiID))
+		resp := env.doRequest(t, http.MethodGet, fmt.Sprintf("/v1/apis/%s/postman", apiID))
 		require.Equal(t, http.StatusNotFound, resp.StatusCode)
 
 		prob := decodeBody[problem.APIError](t, resp)
 		require.Equal(t, "Not Found", prob.Title)
 		require.Equal(t, 404, prob.Status)
-		require.Contains(t, prob.Detail, "Bruno artifact not found")
+		require.Contains(t, prob.Detail, "Postman artifact not found")
 	})
 }

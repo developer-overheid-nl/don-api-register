@@ -101,6 +101,36 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.GetPostman, 200),
 	)
 
+	read.GET("/apis/:id/arazzo/markdown",
+		[]fizz.OperationOption{
+			fizz.ID("getArazzoMarkdown"),
+			fizz.Summary("Arazzo Markdown downloaden"),
+			fizz.Description("Geeft de gegenereerde Markdown terug."),
+			fizz.Security(&openapi.SecurityRequirement{
+				"apiKey":            {},
+				"clientCredentials": {"apis:read"},
+			}),
+			apiVersionHeader,
+			notFoundResponse,
+		},
+		tonic.Handler(controller.GetArazzoMarkdown, 200),
+	)
+
+	read.GET("/apis/:id/arazzo/mermaid",
+		[]fizz.OperationOption{
+			fizz.ID("getArazzoMermaid"),
+			fizz.Summary("Arazzo Mermaid diagram downloaden"),
+			fizz.Description("Geeft het gegenereerde Mermaid diagram terug."),
+			fizz.Security(&openapi.SecurityRequirement{
+				"apiKey":            {},
+				"clientCredentials": {"apis:read"},
+			}),
+			apiVersionHeader,
+			notFoundResponse,
+		},
+		tonic.Handler(controller.GetArazzoMermaid, 200),
+	)
+
 	read.GET("/apis/:id/oas/:version",
 		[]fizz.OperationOption{
 			fizz.ID("getOasVersion"),

@@ -311,7 +311,7 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		require.Contains(t, prob.Detail, "Api not found")
 	})
 
-	t.Run("missing artifact returns problem json", func(t *testing.T) {
+	t.Run("missing postman artifact returns problem json", func(t *testing.T) {
 		resp := env.doRequest(t, http.MethodGet, fmt.Sprintf("/v1/apis/%s/postman", apiID))
 		require.Equal(t, http.StatusNotFound, resp.StatusCode)
 
@@ -319,5 +319,25 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		require.Equal(t, "Not Found", prob.Title)
 		require.Equal(t, 404, prob.Status)
 		require.Contains(t, prob.Detail, "Postman artifact not found")
+	})
+
+	t.Run("missing arazzo markdown returns problem json", func(t *testing.T) {
+		resp := env.doRequest(t, http.MethodGet, fmt.Sprintf("/v1/apis/%s/arazzo/markdown", apiID))
+		require.Equal(t, http.StatusNotFound, resp.StatusCode)
+
+		prob := decodeBody[problem.APIError](t, resp)
+		require.Equal(t, "Not Found", prob.Title)
+		require.Equal(t, 404, prob.Status)
+		require.Contains(t, prob.Detail, "Arazzo Markdown artifact not found")
+	})
+
+	t.Run("missing arazzo mermaid returns problem json", func(t *testing.T) {
+		resp := env.doRequest(t, http.MethodGet, fmt.Sprintf("/v1/apis/%s/arazzo/mermaid", apiID))
+		require.Equal(t, http.StatusNotFound, resp.StatusCode)
+
+		prob := decodeBody[problem.APIError](t, resp)
+		require.Equal(t, "Not Found", prob.Title)
+		require.Equal(t, 404, prob.Status)
+		require.Contains(t, prob.Detail, "Arazzo Mermaid artifact not found")
 	})
 }

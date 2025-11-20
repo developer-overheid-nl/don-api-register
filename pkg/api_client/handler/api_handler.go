@@ -125,14 +125,28 @@ func (c *APIsAPIController) CreateOrganisation(ctx *gin.Context, body *models.Or
 	return created, nil
 }
 
+// GetArazzoMarkdown handles GET /apis/:id/arazzo/markdown
+func (c *APIsAPIController) GetArazzoMarkdown(ctx *gin.Context, params *models.ApiParams) error {
+	return c.getArtifact(ctx, params.Id, "arazzo_markdown")
+}
+
+// GetArazzoMermaid handles GET /apis/:id/arazzo/mermaid
+func (c *APIsAPIController) GetArazzoMermaid(ctx *gin.Context, params *models.ApiParams) error {
+	return c.getArtifact(ctx, params.Id, "arazzo_mermaid")
+}
+
 // GetPostman handles GET /apis/:id/postman
 func (c *APIsAPIController) GetPostman(ctx *gin.Context, params *models.ApiParams) error {
-	art, err := c.Service.GetArtifact(ctx.Request.Context(), params.Id, "postman")
+	return c.getArtifact(ctx, params.Id, "postman")
+}
+
+func (c *APIsAPIController) getArtifact(ctx *gin.Context, apiID, kind string) error {
+	art, err := c.Service.GetArtifact(ctx.Request.Context(), apiID, kind)
 	if err != nil {
 		return err
 	}
 	if art == nil {
-		return problem.NewNotFound(params.Id, "Postman artifact not found")
+		return problem.NewNotFound(apiID, fmt.Sprintf("%s artifact not found", artifactLabel(kind)))
 	}
 	if art.ContentType != "" {
 		ctx.Header("Content-Type", art.ContentType)
@@ -142,6 +156,19 @@ func (c *APIsAPIController) GetPostman(ctx *gin.Context, params *models.ApiParam
 	}
 	ctx.Data(200, art.ContentType, art.Data)
 	return nil
+}
+
+func artifactLabel(kind string) string {
+	switch kind {
+	case "postman":
+		return "Postman"
+	case "arazzo_markdown":
+		return "Arazzo Markdown"
+	case "arazzo_mermaid":
+		return "Arazzo Mermaid"
+	default:
+		return strings.ReplaceAll(kind, "_", " ")
+	}
 }
 
 func (c *APIsAPIController) GetOas(ctx *gin.Context, params *models.ApiOasParams) error {

@@ -3,7 +3,6 @@ package services_test
 import (
 	"context"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	httpclient "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
@@ -11,6 +10,7 @@ import (
 	toolslint "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/testutil"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -154,11 +154,10 @@ func TestCreateApiFromOas_UsesSpecContactOverBody(t *testing.T) {
   }
 }`
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(spec))
 	}))
-	defer srv.Close()
 
 	orgURI := "https://identifier.overheid.nl/tooi/id/0000"
 
@@ -253,11 +252,10 @@ func TestUpdateOasUri_PersistsUpdatedFields(t *testing.T) {
   }
 }`
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(spec))
 	}))
-	defer srv.Close()
 
 	res, err := openapihelper.FetchParseValidateAndHash(context.Background(), toolslint.OASInput{OasUrl: srv.URL}, openapihelper.FetchOpts{})
 	assert.NoError(t, err)
@@ -363,11 +361,10 @@ func TestRefreshChangedApis_UpdatesWhenHashDiffers(t *testing.T) {
   }
 }`
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(spec))
 	}))
-	defer srv.Close()
 
 	orgURI := "https://org.example.com"
 	var updated models.Api
@@ -417,11 +414,10 @@ func TestRefreshChangedApis_SkipsWhenHashUnchanged(t *testing.T) {
   "paths": { "/ping": { "get": { "responses": { "200": { "description": "ok" } } } } }
 }`
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(spec))
 	}))
-	defer srv.Close()
 
 	res, err := openapihelper.FetchParseValidateAndHash(context.Background(), toolslint.OASInput{OasUrl: srv.URL}, openapihelper.FetchOpts{})
 	assert.NoError(t, err)
@@ -588,14 +584,13 @@ func TestCreateApiFromOas_Success(t *testing.T) {
     }
   }
 }`
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, err := w.Write([]byte(spec))
 		if err != nil {
 			return
 		}
 	}))
-	defer server.Close()
 
 	// stub repo
 	var saved models.Api
@@ -665,11 +660,10 @@ func TestPublishAllApisToTypesense_Disabled(t *testing.T) {
 
 func TestPublishAllApisToTypesense_SendsDocuments(t *testing.T) {
 	var calls int
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls++
 		w.WriteHeader(http.StatusCreated)
 	}))
-	defer server.Close()
 
 	t.Setenv("TYPESENSE_ENDPOINT", server.URL)
 	t.Setenv("TYPESENSE_API_KEY", "secret")

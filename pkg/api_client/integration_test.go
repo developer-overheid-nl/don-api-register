@@ -283,8 +283,8 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		prob := decodeBody[problem.APIError](t, resp)
 		require.Equal(t, "Bad Request", prob.Title)
 		require.Equal(t, 400, prob.Status)
-		require.Len(t, prob.InvalidParams, 1)
-		require.Equal(t, "uri", prob.InvalidParams[0].Name)
+		require.Len(t, prob.Errors, 1)
+		require.Equal(t, "uri", prob.Errors[0].Code)
 	})
 
 	t.Run("create organisation missing label", func(t *testing.T) {
@@ -297,8 +297,8 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		prob := decodeBody[problem.APIError](t, resp)
 		require.Equal(t, "Bad Request", prob.Title)
 		require.Equal(t, 400, prob.Status)
-		require.Len(t, prob.InvalidParams, 1)
-		require.Equal(t, "label", prob.InvalidParams[0].Name)
+		require.Len(t, prob.Errors, 1)
+		require.Equal(t, "label", prob.Errors[0].Code)
 	})
 
 	t.Run("missing api gives problem json", func(t *testing.T) {
@@ -308,7 +308,8 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		prob := decodeBody[problem.APIError](t, resp)
 		require.Equal(t, "Not Found", prob.Title)
 		require.Equal(t, 404, prob.Status)
-		require.Contains(t, prob.Detail, "Api not found")
+		require.Len(t, prob.Errors, 1)
+		require.Contains(t, prob.Errors[0].Detail, "Api not found")
 	})
 
 	t.Run("missing artifact returns problem json", func(t *testing.T) {
@@ -318,6 +319,7 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		prob := decodeBody[problem.APIError](t, resp)
 		require.Equal(t, "Not Found", prob.Title)
 		require.Equal(t, 404, prob.Status)
-		require.Contains(t, prob.Detail, "Postman artifact not found")
+		require.Len(t, prob.Errors, 1)
+		require.Contains(t, prob.Errors[0].Detail, "Postman artifact not found")
 	})
 }

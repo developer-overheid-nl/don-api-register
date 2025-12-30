@@ -5,55 +5,74 @@ type InvalidParam struct {
 	Reason string `json:"reason"`
 }
 
-// APIError implementeert error + Problem Details (RFC 7807)
-type APIError struct {
-	Type          string         `json:"type"`
-	Title         string         `json:"title"`
-	Status        int            `json:"status"`
-	Detail        string         `json:"detail"`
-	Instance      string         `json:"instance,omitempty"`
-	InvalidParams []InvalidParam `json:"invalidParams,omitempty"`
+type ErrorDetail struct {
+	In       string `json:"in"`
+	Location string `json:"location"`
+	Code     string `json:"code"`
+	Detail   string `json:"detail"`
 }
 
-func (e APIError) Error() string { return e.Detail }
+// APIError implementeert error + Problem Details (RFC 7807)
+type APIError struct {
+	Title  string        `json:"title"`
+	Status int           `json:"status"`
+	Errors []ErrorDetail `json:"errors,omitempty"`
+}
+
+func (e APIError) Error() string { return e.Title }
 
 func NewBadRequest(oasUri, detail string, params ...InvalidParam) APIError {
 	return APIError{
-		Instance:      oasUri,
-		Type:          "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/400",
-		Title:         "Bad Request",
-		Status:        400,
-		Detail:        detail,
-		InvalidParams: params,
+		Title:  "Request validation failed",
+		Status: 400,
+		Errors: toErrorDetails(params, detail, "body", "body", "bad_request"),
 	}
 }
 
 func NewNotFound(oasUri, detail string, params ...InvalidParam) APIError {
 	return APIError{
-		Instance:      oasUri,
-		Type:          "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/404",
-		Title:         "Not Found",
-		Status:        404,
-		Detail:        detail,
-		InvalidParams: params,
+		Title:  "Resource Not Found",
+		Status: 404,
+		Errors: toErrorDetails(params, detail, "path", oasUri, "not_found"),
 	}
 }
 
 func NewInternalServerError(detail string) APIError {
 	return APIError{
-		Type:   "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/500",
 		Title:  "Internal Server Error",
 		Status: 500,
-		Detail: detail,
+		Errors: toErrorDetails(nil, detail, "", "", "internal_error"),
 	}
 }
 
 func NewForbidden(oasUri, detail string) APIError {
 	return APIError{
-		Instance: oasUri,
-		Type:     "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/403",
-		Title:    "Forbidden",
-		Status:   403,
-		Detail:   detail,
+		Title:  "Forbidden",
+		Status: 403,
+		Errors: toErrorDetails(nil, detail, "", "", "forbidden"),
 	}
+}
+
+func toErrorDetails(params []InvalidParam, fallbackDetail, fallbackIn, fallbackLocation, fallbackCode string) []ErrorDetail {
+	if len(params) == 0 {
+		if fallbackDetail == "" {
+			return nil
+		}
+		return []ErrorDetail{{
+			In:       fallbackIn,
+			Location: fallbackLocation,
+			Code:     fallbackCode,
+			Detail:   fallbackDetail,
+		}}
+	}
+	out := make([]ErrorDetail, 0, len(params))
+	for _, p := range params {
+		out = append(out, ErrorDetail{
+			In:       "body",
+			Location: p.Name,
+			Code:     p.Name,
+			Detail:   p.Reason,
+		})
+	}
+	return out
 }

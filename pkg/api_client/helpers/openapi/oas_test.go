@@ -3,10 +3,10 @@ package openapi
 import (
 	"context"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	toolslint "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/testutil"
 )
 
 func TestFetchParseValidateAndHash_AllowsOpenAPI31(t *testing.T) {
@@ -29,10 +29,9 @@ func TestFetchParseValidateAndHash_AllowsOpenAPI31(t *testing.T) {
 	  }
 	}`
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(spec))
 	}))
-	t.Cleanup(server.Close)
 
 	input := toolslint.OASInput{OasUrl: server.URL}
 	res, err := FetchParseValidateAndHash(context.Background(), input, FetchOpts{})
@@ -61,7 +60,7 @@ func TestFetchParseValidateAndHash_RetriesWithoutOriginOnEmptyBody(t *testing.T)
 	}`
 
 	origins := make([]string, 0, 2)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origins = append(origins, r.Header.Get("Origin"))
 		if r.Header.Get("Origin") != "" {
 			w.WriteHeader(http.StatusOK)
@@ -69,7 +68,6 @@ func TestFetchParseValidateAndHash_RetriesWithoutOriginOnEmptyBody(t *testing.T)
 		}
 		_, _ = w.Write([]byte(spec))
 	}))
-	t.Cleanup(server.Close)
 
 	input := toolslint.OASInput{OasUrl: server.URL}
 	res, err := FetchParseValidateAndHash(context.Background(), input, FetchOpts{Origin: "https://developer.overheid.nl"})

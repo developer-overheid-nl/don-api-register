@@ -172,7 +172,9 @@ func TestGetOas_InvalidFormat(t *testing.T) {
 	apiErr, ok := err.(problem.APIError)
 	assert.True(t, ok)
 	assert.Equal(t, 400, apiErr.Status)
-	assert.Contains(t, apiErr.Detail, "json of yaml")
+	if assert.Len(t, apiErr.Errors, 1) {
+		assert.Contains(t, apiErr.Errors[0].Detail, "json of yaml")
+	}
 }
 func TestListApis_Handler(t *testing.T) {
 	repo := &stubRepo{

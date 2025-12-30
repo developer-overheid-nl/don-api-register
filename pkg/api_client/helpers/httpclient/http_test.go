@@ -4,20 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"testing"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCorsGet(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "https://example.com", r.Header.Get("Origin"))
 		w.WriteHeader(http.StatusOK)
 	}))
-	defer srv.Close()
 
 	_, err := httpclient.CorsGet(&http.Client{}, srv.URL, "https://example.com")
 	assert.NoError(t, err)
@@ -35,11 +34,10 @@ func TestFetchOrganisationLabel(t *testing.T) {
 		}},
 	}}
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/ld+json")
 		_ = json.NewEncoder(w).Encode(data)
 	}))
-	defer srv.Close()
 
 	// Patch HTTPClient zodat requests naar je testserver gaan
 	orig := httpclient.HTTPClient

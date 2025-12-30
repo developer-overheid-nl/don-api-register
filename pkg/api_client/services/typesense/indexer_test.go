@@ -7,13 +7,13 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
 	httpclient "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services/typesense"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/testutil"
 )
 
 func TestPublishApi_Disabled(t *testing.T) {
@@ -31,7 +31,7 @@ func TestPublishApi_SendsDocument(t *testing.T) {
 	var capturedBody []byte
 	var capturedPath, capturedAction, capturedKey string
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedPath = r.URL.Path
 		capturedAction = r.URL.Query().Get("action")
 		capturedKey = r.Header.Get("X-TYPESENSE-API-KEY")

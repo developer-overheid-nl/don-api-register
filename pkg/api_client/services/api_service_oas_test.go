@@ -6,11 +6,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	openapihelper "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/openapi"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/testutil"
 	"github.com/pb33f/libopenapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -214,7 +214,7 @@ func TestPersistOASArtifacts_AcceptsJSONOriginal(t *testing.T) {
 }
 
 func TestBackfillOASArtifacts_GeneratesWhenMissing(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/yaml")
 		fmt.Fprint(w, `openapi: 3.1.0
 info:
@@ -223,7 +223,6 @@ info:
 paths: {}
 `)
 	}))
-	defer srv.Close()
 
 	repo := &artifactRepoStub{
 		apis: []models.Api{

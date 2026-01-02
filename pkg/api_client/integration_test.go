@@ -281,7 +281,7 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
 		prob := decodeBody[problem.APIError](t, resp)
-		require.Equal(t, "Bad Request", prob.Title)
+		require.Equal(t, "Request validation failed", prob.Title)
 		require.Equal(t, 400, prob.Status)
 		require.Len(t, prob.Errors, 1)
 		require.Equal(t, "uri", prob.Errors[0].Code)
@@ -295,7 +295,7 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
 		prob := decodeBody[problem.APIError](t, resp)
-		require.Equal(t, "Bad Request", prob.Title)
+		require.Equal(t, "Request validation failed", prob.Title)
 		require.Equal(t, 400, prob.Status)
 		require.Len(t, prob.Errors, 1)
 		require.Equal(t, "label", prob.Errors[0].Code)
@@ -306,7 +306,7 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		require.Equal(t, http.StatusNotFound, resp.StatusCode)
 
 		prob := decodeBody[problem.APIError](t, resp)
-		require.Equal(t, "Not Found", prob.Title)
+		require.Equal(t, "Resource Not Found", prob.Title)
 		require.Equal(t, 404, prob.Status)
 		require.Len(t, prob.Errors, 1)
 		require.Contains(t, prob.Errors[0].Detail, "Api not found")
@@ -317,7 +317,7 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		require.Equal(t, http.StatusNotFound, resp.StatusCode)
 
 		prob := decodeBody[problem.APIError](t, resp)
-		require.Equal(t, "Not Found", prob.Title)
+		require.Equal(t, "Resource Not Found", prob.Title)
 		require.Equal(t, 404, prob.Status)
 		require.Len(t, prob.Errors, 1)
 		require.Contains(t, prob.Errors[0].Detail, "Postman artifact not found")

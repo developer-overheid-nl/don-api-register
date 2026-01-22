@@ -9,7 +9,7 @@ require (
 	github.com/loopfz/gadgeto v0.11.5
 	github.com/stretchr/testify v1.11.1
 	github.com/wI2L/fizz v0.23.0
-	go.yaml.in/yaml/v4 v4.0.0-rc.3
+	go.yaml.in/yaml/v4 v4.0.0-rc.4
 	golang.org/x/time v0.14.0
 	gorm.io/driver/sqlite v1.6.0
 	sigs.k8s.io/yaml v1.6.0

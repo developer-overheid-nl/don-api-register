@@ -132,28 +132,28 @@
                   }
                 }
               },
-              "Total-Count": {
+              "X-Total-Count": {
                 "description": "Total number of items available",
                 "schema": {
                   "type": "integer",
                   "example": 124
                 }
               },
-              "Current-Page": {
+              "X-Current-Page": {
                 "description": "Current page number",
                 "schema": {
                   "type": "integer",
                   "example": 1
                 }
               },
-              "Per-Page": {
+              "X-Per-Page": {
                 "description": "Number of items per page",
                 "schema": {
                   "type": "integer",
                   "example": 10
                 }
               },
-              "Total-Pages": {
+              "X-Total-Pages": {
                 "description": "Total number of pages available",
                 "schema": {
                   "type": "integer",

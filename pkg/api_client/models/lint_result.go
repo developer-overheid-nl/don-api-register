@@ -7,13 +7,14 @@ import (
 // LintResult stores the output of a linter run for an API
 // so we can keep a history of lint outcomes.
 type LintResult struct {
-	ID        string        `gorm:"column:id;primaryKey"`
-	ApiID     string        `gorm:"column:api_id"`
-	Successes bool          `json:"successes"`
-	Failures  int           `json:"failures"`
-	Warnings  int           `json:"warnings"`
-	CreatedAt time.Time     `gorm:"column:created_at"`
-	Messages  []LintMessage `gorm:"foreignKey:LintResultID" json:"messages,omitempty"`
+	ID             string        `gorm:"column:id;primaryKey"`
+	ApiID          string        `gorm:"column:api_id"`
+	Successes      bool          `json:"successes"`
+	Failures       int           `json:"failures"`
+	Warnings       int           `json:"warnings"`
+	CreatedAt      time.Time     `gorm:"column:created_at"`
+	Messages       []LintMessage `gorm:"foreignKey:LintResultID" json:"messages,omitempty"`
+	RulesetVersion string        `json:"rulesetVersion"`
 }
 
 type LintMessage struct {

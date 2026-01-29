@@ -11,10 +11,10 @@ import (
 )
 
 func SetPaginationHeaders(r *http.Request, setHeader func(key, val string), p models.Pagination) {
-	setHeader("X-Total-Count", strconv.Itoa(p.TotalRecords))
-	setHeader("X-Total-Pages", strconv.Itoa(p.TotalPages))
-	setHeader("X-Per-Page", strconv.Itoa(p.RecordsPerPage))
-	setHeader("X-Current-Page", strconv.Itoa(p.CurrentPage))
+	setHeader("Total-Count", strconv.Itoa(p.TotalRecords))
+	setHeader("Total-Pages", strconv.Itoa(p.TotalPages))
+	setHeader("Per-Page", strconv.Itoa(p.RecordsPerPage))
+	setHeader("Current-Page", strconv.Itoa(p.CurrentPage))
 
 	links := buildLinkHeader(r, p)
 	if links != "" {
@@ -28,7 +28,7 @@ func buildLinkHeader(r *http.Request, p models.Pagination) string {
 	}
 
 	scheme := "http"
-	if r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https") {
+	if r.TLS != nil || strings.EqualFold(r.Header.Get("Forwarded-Proto"), "https") {
 		scheme = "https"
 	}
 	host := r.Host

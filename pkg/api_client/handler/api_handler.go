@@ -99,7 +99,7 @@ func (c *APIsAPIController) ListOrganisations(ctx *gin.Context) ([]models.Organi
 	if err != nil {
 		return nil, err
 	}
-	ctx.Header("X-Total-Count", fmt.Sprintf("%d", total))
+	ctx.Header("Total-Count", fmt.Sprintf("%d", total))
 	// Convert []models.Organisation to []models.OrganisationSummary
 	orgSummaries := make([]models.OrganisationSummary, len(orgs))
 	for i, org := range orgs {
@@ -163,10 +163,10 @@ func (c *APIsAPIController) GetOas(ctx *gin.Context, params *models.ApiOasParams
 		ctx.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", art.Filename))
 	}
 	if art.Version != "" {
-		ctx.Header("X-OAS-Version", art.Version)
+		ctx.Header("OAS-Version", art.Version)
 	}
 	if art.Source != "" {
-		ctx.Header("X-OAS-Source", art.Source)
+		ctx.Header("OAS-Source", art.Source)
 	}
 	ctx.Data(200, art.ContentType, art.Data)
 	return nil

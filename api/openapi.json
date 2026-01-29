@@ -2267,14 +2267,14 @@
                   }
                 }
               },
-              "X-OAS-Version": {
+              "OAS-Version": {
                 "description": "Geleverde OAS-versie (bijv. 3.0 of 3.1).",
                 "schema": {
                   "type": "string",
                   "example": "3.1"
                 }
               },
-              "X-OAS-Source": {
+              "OAS-Source": {
                 "description": "Bron van het OAS-document.",
                 "schema": {
                   "type": "string",

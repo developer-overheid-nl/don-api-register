@@ -33,6 +33,7 @@ type LintResultDTO struct {
 	Score     int              `json:"score"`
 	Messages  []LintMessageDTO `json:"messages"`
 	CreatedAt time.Time        `json:"createdAt"`
+	RulesetVersion string `json:"rulesetVersion"`
 }
 
 // LintGet calls the tools API to lint the given OAS input and returns the result DTO.

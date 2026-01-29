@@ -117,8 +117,8 @@ func TestGetOas_Handler(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 200, w.Code)
 	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
-	assert.Equal(t, "converted", w.Header().Get("X-OAS-Source"))
-	assert.Equal(t, "3.1", w.Header().Get("X-OAS-Version"))
+	assert.Equal(t, "converted", w.Header().Get("OAS-Source"))
+	assert.Equal(t, "3.1", w.Header().Get("OAS-Version"))
 	assert.Equal(t, `{"openapi":"3.1.0"}`, w.Body.String())
 }
 
@@ -209,7 +209,7 @@ func TestListApis_Handler(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Len(t, resp, 2)
-	assert.Equal(t, "2", w.Header().Get("X-Total-Count"))
+	assert.Equal(t, "2", w.Header().Get("Total-Count"))
 }
 
 func TestSearchApis_Handler(t *testing.T) {
@@ -249,10 +249,10 @@ func TestSearchApis_Handler(t *testing.T) {
 	if assert.Len(t, resp, 1) {
 		assert.Equal(t, "a1", resp[0].Id)
 	}
-	assert.Equal(t, "1", w.Header().Get("X-Current-Page"))
-	assert.Equal(t, "1", w.Header().Get("X-Total-Pages"))
-	assert.Equal(t, "1", w.Header().Get("X-Total-Count"))
-	assert.Equal(t, strconv.Itoa(10), w.Header().Get("X-Per-Page"))
+	assert.Equal(t, "1", w.Header().Get("Current-Page"))
+	assert.Equal(t, "1", w.Header().Get("Total-Pages"))
+	assert.Equal(t, "1", w.Header().Get("Total-Count"))
+	assert.Equal(t, strconv.Itoa(10), w.Header().Get("Per-Page"))
 	limitStr := strconv.Itoa(10)
 	expectedLink := "<http://host/v1/apis/_search?page=1&perPage=" + limitStr + "&q=title>; rel=\"first\", " +
 		"<http://host/v1/apis/_search?page=1&perPage=" + limitStr + "&q=title>; rel=\"self\", " +

@@ -414,7 +414,7 @@ func TestListOrganisations_Handler(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
 	assert.Equal(t, "Org 1", result[0].Label)
-	assert.Equal(t, "2", w.Header().Get("X-Total-Count"))
+	assert.Equal(t, "2", w.Header().Get("Total-Count"))
 }
 
 func TestCreateOrganisation_Handler(t *testing.T) {

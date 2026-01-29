@@ -144,6 +144,7 @@ func PublishApi(ctx context.Context, api *models.Api) error {
 		return fmt.Errorf("typesense: create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-TYPESENSE-API-KEY", cfg.apiKey)
 
 	resp, err := httpclient.HTTPClient.Do(req)
 	if err != nil {

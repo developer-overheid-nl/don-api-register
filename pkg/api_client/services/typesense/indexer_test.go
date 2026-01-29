@@ -34,6 +34,7 @@ func TestPublishApi_SendsDocument(t *testing.T) {
 	server := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedPath = r.URL.Path
 		capturedAction = r.URL.Query().Get("action")
+		capturedKey = r.Header.Get("X-TYPESENSE-API-KEY")
 		defer r.Body.Close()
 		body, err := io.ReadAll(r.Body)
 		if err != nil {

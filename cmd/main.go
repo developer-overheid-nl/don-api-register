@@ -20,7 +20,9 @@ import (
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"gorm.io/gorm"
 
+	"github.com/developer-overheid-nl/don-api-register/pkg/adrimport"
 	api "github.com/developer-overheid-nl/don-api-register/pkg/api_client"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/database"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
@@ -97,6 +99,47 @@ func isValidationErr(err error) bool {
 	return errors.As(err, &verrs)
 }
 
+func maybeImportAdrCSV(ctx context.Context, db *gorm.DB) {
+	csvPath := resolveAdrCSVPath()
+	if csvPath == "" {
+		log.Printf("[adr-import] no CSV file found, skipping")
+		return
+	}
+	if !fileExists(csvPath) {
+		log.Printf("[adr-import] csv not found at %q, skipping", csvPath)
+		return
+	}
+
+	result, err := adrimport.ImportCSV(ctx, db, adrimport.Options{
+		CSVPath: csvPath,
+	})
+	if err != nil {
+		log.Printf("[adr-import] failed: %v", err)
+		return
+	}
+	if result.ParseErrors > 0 {
+		log.Printf("[adr-import] completed with %d parse errors", result.ParseErrors)
+	}
+}
+
+func resolveAdrCSVPath() string {
+	if value := strings.TrimSpace(os.Getenv("ADR_IMPORT_CSV_PATH")); value != "" {
+		return value
+	}
+	if fileExists("ADR_VALIDATOR_HISTORYMAPPED.csv") {
+		return "ADR_VALIDATOR_HISTORYMAPPED.csv"
+	}
+	return ""
+}
+
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
+}
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -130,6 +173,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Geen databaseverbinding: %v", err)
 	}
+
+	maybeImportAdrCSV(context.Background(), db)
+
 	apiRepo := repositories.NewApiRepository(db)
 	APIsAPIService := services.NewAPIsAPIService(apiRepo)
 	APIsAPIController := handler.NewAPIsAPIController(APIsAPIService)

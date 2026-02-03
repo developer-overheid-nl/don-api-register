@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/gin-contrib/cors v1.7.6
 	github.com/go-playground/validator/v10 v10.30.1
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.11.1
 	github.com/loopfz/gadgeto v0.11.5
 	github.com/stretchr/testify v1.11.1
 	github.com/wI2L/fizz v0.23.0

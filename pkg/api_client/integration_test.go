@@ -215,7 +215,7 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		resp := env.doRequest(t, http.MethodGet, "/v1/apis")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		require.Equal(t, "test-version", resp.Header.Get("API-Version"))
-		require.Equal(t, "1", resp.Header.Get("X-Total-Count"))
+		require.Equal(t, "1", resp.Header.Get("Total-Count"))
 		require.Contains(t, resp.Header.Get("Link"), "rel=\"self\"")
 
 		summaries := decodeBody[[]models.ApiSummary](t, resp)
@@ -252,7 +252,7 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		resp := env.doRequest(t, http.MethodGet, "/v1/apis/_search?q=Realtime")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		require.Equal(t, "test-version", resp.Header.Get("API-Version"))
-		require.Equal(t, "1", resp.Header.Get("X-Total-Count"))
+		require.Equal(t, "1", resp.Header.Get("Total-Count"))
 
 		results := decodeBody[[]models.ApiSummary](t, resp)
 		require.Len(t, results, 1)
@@ -262,7 +262,7 @@ func TestRealtimeApplicationRun(t *testing.T) {
 	t.Run("list organisations", func(t *testing.T) {
 		resp := env.doRequest(t, http.MethodGet, "/v1/organisations")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
-		require.Equal(t, "1", resp.Header.Get("X-Total-Count"))
+		require.Equal(t, "1", resp.Header.Get("Total-Count"))
 
 		organisations := decodeBody[[]models.OrganisationSummary](t, resp)
 		require.Len(t, organisations, 1)

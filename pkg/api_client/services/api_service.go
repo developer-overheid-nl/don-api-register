@@ -422,13 +422,14 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID string, input
 			rid = uuid.New().String()
 		}
 		res := &models.LintResult{
-			ID:        rid,
-			ApiID:     apiID,
-			Successes: dto.Successes,
-			Failures:  dto.Failures,
-			Warnings:  dto.Warnings,
-			Messages:  msgs,
-			CreatedAt: dto.CreatedAt,
+			ID:             rid,
+			ApiID:          apiID,
+			Successes:      dto.Successes,
+			Failures:       dto.Failures,
+			Warnings:       dto.Warnings,
+			Messages:       msgs,
+			CreatedAt:      dto.CreatedAt,
+			RulesetVersion: dto.RulesetVersion,
 		}
 		if err := s.repo.SaveLintResult(ctx, res); err != nil {
 			log.Printf("[lint] save result failed: %v", err)

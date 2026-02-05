@@ -21,6 +21,7 @@ type stubRepo struct {
 	findOrg      func(ctx context.Context, uri string) (*models.Organisation, error)
 	getByID      func(ctx context.Context, id string) (*models.Api, error)
 	getLintRes   func(ctx context.Context, apiID string) ([]models.LintResult, error)
+	listLintRes  func(ctx context.Context) ([]models.LintResult, error)
 	getApis      func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
 	searchApis   func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
 	saveServer   func(server models.Server) error
@@ -46,6 +47,12 @@ func (s *stubRepo) GetLintResults(ctx context.Context, apiID string) ([]models.L
 		return s.getLintRes(ctx, apiID)
 	}
 	return nil, nil
+}
+func (s *stubRepo) ListLintResults(ctx context.Context) ([]models.LintResult, error) {
+	if s.listLintRes != nil {
+		return s.listLintRes(ctx)
+	}
+	return []models.LintResult{}, nil
 }
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
 	return s.getApis(ctx, page, perPage, organisation, ids)

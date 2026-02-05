@@ -70,6 +70,11 @@ func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, params *models.ApiPara
 	return api, nil
 }
 
+// ListLintResults handles GET /lint-results
+func (c *APIsAPIController) ListLintResults(ctx *gin.Context) ([]models.LintResult, error) {
+	return c.Service.ListLintResults(ctx.Request.Context())
+}
+
 // CreateApiFromOas handles POST /apis
 func (c *APIsAPIController) CreateApiFromOas(ctx *gin.Context, body *models.ApiPost) (*models.ApiSummary, error) {
 	created, err := c.Service.CreateApiFromOas(*body)

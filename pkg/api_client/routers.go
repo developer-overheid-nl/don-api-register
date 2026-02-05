@@ -75,8 +75,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	publicApis.GET("/apis",
 		[]fizz.OperationOption{
 			fizz.ID("listApis"),
-			fizz.Summary("Alle API's ophalen"),
-			fizz.Description("Alle API's ophalen"),
+			fizz.Summary("List all APIs"),
+			fizz.Description("List all APIs"),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"apiKey": []string{},
@@ -93,8 +93,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	publicApis.GET("/apis/:id",
 		[]fizz.OperationOption{
 			fizz.ID("retreiveApi"),
-			fizz.Summary("Specifieke API ophalen"),
-			fizz.Description("Specifieke API ophalen"),
+			fizz.Summary("Retrieve a specific API"),
+			fizz.Description("Retrieve a specific API"),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"apiKey": []string{},
@@ -111,8 +111,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	publicApis.GET("/apis/:id/postman",
 		[]fizz.OperationOption{
 			fizz.ID("getPostman"),
-			fizz.Summary("Download Postman collectie"),
-			fizz.Description("Geeft de gegenereerde Postman JSON terug."),
+			fizz.Summary("Download Postman collection"),
+			fizz.Description("Returns the generated Postman JSON."),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"apiKey": []string{},
@@ -130,7 +130,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		[]fizz.OperationOption{
 			fizz.ID("getOasVersion"),
 			fizz.Summary("Download OAS document"),
-			fizz.Description("Geeft de OAS 3.0 of 3.1 specificatie in JSON of YAML terug."),
+			fizz.Description("Returns the OAS 3.0 or 3.1 specification in JSON or YAML."),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"apiKey": []string{},
@@ -151,8 +151,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	publicOrganisations.GET("/organisations",
 		[]fizz.OperationOption{
 			fizz.ID("listOrganisations"),
-			fizz.Summary("Alle organisaties ophalen"),
-			fizz.Description("Alle organisaties ophalen"),
+			fizz.Summary("List all organisations"),
+			fizz.Description("List all organisations"),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"apiKey": []string{},
@@ -167,8 +167,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	privateOrganisations.POST("/organisations",
 		[]fizz.OperationOption{
 			fizz.ID("createOrganisation"),
-			fizz.Summary("Organisatie aanmaken"),
-			fizz.Description("Maak een nieuwe organisatie aan."),
+			fizz.Summary("Create organisation"),
+			fizz.Description("Create a new organisation."),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"apiKey": []string{},
@@ -182,11 +182,26 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.CreateOrganisation, 201),
 	)
 
+	privateApis.GET("/lint-results",
+		[]fizz.OperationOption{
+			fizz.ID("listLintResults"),
+			fizz.Summary("List all lint results"),
+			fizz.Description("Returns all lint results."),
+			fizz.WithOptionalSecurity(),
+			fizz.Security(&openapi.SecurityRequirement{
+				"clientCredentials": {"apis:read"},
+			}),
+			apiVersionHeaderOption,
+			badRequestResponse,
+		},
+		tonic.Handler(controller.ListLintResults, 200),
+	)
+
 	privateApis.POST("/apis",
 		[]fizz.OperationOption{
 			fizz.ID("createApi"),
-			fizz.Summary("Registreer een nieuwe API"),
-			fizz.Description("Registreer een nieuwe API"),
+			fizz.Summary("Register a new API"),
+			fizz.Description("Register a new API"),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"clientCredentials": {"apis:write"},
@@ -200,8 +215,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	privateApis.PUT("/apis/:id",
 		[]fizz.OperationOption{
 			fizz.ID("updateApi"),
-			fizz.Summary("Specifieke API updaten"),
-			fizz.Description("Specifieke API updaten"),
+			fizz.Summary("Update a specific API"),
+			fizz.Description("Update a specific API"),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"clientCredentials": {"apis:write"},

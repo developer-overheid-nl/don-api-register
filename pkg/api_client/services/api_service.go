@@ -148,6 +148,10 @@ func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Ap
 	return detail, nil
 }
 
+func (s *APIsAPIService) ListLintResults(ctx context.Context) ([]models.LintResult, error) {
+	return s.repo.ListLintResults(ctx)
+}
+
 func (s *APIsAPIService) ListApis(ctx context.Context, p *models.ListApisParams) ([]models.ApiSummary, models.Pagination, error) {
 	idFilter := p.FilterIDs()
 	apis, pagination, err := s.repo.GetApis(ctx, p.Page, p.PerPage, p.Organisation, idFilter)

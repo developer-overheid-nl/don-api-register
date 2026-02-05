@@ -20,6 +20,7 @@ type stubRepo struct {
 	searchFunc  func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
 	retrFunc    func(ctx context.Context, id string) (*models.Api, error)
 	lintResFunc func(ctx context.Context, apiID string) ([]models.LintResult, error)
+	listLint    func(ctx context.Context) ([]models.LintResult, error)
 	findOasFunc func(ctx context.Context, oasUrl string) (*models.Api, error)
 	getOrgs     func(ctx context.Context) ([]models.Organisation, int, error)
 	findOrg     func(ctx context.Context, uri string) (*models.Organisation, error)
@@ -44,6 +45,12 @@ func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, erro
 }
 func (s *stubRepo) GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error) {
 	return s.lintResFunc(ctx, apiID)
+}
+func (s *stubRepo) ListLintResults(ctx context.Context) ([]models.LintResult, error) {
+	if s.listLint != nil {
+		return s.listLint(ctx)
+	}
+	return []models.LintResult{}, nil
 }
 func (s *stubRepo) FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api, error) {
 	return s.findOasFunc(ctx, oasUrl)

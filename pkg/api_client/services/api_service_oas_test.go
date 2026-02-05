@@ -50,6 +50,9 @@ func (a *artifactRepoStub) SaveLintResult(ctx context.Context, res *models.LintR
 func (a *artifactRepoStub) GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error) {
 	return nil, nil
 }
+func (a *artifactRepoStub) ListLintResults(ctx context.Context) ([]models.LintResult, error) {
+	return nil, nil
+}
 func (a *artifactRepoStub) GetOrganisations(ctx context.Context) ([]models.Organisation, int, error) {
 	return nil, 0, nil
 }

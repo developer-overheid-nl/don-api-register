@@ -58,8 +58,8 @@
           "Public endpoints",
           "APIs"
         ],
-        "summary": "Alle API's ophalen",
-        "description": "Alle API's ophalen",
+        "summary": "List all APIs",
+        "description": "List all APIs",
         "operationId": "listApis",
         "parameters": [
           {
@@ -99,7 +99,7 @@
             "name": "ids",
             "in": "query",
             "required": false,
-            "description": "Kommagescheiden lijst met API-id's.",
+            "description": "Comma-separated list of API IDs.",
             "schema": {
               "type": "string",
               "example": "dicF0B3HR,diC1D4EHR"
@@ -227,7 +227,7 @@
                       "description": "The description of the API",
                       "type": "string",
                       "examples": [
-                        "Dit is versie 1 van het API-register. Deze omschrijving kan ook Markdown bevatten."
+                        "This is version 1 of the API register. This description can also contain Markdown."
                       ]
                     },
                     "organisation": {
@@ -430,8 +430,8 @@
           "Private endpoints",
           "APIs"
         ],
-        "summary": "Registreer een nieuwe API",
-        "description": "Registreer een nieuwe API",
+        "summary": "Register a new API",
+        "description": "Register a new API",
         "operationId": "createApi",
         "requestBody": {
           "content": {
@@ -600,7 +600,7 @@
                           "description": "The description of the API",
                           "type": "string",
                           "examples": [
-                            "Dit is versie 1 van het API-register. Deze omschrijving kan ook Markdown bevatten."
+                            "This is version 1 of the API register. This description can also contain Markdown."
                           ]
                         },
                         "organisation": {
@@ -1041,7 +1041,7 @@
                         "description": "The description of the API",
                         "type": "string",
                         "examples": [
-                          "Dit is versie 1 van het API-register. Deze omschrijving kan ook Markdown bevatten."
+                          "This is version 1 of the API register. This description can also contain Markdown."
                         ]
                       },
                       "organisation": {
@@ -1233,6 +1233,233 @@
         }
       }
     },
+    "/lint-results": {
+      "get": {
+        "security": [
+          {},
+          {
+            "clientCredentials": [
+              "apis:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Private endpoints",
+          "APIs"
+        ],
+        "summary": "List all lint results",
+        "description": "Returns all lint results.",
+        "operationId": "listLintResults",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "API-Version": {
+                "description": "Semver of this API",
+                "schema": {
+                  "type": "string",
+                  "example": "1.0.0",
+                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+                  "externalDocs": {
+                    "description": " /core/version-header: Return the full version number in a response header",
+                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
+                  }
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "ID": {
+                        "type": "string"
+                      },
+                      "ApiID": {
+                        "type": "string"
+                      },
+                      "successes": {
+                        "type": "boolean"
+                      },
+                      "failures": {
+                        "type": "integer"
+                      },
+                      "warnings": {
+                        "type": "integer"
+                      },
+                      "CreatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "messages": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "lintResultId": {
+                              "type": "string"
+                            },
+                            "line": {
+                              "type": "integer"
+                            },
+                            "column": {
+                              "type": "integer"
+                            },
+                            "severity": {
+                              "type": "string"
+                            },
+                            "code": {
+                              "type": "string"
+                            },
+                            "CreatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "infos": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "lintMessageId": {
+                                    "type": "string"
+                                  },
+                                  "message": {
+                                    "type": "string"
+                                  },
+                                  "path": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "lintMessageId",
+                                  "message",
+                                  "path"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "lintResultId",
+                            "line",
+                            "column",
+                            "severity",
+                            "code",
+                            "CreatedAt"
+                          ]
+                        }
+                      },
+                      "rulesetVersion": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "ID",
+                      "ApiID",
+                      "successes",
+                      "failures",
+                      "warnings",
+                      "CreatedAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "headers": {
+              "API-Version": {
+                "description": "Semver of this API",
+                "schema": {
+                  "type": "string",
+                  "example": "1.0.0",
+                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+                  "externalDocs": {
+                    "description": " /core/version-header: Return the full version number in a response header",
+                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
+                  }
+                }
+              }
+            },
+            "description": "Bad request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://example.com/ProblemJson.schema.json",
+                  "title": "Problem JSON",
+                  "description": "Problem JSON schema representing errors and status code",
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "description": "The HTTP status code generated by the origin server for this occurrence of the problem",
+                      "example": 400
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "A short, human-readable summary of the problem type",
+                      "example": "Request validation failed"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "description": "List of errors encountered during processing",
+                        "properties": {
+                          "in": {
+                            "type": "string",
+                            "description": "Location of the error (e.g., body, query, header)",
+                            "enum": [
+                              "body",
+                              "query"
+                            ]
+                          },
+                          "location": {
+                            "type": "string",
+                            "description": "Location in the document where the error occurred (JSON Pointer)",
+                            "example": "#/foo[0]/bar"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "A code representing the type of error",
+                            "example": "date.format"
+                          },
+                          "detail": {
+                            "type": "string",
+                            "description": "A detailed message describing the error",
+                            "example": "must be ISO 8601"
+                          }
+                        },
+                        "required": [
+                          "in",
+                          "location",
+                          "code",
+                          "detail"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "title"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/apis/{id}": {
       "parameters": [
         {
@@ -1261,8 +1488,8 @@
           "Public endpoints",
           "APIs"
         ],
-        "summary": "Specifieke API ophalen",
-        "description": "Specifieke API ophalen",
+        "summary": "Retrieve a specific API",
+        "description": "Retrieve a specific API",
         "operationId": "retreiveApi",
         "responses": {
           "200": {
@@ -1353,7 +1580,7 @@
                           "description": "The description of the API",
                           "type": "string",
                           "examples": [
-                            "Dit is versie 1 van het API-register. Deze omschrijving kan ook Markdown bevatten."
+                            "This is version 1 of the API register. This description can also contain Markdown."
                           ]
                         },
                         "organisation": {
@@ -1630,8 +1857,8 @@
           "Private endpoints",
           "APIs"
         ],
-        "summary": "Specifieke API updaten",
-        "description": "Specifieke API updaten",
+        "summary": "Update a specific API",
+        "description": "Update a specific API",
         "operationId": "updateApi",
         "requestBody": {
           "content": {
@@ -1800,7 +2027,7 @@
                           "description": "The description of the API",
                           "type": "string",
                           "examples": [
-                            "Dit is versie 1 van het API-register. Deze omschrijving kan ook Markdown bevatten."
+                            "This is version 1 of the API register. This description can also contain Markdown."
                           ]
                         },
                         "organisation": {
@@ -2175,8 +2402,8 @@
           "Public endpoints",
           "APIs"
         ],
-        "summary": "Download Postman collectie",
-        "description": "Geeft de gegenereerde Postman JSON terug.",
+        "summary": "Download Postman collection",
+        "description": "Returns the generated Postman JSON.",
         "operationId": "getPostman",
         "responses": {
           "200": {
@@ -2225,7 +2452,7 @@
           "name": "version",
           "in": "path",
           "required": true,
-          "description": "OAS versie en formaat, bijv. 3.0.json of 3.1.yaml.",
+          "description": "OAS version and format, e.g. 3.0.json or 3.1.yaml.",
           "schema": {
             "type": "string",
             "example": "3.0.json"
@@ -2249,7 +2476,7 @@
           "APIs"
         ],
         "summary": "Download OAS document",
-        "description": "Geeft de OAS 3.0 of 3.1 specificatie in JSON of YAML terug.",
+        "description": "Returns the OAS 3.0 or 3.1 specification in JSON or YAML.",
         "operationId": "getOasVersion",
         "responses": {
           "200": {
@@ -2268,14 +2495,14 @@
                 }
               },
               "OAS-Version": {
-                "description": "Geleverde OAS-versie (bijv. 3.0 of 3.1).",
+                "description": "Returned OAS version (e.g. 3.0 or 3.1).",
                 "schema": {
                   "type": "string",
                   "example": "3.1"
                 }
               },
               "OAS-Source": {
-                "description": "Bron van het OAS-document.",
+                "description": "Source of the OAS document.",
                 "schema": {
                   "type": "string",
                   "example": "repository"
@@ -2286,13 +2513,13 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "OpenAPI document in JSON formaat."
+                  "description": "OpenAPI document in JSON format."
                 }
               },
               "application/yaml": {
                 "schema": {
                   "type": "string",
-                  "description": "OpenAPI document in YAML formaat."
+                  "description": "OpenAPI document in YAML format."
                 }
               }
             }
@@ -2315,8 +2542,8 @@
           "Public endpoints",
           "APIs"
         ],
-        "summary": "OpenAPI documentatie",
-        "description": "Download de OpenAPI specificatie van deze API.",
+        "summary": "OpenAPI documentation",
+        "description": "Download the OpenAPI specification for this API.",
         "operationId": "getOpenApiSpecification",
         "responses": {
           "200": {
@@ -2339,7 +2566,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "description": "OpenAPI 3 specificatie van de API."
+                  "description": "OpenAPI 3 specification for the API."
                 }
               }
             }
@@ -2364,8 +2591,8 @@
           "Public endpoints",
           "Organisations"
         ],
-        "summary": "Alle organisaties ophalen",
-        "description": "Alle organisaties ophalen",
+        "summary": "List all organisations",
+        "description": "List all organisations",
         "operationId": "listOrganisations",
         "responses": {
           "200": {
@@ -2441,8 +2668,8 @@
           "Private endpoints",
           "Organisations"
         ],
-        "summary": "Organisatie aanmaken",
-        "description": "Maak een nieuwe organisatie aan.",
+        "summary": "Create organisation",
+        "description": "Create a new organisation.",
         "operationId": "createOrganisation",
         "requestBody": {
           "content": {
@@ -2951,7 +3178,7 @@
             "description": "The description of the API",
             "type": "string",
             "examples": [
-              "Dit is versie 1 van het API-register. Deze omschrijving kan ook Markdown bevatten."
+              "This is version 1 of the API register. This description can also contain Markdown."
             ]
           },
           "organisation": {
@@ -3268,7 +3495,7 @@
                 "description": "The description of the API",
                 "type": "string",
                 "examples": [
-                  "Dit is versie 1 van het API-register. Deze omschrijving kan ook Markdown bevatten."
+                  "This is version 1 of the API register. This description can also contain Markdown."
                 ]
               },
               "organisation": {

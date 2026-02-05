@@ -23,6 +23,7 @@ type ApiRepository interface {
 	AllApis(ctx context.Context) ([]models.Api, error)
 	SaveLintResult(ctx context.Context, result *models.LintResult) error
 	GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error)
+	ListLintResults(ctx context.Context) ([]models.LintResult, error)
 	GetOrganisations(ctx context.Context) ([]models.Organisation, int, error)
 	FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error)
 	SaveArtifact(ctx context.Context, art *models.ApiArtifact) error
@@ -230,6 +231,19 @@ func (r *apiRepository) GetLintResults(ctx context.Context, apiID string) ([]mod
 	err := r.db.WithContext(ctx).Preload("Messages").
 		Preload("Messages.Infos").
 		Where("api_id = ?", apiID).
+		Order("created_at desc").
+		Find(&results).Error
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func (r *apiRepository) ListLintResults(ctx context.Context) ([]models.LintResult, error) {
+	var results []models.LintResult
+	err := r.db.WithContext(ctx).
+		Preload("Messages").
+		Preload("Messages.Infos").
 		Order("created_at desc").
 		Find(&results).Error
 	if err != nil {

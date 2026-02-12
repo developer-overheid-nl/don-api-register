@@ -133,6 +133,10 @@ func main() {
 	apiRepo := repositories.NewApiRepository(db)
 	APIsAPIService := services.NewAPIsAPIService(apiRepo)
 	APIsAPIController := handler.NewAPIsAPIController(APIsAPIService)
+
+	adoptionRepo := repositories.NewAdoptionRepository(db)
+	adoptionService := services.NewAdoptionService(adoptionRepo)
+	statsController := handler.NewStatisticsController(adoptionService)
 	if err := APIsAPIService.PublishAllApisToTypesense(context.Background()); err != nil {
 		log.Fatalf("[typesense-sync] bulk publish failed: %v", err)
 	}
@@ -145,7 +149,7 @@ func main() {
 	}()
 
 	// Start server
-	router := api.NewRouter(version, APIsAPIController)
+	router := api.NewRouter(version, APIsAPIController, statsController)
 
 	log.Println("Server is running on port 1337")
 	log.Fatal(http.ListenAndServe(":1337", router))

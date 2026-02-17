@@ -12,12 +12,15 @@
   },
   "servers": [
     {
-      "description": "Default",
+      "description": "Production",
       "url": "https://api.developer.overheid.nl/api-register/v1"
+    },
+    {
+      "description": "Test",
+      "url": "https://api.don.apps.digilab.network/api-register/v1"
     }
   ],
   "security": [
-    {},
     {
       "clientCredentials": []
     }

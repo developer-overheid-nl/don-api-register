@@ -832,7 +832,7 @@
         }
       }
     },
-    "/apis/search": {
+    "/apis/_search": {
       "get": {
         "tags": [
           "Public endpoints",

@@ -72,8 +72,6 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		},
 		tonic.Handler(controller.SearchApis, 200),
 	)
-	// Backward-compatible legacy alias, intentionally not documented in OAS.
-	g.GET("/v1/apis/_search", tonic.Handler(controller.SearchApis, 200))
 	publicApis.GET("/apis",
 		[]fizz.OperationOption{
 			fizz.ID("listApis"),

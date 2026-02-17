@@ -13,7 +13,7 @@
   "servers": [
     {
       "description": "Default",
-      "url": "/v1"
+      "url": "https://api.developer.overheid.nl/api-register/v1"
     }
   ],
   "security": [
@@ -165,170 +165,163 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://example.com/Api.schema.json",
-                  "title": "API",
-                  "description": "An API from the catalog",
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "description": "The unique identifier for an API",
-                      "type": "string",
-                      "readOnly": true,
-                      "examples": [
-                        "dicF0B3HR"
-                      ]
-                    },
-                    "contact": {
-                      "$schema": "https://json-schema.org/draft/2020-12/schema",
-                      "$id": "https://example.com/Contact.schema.json",
-                      "title": "Contact",
-                      "description": "Contact details",
-                      "type": "object",
-                      "properties": {
-                        "email": {
-                          "type": "string",
-                          "format": "email",
-                          "description": "The email address of the contact",
-                          "examples": [
-                            "developer.overheid@geonovum.nl"
-                          ]
-                        },
-                        "name": {
-                          "type": "string",
-                          "description": "The name of the contact",
-                          "examples": [
-                            "Developer Overheid"
-                          ]
-                        },
-                        "url": {
-                          "type": "string",
-                          "format": "uri",
-                          "description": "The URL of the contact",
-                          "examples": [
-                            "https://developer.overheid.nl"
-                          ]
-                        }
+                  "type": "array",
+                  "items": {
+                    "title": "API",
+                    "description": "An API from the catalog",
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "description": "The unique identifier for an API",
+                        "type": "string",
+                        "readOnly": true,
+                        "examples": [
+                          "dicF0B3HR"
+                        ]
                       },
-                      "required": [
-                        "email",
-                        "name",
-                        "url"
-                      ]
-                    },
-                    "title": {
-                      "description": "The title of the API",
-                      "type": "string",
-                      "examples": [
-                        "API register API v1"
-                      ]
-                    },
-                    "description": {
-                      "description": "The description of the API",
-                      "type": "string",
-                      "examples": [
-                        "This is version 1 of the API register. This description can also contain Markdown."
-                      ]
-                    },
-                    "organisation": {
-                      "$schema": "https://json-schema.org/draft/2020-12/schema",
-                      "$id": "https://example.com/OrganisationSummary.schema.json",
-                      "title": "Organisation summary",
-                      "description": "An organisation from the catalog",
-                      "type": "object",
-                      "properties": {
-                        "uri": {
-                          "$schema": "https://json-schema.org/draft/2020-12/schema",
-                          "$id": "https://example.com/OrganisationUri.schema.json",
-                          "title": "Organisation URI",
-                          "description": "The unique identifier for an organisation",
-                          "type": "string",
-                          "format": "uri",
-                          "examples": [
-                            "https://developer.overheid.nl"
-                          ]
+                      "contact": {
+                        "title": "Contact",
+                        "description": "Contact details",
+                        "type": "object",
+                        "properties": {
+                          "email": {
+                            "type": "string",
+                            "format": "email",
+                            "description": "The email address of the contact",
+                            "examples": [
+                              "developer.overheid@geonovum.nl"
+                            ]
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "The name of the contact",
+                            "examples": [
+                              "Developer Overheid"
+                            ]
+                          },
+                          "url": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "The URL of the contact",
+                            "examples": [
+                              "https://developer.overheid.nl"
+                            ]
+                          }
                         },
-                        "label": {
-                          "description": "The label of the organisation",
-                          "type": "string",
-                          "examples": [
-                            "developer.overheid.nl"
-                          ]
-                        }
+                        "required": [
+                          "email",
+                          "name",
+                          "url"
+                        ]
                       },
-                      "required": [
-                        "uri",
-                        "label"
-                      ]
-                    },
-                    "adrScore": {
-                      "description": "The ADR score of the API",
-                      "type": [
-                        "number",
-                        "null"
-                      ],
-                      "minimum": 0,
-                      "maximum": 100,
-                      "examples": [
-                        85
-                      ]
-                    },
-                    "lifecycle": {
-                      "$schema": "https://json-schema.org/draft/2020-12/schema",
-                      "$id": "https://example.com/Lifecycle.schema.json",
-                      "title": "Lifecycle",
-                      "description": "The lifecycle status of the API",
-                      "type": "object",
-                      "properties": {
-                        "status": {
-                          "type": "string",
-                          "description": "The lifecycle status",
-                          "enum": [
-                            "active",
-                            "deprecated",
-                            "sunset",
-                            "retired"
-                          ],
-                          "examples": [
-                            "deprecated",
-                            "sunset",
-                            "retired"
-                          ]
-                        },
-                        "version": {
-                          "type": "string",
-                          "description": "The version of the API",
-                          "examples": [
-                            "1.0.0"
-                          ]
-                        },
-                        "from": {
-                          "type": [
-                            "string",
-                            "null"
-                          ],
-                          "format": "date",
-                          "description": "The date from which the lifecycle status is/has been deprecated, sunset or retired.",
-                          "examples": [
-                            "2025-01-15"
-                          ]
-                        }
+                      "title": {
+                        "description": "The title of the API",
+                        "type": "string",
+                        "examples": [
+                          "API register API v1"
+                        ]
                       },
-                      "required": [
-                        "status",
-                        "version"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "contact",
-                    "title",
-                    "description",
-                    "organisation",
-                    "adrScore",
-                    "lifecycle"
-                  ]
+                      "description": {
+                        "description": "The description of the API",
+                        "type": "string",
+                        "examples": [
+                          "This is version 1 of the API register. This description can also contain Markdown."
+                        ]
+                      },
+                      "organisation": {
+                        "title": "Organisation summary",
+                        "description": "An organisation from the catalog",
+                        "type": "object",
+                        "properties": {
+                          "uri": {
+                            "title": "Organisation URI",
+                            "description": "The unique identifier for an organisation",
+                            "type": "string",
+                            "format": "uri",
+                            "examples": [
+                              "https://developer.overheid.nl"
+                            ]
+                          },
+                          "label": {
+                            "description": "The label of the organisation",
+                            "type": "string",
+                            "examples": [
+                              "developer.overheid.nl"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "uri",
+                          "label"
+                        ]
+                      },
+                      "adrScore": {
+                        "description": "The ADR score of the API",
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "minimum": 0,
+                        "maximum": 100,
+                        "examples": [
+                          85
+                        ]
+                      },
+                      "lifecycle": {
+                        "title": "Lifecycle",
+                        "description": "The lifecycle status of the API",
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "description": "The lifecycle status",
+                            "enum": [
+                              "active",
+                              "deprecated",
+                              "sunset",
+                              "retired"
+                            ],
+                            "examples": [
+                              "deprecated",
+                              "sunset",
+                              "retired"
+                            ]
+                          },
+                          "version": {
+                            "type": "string",
+                            "description": "The version of the API",
+                            "examples": [
+                              "1.0.0"
+                            ]
+                          },
+                          "from": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "format": "date",
+                            "description": "The date from which the lifecycle status is/has been deprecated, sunset or retired.",
+                            "examples": [
+                              "2025-01-15"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "status",
+                          "version"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "contact",
+                      "title",
+                      "description",
+                      "organisation",
+                      "adrScore",
+                      "lifecycle"
+                    ]
+                  }
                 }
               }
             }
@@ -352,8 +345,6 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://example.com/ProblemJson.schema.json",
                   "title": "Problem JSON",
                   "description": "Problem JSON schema representing errors and status code",
                   "type": "object",
@@ -437,15 +428,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "$id": "https://example.com/Repository.schema.json",
                 "title": "API Input",
                 "description": "An OSS repository from the catalog",
                 "type": "object",
                 "properties": {
                   "oasUrl": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "$id": "https://example.com/OasUrl.schema.json",
                     "title": "OAS Url",
                     "description": "The URL of the OAS document",
                     "type": "string",
@@ -455,8 +442,6 @@
                     ]
                   },
                   "organisationUri": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "$id": "https://example.com/OrganisationUri.schema.json",
                     "title": "Organisation URI",
                     "description": "The unique identifier for an organisation",
                     "type": "string",
@@ -466,8 +451,6 @@
                     ]
                   },
                   "contact": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "$id": "https://example.com/Contact.schema.json",
                     "title": "Contact",
                     "description": "Contact details",
                     "type": "object",
@@ -531,15 +514,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://example.com/Api.schema.json",
                   "title": "API",
                   "description": "An API from the catalog",
                   "type": "object",
                   "allOf": [
                     {
-                      "$schema": "https://json-schema.org/draft/2020-12/schema",
-                      "$id": "https://example.com/Api.schema.json",
                       "title": "API",
                       "description": "An API from the catalog",
                       "type": "object",
@@ -553,8 +532,6 @@
                           ]
                         },
                         "contact": {
-                          "$schema": "https://json-schema.org/draft/2020-12/schema",
-                          "$id": "https://example.com/Contact.schema.json",
                           "title": "Contact",
                           "description": "Contact details",
                           "type": "object",
@@ -604,15 +581,11 @@
                           ]
                         },
                         "organisation": {
-                          "$schema": "https://json-schema.org/draft/2020-12/schema",
-                          "$id": "https://example.com/OrganisationSummary.schema.json",
                           "title": "Organisation summary",
                           "description": "An organisation from the catalog",
                           "type": "object",
                           "properties": {
                             "uri": {
-                              "$schema": "https://json-schema.org/draft/2020-12/schema",
-                              "$id": "https://example.com/OrganisationUri.schema.json",
                               "title": "Organisation URI",
                               "description": "The unique identifier for an organisation",
                               "type": "string",
@@ -647,8 +620,6 @@
                           ]
                         },
                         "lifecycle": {
-                          "$schema": "https://json-schema.org/draft/2020-12/schema",
-                          "$id": "https://example.com/Lifecycle.schema.json",
                           "title": "Lifecycle",
                           "description": "The lifecycle status of the API",
                           "type": "object",
@@ -740,8 +711,6 @@
                           ]
                         },
                         "servers": {
-                          "type": "array",
-                          "description": "The servers where the API is hosted",
                           "items": {
                             "type": "object",
                             "properties": {
@@ -799,8 +768,6 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://example.com/ProblemJson.schema.json",
                   "title": "Problem JSON",
                   "description": "Problem JSON schema representing errors and status code",
                   "type": "object",
@@ -865,7 +832,7 @@
         }
       }
     },
-    "/apis/_search": {
+    "/apis/search": {
       "get": {
         "tags": [
           "Public endpoints",
@@ -979,8 +946,6 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "$id": "https://example.com/Api.schema.json",
                     "title": "API",
                     "description": "An API from the catalog",
                     "type": "object",
@@ -994,8 +959,6 @@
                         ]
                       },
                       "contact": {
-                        "$schema": "https://json-schema.org/draft/2020-12/schema",
-                        "$id": "https://example.com/Contact.schema.json",
                         "title": "Contact",
                         "description": "Contact details",
                         "type": "object",
@@ -1045,15 +1008,11 @@
                         ]
                       },
                       "organisation": {
-                        "$schema": "https://json-schema.org/draft/2020-12/schema",
-                        "$id": "https://example.com/OrganisationSummary.schema.json",
                         "title": "Organisation summary",
                         "description": "An organisation from the catalog",
                         "type": "object",
                         "properties": {
                           "uri": {
-                            "$schema": "https://json-schema.org/draft/2020-12/schema",
-                            "$id": "https://example.com/OrganisationUri.schema.json",
                             "title": "Organisation URI",
                             "description": "The unique identifier for an organisation",
                             "type": "string",
@@ -1088,8 +1047,6 @@
                         ]
                       },
                       "lifecycle": {
-                        "$schema": "https://json-schema.org/draft/2020-12/schema",
-                        "$id": "https://example.com/Lifecycle.schema.json",
                         "title": "Lifecycle",
                         "description": "The lifecycle status of the API",
                         "type": "object",
@@ -1167,8 +1124,6 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://example.com/ProblemJson.schema.json",
                   "title": "Problem JSON",
                   "description": "Problem JSON schema representing errors and status code",
                   "type": "object",
@@ -1394,8 +1349,6 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://example.com/ProblemJson.schema.json",
                   "title": "Problem JSON",
                   "description": "Problem JSON schema representing errors and status code",
                   "type": "object",
@@ -1511,15 +1464,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://example.com/Api.schema.json",
                   "title": "API",
                   "description": "An API from the catalog",
                   "type": "object",
                   "allOf": [
                     {
-                      "$schema": "https://json-schema.org/draft/2020-12/schema",
-                      "$id": "https://example.com/Api.schema.json",
                       "title": "API",
                       "description": "An API from the catalog",
                       "type": "object",
@@ -1533,8 +1482,6 @@
                           ]
                         },
                         "contact": {
-                          "$schema": "https://json-schema.org/draft/2020-12/schema",
-                          "$id": "https://example.com/Contact.schema.json",
                           "title": "Contact",
                           "description": "Contact details",
                           "type": "object",
@@ -1584,15 +1531,11 @@
                           ]
                         },
                         "organisation": {
-                          "$schema": "https://json-schema.org/draft/2020-12/schema",
-                          "$id": "https://example.com/OrganisationSummary.schema.json",
                           "title": "Organisation summary",
                           "description": "An organisation from the catalog",
                           "type": "object",
                           "properties": {
                             "uri": {
-                              "$schema": "https://json-schema.org/draft/2020-12/schema",
-                              "$id": "https://example.com/OrganisationUri.schema.json",
                               "title": "Organisation URI",
                               "description": "The unique identifier for an organisation",
                               "type": "string",
@@ -1627,8 +1570,6 @@
                           ]
                         },
                         "lifecycle": {
-                          "$schema": "https://json-schema.org/draft/2020-12/schema",
-                          "$id": "https://example.com/Lifecycle.schema.json",
                           "title": "Lifecycle",
                           "description": "The lifecycle status of the API",
                           "type": "object",
@@ -1720,8 +1661,6 @@
                           ]
                         },
                         "servers": {
-                          "type": "array",
-                          "description": "The servers where the API is hosted",
                           "items": {
                             "type": "object",
                             "properties": {
@@ -1779,8 +1718,6 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://example.com/ProblemJson.schema.json",
                   "title": "Problem JSON",
                   "description": "Problem JSON schema representing errors and status code",
                   "type": "object",
@@ -1864,15 +1801,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "$id": "https://example.com/Repository.schema.json",
                 "title": "API Input",
                 "description": "An OSS repository from the catalog",
                 "type": "object",
                 "properties": {
                   "oasUrl": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "$id": "https://example.com/OasUrl.schema.json",
                     "title": "OAS Url",
                     "description": "The URL of the OAS document",
                     "type": "string",
@@ -1882,8 +1815,6 @@
                     ]
                   },
                   "organisationUri": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "$id": "https://example.com/OrganisationUri.schema.json",
                     "title": "Organisation URI",
                     "description": "The unique identifier for an organisation",
                     "type": "string",
@@ -1893,8 +1824,6 @@
                     ]
                   },
                   "contact": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "$id": "https://example.com/Contact.schema.json",
                     "title": "Contact",
                     "description": "Contact details",
                     "type": "object",
@@ -1958,15 +1887,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://example.com/Api.schema.json",
                   "title": "API",
                   "description": "An API from the catalog",
                   "type": "object",
                   "allOf": [
                     {
-                      "$schema": "https://json-schema.org/draft/2020-12/schema",
-                      "$id": "https://example.com/Api.schema.json",
                       "title": "API",
                       "description": "An API from the catalog",
                       "type": "object",
@@ -1980,8 +1905,6 @@
                           ]
                         },
                         "contact": {
-                          "$schema": "https://json-schema.org/draft/2020-12/schema",
-                          "$id": "https://example.com/Contact.schema.json",
                           "title": "Contact",
                           "description": "Contact details",
                           "type": "object",
@@ -2031,15 +1954,11 @@
                           ]
                         },
                         "organisation": {
-                          "$schema": "https://json-schema.org/draft/2020-12/schema",
-                          "$id": "https://example.com/OrganisationSummary.schema.json",
                           "title": "Organisation summary",
                           "description": "An organisation from the catalog",
                           "type": "object",
                           "properties": {
                             "uri": {
-                              "$schema": "https://json-schema.org/draft/2020-12/schema",
-                              "$id": "https://example.com/OrganisationUri.schema.json",
                               "title": "Organisation URI",
                               "description": "The unique identifier for an organisation",
                               "type": "string",
@@ -2074,8 +1993,6 @@
                           ]
                         },
                         "lifecycle": {
-                          "$schema": "https://json-schema.org/draft/2020-12/schema",
-                          "$id": "https://example.com/Lifecycle.schema.json",
                           "title": "Lifecycle",
                           "description": "The lifecycle status of the API",
                           "type": "object",
@@ -2167,8 +2084,6 @@
                           ]
                         },
                         "servers": {
-                          "type": "array",
-                          "description": "The servers where the API is hosted",
                           "items": {
                             "type": "object",
                             "properties": {
@@ -2226,8 +2141,6 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://example.com/ProblemJson.schema.json",
                   "title": "Problem JSON",
                   "description": "Problem JSON schema representing errors and status code",
                   "type": "object",
@@ -2308,8 +2221,6 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://example.com/ProblemJson.schema.json",
                   "title": "Problem JSON",
                   "description": "Problem JSON schema representing errors and status code",
                   "type": "object",
@@ -2616,15 +2527,11 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "$id": "https://example.com/OrganisationSummary.schema.json",
                     "title": "Organisation summary",
                     "description": "An organisation from the catalog",
                     "type": "object",
                     "properties": {
                       "uri": {
-                        "$schema": "https://json-schema.org/draft/2020-12/schema",
-                        "$id": "https://example.com/OrganisationUri.schema.json",
                         "title": "Organisation URI",
                         "description": "The unique identifier for an organisation",
                         "type": "string",
@@ -2675,15 +2582,11 @@
           "content": {
             "application/json": {
               "schema": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "$id": "https://example.com/OrganisationSummary.schema.json",
                 "title": "Organisation summary",
                 "description": "An organisation from the catalog",
                 "type": "object",
                 "properties": {
                   "uri": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "$id": "https://example.com/OrganisationUri.schema.json",
                     "title": "Organisation URI",
                     "description": "The unique identifier for an organisation",
                     "type": "string",
@@ -2728,22 +2631,16 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://example.com/Organisation.schema.json",
                   "title": "Organisation",
                   "description": "An organisation from the catalog",
                   "type": "object",
                   "allOf": [
                     {
-                      "$schema": "https://json-schema.org/draft/2020-12/schema",
-                      "$id": "https://example.com/OrganisationSummary.schema.json",
                       "title": "Organisation summary",
                       "description": "An organisation from the catalog",
                       "type": "object",
                       "properties": {
                         "uri": {
-                          "$schema": "https://json-schema.org/draft/2020-12/schema",
-                          "$id": "https://example.com/OrganisationUri.schema.json",
                           "title": "Organisation URI",
                           "description": "The unique identifier for an organisation",
                           "type": "string",
@@ -2789,8 +2686,6 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://example.com/ProblemJson.schema.json",
                   "title": "Problem JSON",
                   "description": "Problem JSON schema representing errors and status code",
                   "type": "object",
@@ -2884,836 +2779,6 @@
         }
       }
     },
-    "parameters": {
-      "page": {
-        "name": "page",
-        "in": "query",
-        "required": false,
-        "description": "Page number (1-based).",
-        "schema": {
-          "type": "integer",
-          "minimum": 1,
-          "default": 1
-        }
-      },
-      "perPage": {
-        "name": "perPage",
-        "in": "query",
-        "required": false,
-        "description": "Number of results per page.",
-        "schema": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 100,
-          "default": 20
-        }
-      },
-      "organisation": {
-        "name": "organisation",
-        "in": "query",
-        "required": false,
-        "description": "Filter on organisation URI.",
-        "schema": {
-          "type": "string",
-          "format": "uri"
-        }
-      },
-      "q": {
-        "name": "q",
-        "in": "query",
-        "required": true,
-        "description": "Search term.",
-        "schema": {
-          "type": "string"
-        }
-      },
-      "id": {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "description": "Unique identifier of the resource.",
-        "schema": {
-          "type": "string"
-        }
-      }
-    },
-    "headers": {
-      "API-Version": {
-        "description": "Semver of this API",
-        "schema": {
-          "type": "string",
-          "example": "1.0.0",
-          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-          "externalDocs": {
-            "description": " /core/version-header: Return the full version number in a response header",
-            "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-          }
-        }
-      },
-      "Link": {
-        "description": "Links to the previous, next, last or first pages",
-        "schema": {
-          "type": "string",
-          "example": "<https://api.developer.overheid.nl/api-register/v1/apis?page=2>; rel='prev', <https://api.developer.overheid.nl/api-register/v1/apis?page=3>; rel='next'",
-          "externalDocs": {
-            "description": "W3C reference",
-            "url": "https://www.w3.org/wiki/LinkHeader"
-          }
-        }
-      },
-      "Total-Count": {
-        "description": "Total number of items available",
-        "schema": {
-          "type": "integer",
-          "example": 124
-        }
-      },
-      "Current-Page": {
-        "description": "Current page number",
-        "schema": {
-          "type": "integer",
-          "example": 1
-        }
-      },
-      "Per-Page": {
-        "description": "Number of items per page",
-        "schema": {
-          "type": "integer",
-          "example": 10
-        }
-      },
-      "Total-Pages": {
-        "description": "Total number of pages available",
-        "schema": {
-          "type": "integer",
-          "example": 13
-        }
-      }
-    },
-    "schemas": {
-      "Contact.schema": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://example.com/Contact.schema.json",
-        "title": "Contact",
-        "description": "Contact details",
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email",
-            "description": "The email address of the contact",
-            "examples": [
-              "developer.overheid@geonovum.nl"
-            ]
-          },
-          "name": {
-            "type": "string",
-            "description": "The name of the contact",
-            "examples": [
-              "Developer Overheid"
-            ]
-          },
-          "url": {
-            "type": "string",
-            "format": "uri",
-            "description": "The URL of the contact",
-            "examples": [
-              "https://developer.overheid.nl"
-            ]
-          }
-        },
-        "required": [
-          "email",
-          "name",
-          "url"
-        ]
-      },
-      "OrganisationUri.schema": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://example.com/OrganisationUri.schema.json",
-        "title": "Organisation URI",
-        "description": "The unique identifier for an organisation",
-        "type": "string",
-        "format": "uri",
-        "examples": [
-          "https://developer.overheid.nl"
-        ]
-      },
-      "OrganisationSummary.schema": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://example.com/OrganisationSummary.schema.json",
-        "title": "Organisation summary",
-        "description": "An organisation from the catalog",
-        "type": "object",
-        "properties": {
-          "uri": {
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "$id": "https://example.com/OrganisationUri.schema.json",
-            "title": "Organisation URI",
-            "description": "The unique identifier for an organisation",
-            "type": "string",
-            "format": "uri",
-            "examples": [
-              "https://developer.overheid.nl"
-            ]
-          },
-          "label": {
-            "description": "The label of the organisation",
-            "type": "string",
-            "examples": [
-              "developer.overheid.nl"
-            ]
-          }
-        },
-        "required": [
-          "uri",
-          "label"
-        ]
-      },
-      "Lifecycle.schema": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://example.com/Lifecycle.schema.json",
-        "title": "Lifecycle",
-        "description": "The lifecycle status of the API",
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "description": "The lifecycle status",
-            "enum": [
-              "active",
-              "deprecated",
-              "sunset",
-              "retired"
-            ],
-            "examples": [
-              "deprecated",
-              "sunset",
-              "retired"
-            ]
-          },
-          "version": {
-            "type": "string",
-            "description": "The version of the API",
-            "examples": [
-              "1.0.0"
-            ]
-          },
-          "from": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date",
-            "description": "The date from which the lifecycle status is/has been deprecated, sunset or retired.",
-            "examples": [
-              "2025-01-15"
-            ]
-          }
-        },
-        "required": [
-          "status",
-          "version"
-        ]
-      },
-      "ApiSummary.schema": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://example.com/Api.schema.json",
-        "title": "API",
-        "description": "An API from the catalog",
-        "type": "object",
-        "properties": {
-          "id": {
-            "description": "The unique identifier for an API",
-            "type": "string",
-            "readOnly": true,
-            "examples": [
-              "dicF0B3HR"
-            ]
-          },
-          "contact": {
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "$id": "https://example.com/Contact.schema.json",
-            "title": "Contact",
-            "description": "Contact details",
-            "type": "object",
-            "properties": {
-              "email": {
-                "type": "string",
-                "format": "email",
-                "description": "The email address of the contact",
-                "examples": [
-                  "developer.overheid@geonovum.nl"
-                ]
-              },
-              "name": {
-                "type": "string",
-                "description": "The name of the contact",
-                "examples": [
-                  "Developer Overheid"
-                ]
-              },
-              "url": {
-                "type": "string",
-                "format": "uri",
-                "description": "The URL of the contact",
-                "examples": [
-                  "https://developer.overheid.nl"
-                ]
-              }
-            },
-            "required": [
-              "email",
-              "name",
-              "url"
-            ]
-          },
-          "title": {
-            "description": "The title of the API",
-            "type": "string",
-            "examples": [
-              "API register API v1"
-            ]
-          },
-          "description": {
-            "description": "The description of the API",
-            "type": "string",
-            "examples": [
-              "This is version 1 of the API register. This description can also contain Markdown."
-            ]
-          },
-          "organisation": {
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "$id": "https://example.com/OrganisationSummary.schema.json",
-            "title": "Organisation summary",
-            "description": "An organisation from the catalog",
-            "type": "object",
-            "properties": {
-              "uri": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "$id": "https://example.com/OrganisationUri.schema.json",
-                "title": "Organisation URI",
-                "description": "The unique identifier for an organisation",
-                "type": "string",
-                "format": "uri",
-                "examples": [
-                  "https://developer.overheid.nl"
-                ]
-              },
-              "label": {
-                "description": "The label of the organisation",
-                "type": "string",
-                "examples": [
-                  "developer.overheid.nl"
-                ]
-              }
-            },
-            "required": [
-              "uri",
-              "label"
-            ]
-          },
-          "adrScore": {
-            "description": "The ADR score of the API",
-            "type": [
-              "number",
-              "null"
-            ],
-            "minimum": 0,
-            "maximum": 100,
-            "examples": [
-              85
-            ]
-          },
-          "lifecycle": {
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "$id": "https://example.com/Lifecycle.schema.json",
-            "title": "Lifecycle",
-            "description": "The lifecycle status of the API",
-            "type": "object",
-            "properties": {
-              "status": {
-                "type": "string",
-                "description": "The lifecycle status",
-                "enum": [
-                  "active",
-                  "deprecated",
-                  "sunset",
-                  "retired"
-                ],
-                "examples": [
-                  "deprecated",
-                  "sunset",
-                  "retired"
-                ]
-              },
-              "version": {
-                "type": "string",
-                "description": "The version of the API",
-                "examples": [
-                  "1.0.0"
-                ]
-              },
-              "from": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "format": "date",
-                "description": "The date from which the lifecycle status is/has been deprecated, sunset or retired.",
-                "examples": [
-                  "2025-01-15"
-                ]
-              }
-            },
-            "required": [
-              "status",
-              "version"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "contact",
-          "title",
-          "description",
-          "organisation",
-          "adrScore",
-          "lifecycle"
-        ]
-      },
-      "ProblemJson.schema": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://example.com/ProblemJson.schema.json",
-        "title": "Problem JSON",
-        "description": "Problem JSON schema representing errors and status code",
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "integer",
-            "description": "The HTTP status code generated by the origin server for this occurrence of the problem",
-            "example": 400
-          },
-          "title": {
-            "type": "string",
-            "description": "A short, human-readable summary of the problem type",
-            "example": "Request validation failed"
-          },
-          "errors": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "List of errors encountered during processing",
-              "properties": {
-                "in": {
-                  "type": "string",
-                  "description": "Location of the error (e.g., body, query, header)",
-                  "enum": [
-                    "body",
-                    "query"
-                  ]
-                },
-                "location": {
-                  "type": "string",
-                  "description": "Location in the document where the error occurred (JSON Pointer)",
-                  "example": "#/foo[0]/bar"
-                },
-                "code": {
-                  "type": "string",
-                  "description": "A code representing the type of error",
-                  "example": "date.format"
-                },
-                "detail": {
-                  "type": "string",
-                  "description": "A detailed message describing the error",
-                  "example": "must be ISO 8601"
-                }
-              },
-              "required": [
-                "in",
-                "location",
-                "code",
-                "detail"
-              ]
-            }
-          }
-        },
-        "required": [
-          "status",
-          "title"
-        ]
-      },
-      "OasUrl.schema": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://example.com/OasUrl.schema.json",
-        "title": "OAS Url",
-        "description": "The URL of the OAS document",
-        "type": "string",
-        "format": "uri",
-        "examples": [
-          "https://api.developer.overheid.nl/api-register/v1/openapi.json"
-        ]
-      },
-      "ApiInput.schema": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://example.com/Repository.schema.json",
-        "title": "API Input",
-        "description": "An OSS repository from the catalog",
-        "type": "object",
-        "properties": {
-          "oasUrl": {
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "$id": "https://example.com/OasUrl.schema.json",
-            "title": "OAS Url",
-            "description": "The URL of the OAS document",
-            "type": "string",
-            "format": "uri",
-            "examples": [
-              "https://api.developer.overheid.nl/api-register/v1/openapi.json"
-            ]
-          },
-          "organisationUri": {
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "$id": "https://example.com/OrganisationUri.schema.json",
-            "title": "Organisation URI",
-            "description": "The unique identifier for an organisation",
-            "type": "string",
-            "format": "uri",
-            "examples": [
-              "https://developer.overheid.nl"
-            ]
-          },
-          "contact": {
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "$id": "https://example.com/Contact.schema.json",
-            "title": "Contact",
-            "description": "Contact details",
-            "type": "object",
-            "properties": {
-              "email": {
-                "type": "string",
-                "format": "email",
-                "description": "The email address of the contact",
-                "examples": [
-                  "developer.overheid@geonovum.nl"
-                ]
-              },
-              "name": {
-                "type": "string",
-                "description": "The name of the contact",
-                "examples": [
-                  "Developer Overheid"
-                ]
-              },
-              "url": {
-                "type": "string",
-                "format": "uri",
-                "description": "The URL of the contact",
-                "examples": [
-                  "https://developer.overheid.nl"
-                ]
-              }
-            },
-            "required": [
-              "email",
-              "name",
-              "url"
-            ]
-          }
-        },
-        "required": [
-          "oasUrl",
-          "organisationUri"
-        ]
-      },
-      "Api.schema": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://example.com/Api.schema.json",
-        "title": "API",
-        "description": "An API from the catalog",
-        "type": "object",
-        "allOf": [
-          {
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "$id": "https://example.com/Api.schema.json",
-            "title": "API",
-            "description": "An API from the catalog",
-            "type": "object",
-            "properties": {
-              "id": {
-                "description": "The unique identifier for an API",
-                "type": "string",
-                "readOnly": true,
-                "examples": [
-                  "dicF0B3HR"
-                ]
-              },
-              "contact": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "$id": "https://example.com/Contact.schema.json",
-                "title": "Contact",
-                "description": "Contact details",
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "description": "The email address of the contact",
-                    "examples": [
-                      "developer.overheid@geonovum.nl"
-                    ]
-                  },
-                  "name": {
-                    "type": "string",
-                    "description": "The name of the contact",
-                    "examples": [
-                      "Developer Overheid"
-                    ]
-                  },
-                  "url": {
-                    "type": "string",
-                    "format": "uri",
-                    "description": "The URL of the contact",
-                    "examples": [
-                      "https://developer.overheid.nl"
-                    ]
-                  }
-                },
-                "required": [
-                  "email",
-                  "name",
-                  "url"
-                ]
-              },
-              "title": {
-                "description": "The title of the API",
-                "type": "string",
-                "examples": [
-                  "API register API v1"
-                ]
-              },
-              "description": {
-                "description": "The description of the API",
-                "type": "string",
-                "examples": [
-                  "This is version 1 of the API register. This description can also contain Markdown."
-                ]
-              },
-              "organisation": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "$id": "https://example.com/OrganisationSummary.schema.json",
-                "title": "Organisation summary",
-                "description": "An organisation from the catalog",
-                "type": "object",
-                "properties": {
-                  "uri": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "$id": "https://example.com/OrganisationUri.schema.json",
-                    "title": "Organisation URI",
-                    "description": "The unique identifier for an organisation",
-                    "type": "string",
-                    "format": "uri",
-                    "examples": [
-                      "https://developer.overheid.nl"
-                    ]
-                  },
-                  "label": {
-                    "description": "The label of the organisation",
-                    "type": "string",
-                    "examples": [
-                      "developer.overheid.nl"
-                    ]
-                  }
-                },
-                "required": [
-                  "uri",
-                  "label"
-                ]
-              },
-              "adrScore": {
-                "description": "The ADR score of the API",
-                "type": [
-                  "number",
-                  "null"
-                ],
-                "minimum": 0,
-                "maximum": 100,
-                "examples": [
-                  85
-                ]
-              },
-              "lifecycle": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "$id": "https://example.com/Lifecycle.schema.json",
-                "title": "Lifecycle",
-                "description": "The lifecycle status of the API",
-                "type": "object",
-                "properties": {
-                  "status": {
-                    "type": "string",
-                    "description": "The lifecycle status",
-                    "enum": [
-                      "active",
-                      "deprecated",
-                      "sunset",
-                      "retired"
-                    ],
-                    "examples": [
-                      "deprecated",
-                      "sunset",
-                      "retired"
-                    ]
-                  },
-                  "version": {
-                    "type": "string",
-                    "description": "The version of the API",
-                    "examples": [
-                      "1.0.0"
-                    ]
-                  },
-                  "from": {
-                    "type": [
-                      "string",
-                      "null"
-                    ],
-                    "format": "date",
-                    "description": "The date from which the lifecycle status is/has been deprecated, sunset or retired.",
-                    "examples": [
-                      "2025-01-15"
-                    ]
-                  }
-                },
-                "required": [
-                  "status",
-                  "version"
-                ]
-              }
-            },
-            "required": [
-              "id",
-              "contact",
-              "title",
-              "description",
-              "organisation",
-              "adrScore",
-              "lifecycle"
-            ]
-          },
-          {
-            "type": "object",
-            "properties": {
-              "oasUrl": {
-                "description": "The URL of the OAS document",
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "format": "uri",
-                "examples": [
-                  "https://api.developer.overheid.nl/api-register/v1/openapi.json"
-                ]
-              },
-              "auth": {
-                "type": "array",
-                "description": "The authentication methods supported by the API",
-                "items": {
-                  "type": "string",
-                  "examples": [
-                    "OAuth2",
-                    "API Key"
-                  ]
-                }
-              },
-              "docsUrl": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "The URL to the documentation of the API",
-                "format": "uri",
-                "examples": [
-                  "https://developer.overheid.nl/kennisbank/"
-                ]
-              },
-              "servers": {
-                "type": "array",
-                "description": "The servers where the API is hosted",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "url": {
-                      "type": "string",
-                      "format": "uri",
-                      "description": "The URL of the server",
-                      "examples": [
-                        "https://api.developer.overheid.nl/api-register/v1"
-                      ]
-                    },
-                    "description": {
-                      "type": "string",
-                      "description": "A description of the server",
-                      "examples": [
-                        "Production server"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "url",
-                    "description"
-                  ]
-                }
-              }
-            },
-            "required": [
-              "oasUrl",
-              "auth",
-              "docsUrl",
-              "servers"
-            ]
-          }
-        ]
-      },
-      "Organisation.schema": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://example.com/Organisation.schema.json",
-        "title": "Organisation",
-        "description": "An organisation from the catalog",
-        "type": "object",
-        "allOf": [
-          {
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "$id": "https://example.com/OrganisationSummary.schema.json",
-            "title": "Organisation summary",
-            "description": "An organisation from the catalog",
-            "type": "object",
-            "properties": {
-              "uri": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "$id": "https://example.com/OrganisationUri.schema.json",
-                "title": "Organisation URI",
-                "description": "The unique identifier for an organisation",
-                "type": "string",
-                "format": "uri",
-                "examples": [
-                  "https://developer.overheid.nl"
-                ]
-              },
-              "label": {
-                "description": "The label of the organisation",
-                "type": "string",
-                "examples": [
-                  "developer.overheid.nl"
-                ]
-              }
-            },
-            "required": [
-              "uri",
-              "label"
-            ]
-          }
-        ]
-      }
-    },
     "responses": {
       "400": {
         "headers": {
@@ -3734,8 +2799,6 @@
         "content": {
           "application/problem+json": {
             "schema": {
-              "$schema": "https://json-schema.org/draft/2020-12/schema",
-              "$id": "https://example.com/ProblemJson.schema.json",
               "title": "Problem JSON",
               "description": "Problem JSON schema representing errors and status code",
               "type": "object",
@@ -3816,8 +2879,6 @@
         "content": {
           "application/problem+json": {
             "schema": {
-              "$schema": "https://json-schema.org/draft/2020-12/schema",
-              "$id": "https://example.com/ProblemJson.schema.json",
               "title": "Problem JSON",
               "description": "Problem JSON schema representing errors and status code",
               "type": "object",

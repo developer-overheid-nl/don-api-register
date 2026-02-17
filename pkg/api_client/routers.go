@@ -58,7 +58,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	apiGroup := f.Group("/v1", "APIs", "Endpoints for listing and managing APIs.")
 	publicApis := apiGroup.Group("", "Public endpoints", "Public endpoints, accessible with an API key or client credentials token.")
 	privateApis := apiGroup.Group("", "Private endpoints", "Private endpoints of the API register, accessible with a client credentials token.")
-	publicApis.GET("/apis/_search",
+	publicApis.GET("/apis/search",
 		[]fizz.OperationOption{
 			fizz.ID("searchApis"),
 			fizz.Summary("Search apis"),
@@ -72,6 +72,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		},
 		tonic.Handler(controller.SearchApis, 200),
 	)
+	// Backward-compatible legacy alias, intentionally not documented in OAS.
+	g.GET("/v1/apis/_search", tonic.Handler(controller.SearchApis, 200))
 	publicApis.GET("/apis",
 		[]fizz.OperationOption{
 			fizz.ID("listApis"),

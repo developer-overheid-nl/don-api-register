@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	refreshHour   = 12
-	refreshMinute = 30
+	refreshHour   = 7
+	refreshMinute = 0
 	runTimeout    = 120 * time.Minute
 	refreshPeriod = 24 * time.Hour
 )
 
-// OASRefreshService draait dagelijks een refresh-run om 07:00.
+// OASRefreshService draait direct na startup en daarna dagelijks om 07:00 een refresh-run.
 type OASRefreshService struct {
 	apiService *APIsAPIService
 	location   *time.Location
@@ -22,7 +22,7 @@ type OASRefreshService struct {
 	cancel     context.CancelFunc
 }
 
-// NewOASRefreshService start direct een dagelijkse job. Parent context kan nil zijn.
+// NewOASRefreshService start direct een refresh-run en plant daarna een dagelijkse job. Parent context kan nil zijn.
 func NewOASRefreshService(apiService *APIsAPIService, parentCtx context.Context) *OASRefreshService {
 	if apiService == nil {
 		return nil
@@ -37,7 +37,10 @@ func NewOASRefreshService(apiService *APIsAPIService, parentCtx context.Context)
 		ctx:        ctx,
 		cancel:     cancel,
 	}
-	go svc.loop()
+	go func() {
+		svc.runOnce()
+		svc.loop()
+	}()
 	return svc
 }
 

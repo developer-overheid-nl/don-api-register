@@ -247,7 +247,7 @@ func TestSearchApis_Handler(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
-	req := httptest.NewRequest("GET", "/v1/apis/search?q=title", nil)
+	req := httptest.NewRequest("GET", "/v1/apis/_search?q=title", nil)
 	req.Host = "host"
 	ctx.Request = req
 
@@ -261,9 +261,9 @@ func TestSearchApis_Handler(t *testing.T) {
 	assert.Equal(t, "1", w.Header().Get("Total-Count"))
 	assert.Equal(t, strconv.Itoa(10), w.Header().Get("Per-Page"))
 	limitStr := strconv.Itoa(10)
-	expectedLink := "<http://host/v1/apis/search?page=1&perPage=" + limitStr + "&q=title>; rel=\"first\", " +
-		"<http://host/v1/apis/search?page=1&perPage=" + limitStr + "&q=title>; rel=\"self\", " +
-		"<http://host/v1/apis/search?page=1&perPage=" + limitStr + "&q=title>; rel=\"last\""
+	expectedLink := "<http://host/v1/apis/_search?page=1&perPage=" + limitStr + "&q=title>; rel=\"first\", " +
+		"<http://host/v1/apis/_search?page=1&perPage=" + limitStr + "&q=title>; rel=\"self\", " +
+		"<http://host/v1/apis/_search?page=1&perPage=" + limitStr + "&q=title>; rel=\"last\""
 	assert.Equal(t, expectedLink, w.Header().Get("Link"))
 }
 

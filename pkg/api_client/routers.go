@@ -58,7 +58,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	apiGroup := f.Group("/v1", "APIs", "Endpoints for listing and managing APIs.")
 	publicApis := apiGroup.Group("", "Public endpoints", "Public endpoints, accessible with an API key or client credentials token.")
 	privateApis := apiGroup.Group("", "Private endpoints", "Private endpoints of the API register, accessible with a client credentials token.")
-	publicApis.GET("/apis/search",
+	publicApis.GET("/apis/_search",
 		[]fizz.OperationOption{
 			fizz.ID("searchApis"),
 			fizz.Summary("Search apis"),

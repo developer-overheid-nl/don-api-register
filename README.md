@@ -36,4 +36,4 @@ Nieuwe APIs worden na een succesvolle POST ook naar Typesense gestuurd, zodat ze
 
 ## Dagelijkse OAS-refresh
 
-Bij het opstarten van de server wordt automatisch een aparte service gestart die iedere ochtend om **07:00** alle geregistreerde APIs opnieuw ophaalt. Zodra de OAS is gewijzigd, volgen exact dezelfde stappen als bij een POST: validatie, regeneratie van artifacts (Bruno, Postman en OAS-bestanden) en het opruimen van verouderde bestanden. Er zijn geen extra omgevingsvariabelen nodig; de job draait iedere 24 uur op het ingestelde tijdstip.
+Bij het opstarten van de server wordt automatisch een aparte service gestart die direct een refresh-run uitvoert. Daarna draait de job iedere ochtend om **07:00** en haalt alle geregistreerde APIs opnieuw op. Zodra de OAS is gewijzigd, volgen exact dezelfde stappen als bij een POST: validatie, regeneratie van artifacts (Bruno, Postman en OAS-bestanden) en het opruimen van verouderde bestanden. Er zijn geen extra omgevingsvariabelen nodig.

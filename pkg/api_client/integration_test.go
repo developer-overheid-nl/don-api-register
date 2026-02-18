@@ -249,7 +249,7 @@ func TestRealtimeApplicationRun(t *testing.T) {
 	})
 
 	t.Run("search apis", func(t *testing.T) {
-		resp := env.doRequest(t, http.MethodGet, "/v1/apis/search?q=Realtime")
+		resp := env.doRequest(t, http.MethodGet, "/v1/apis/_search?q=Realtime")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		require.Equal(t, "test-version", resp.Header.Get("API-Version"))
 		require.Equal(t, "1", resp.Header.Get("Total-Count"))

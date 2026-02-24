@@ -257,7 +257,10 @@ func parseDateRange(startStr, endStr string) (time.Time, time.Time, error) {
 	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("invalid endDate: %w", err)
 	}
-	// Set end to end of day
+	if start.After(end) {
+		return time.Time{}, time.Time{}, fmt.Errorf("invalid date range: startDate must be on or before endDate")
+	}
+	// Return an exclusive upper bound at the start of the next day.
 	end = end.Add(24 * time.Hour)
 	return start, end, nil
 }

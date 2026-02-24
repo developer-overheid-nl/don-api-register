@@ -80,11 +80,11 @@ func NewAdoptionRepository(db *gorm.DB) AdoptionRepository {
 }
 
 // latestResultsCTE builds the common CTE that finds the most recent lint result
-// per API on or before endDate for a given adrVersion, with optional filters.
+// per API before the exclusive endDate for a given adrVersion, with optional filters.
 func latestResultsCTE(params AdoptionQueryParams, selectCols string) (string, []interface{}) {
 	var args []interface{}
 
-	where := "lr.created_at <= ? AND lr.adr_version = ?"
+	where := "lr.created_at < ? AND lr.adr_version = ?"
 	args = append(args, params.EndDate, params.AdrVersion)
 
 	if len(params.ApiIds) > 0 {
@@ -129,8 +129,8 @@ FROM latest_results`
 		return SummaryResult{}, 0, fmt.Errorf("summary query failed: %w", err)
 	}
 
-	// Count total lint runs in the period
-	runsQuery := `SELECT COUNT(*) FROM lint_results WHERE created_at BETWEEN ? AND ? AND adr_version = ?`
+	// Count total lint runs in the period [startDate, endDate)
+	runsQuery := `SELECT COUNT(*) FROM lint_results WHERE created_at >= ? AND created_at < ? AND adr_version = ?`
 	runsArgs := []interface{}{params.StartDate, params.EndDate, params.AdrVersion}
 
 	if len(params.ApiIds) > 0 {
@@ -244,10 +244,10 @@ func (r *adoptionRepository) GetTimeline(ctx context.Context, params TimelineQue
 		"month": "YYYY-MM",
 	}
 
-	periodEndExpr := map[string]string{
-		"day":   "ds.period_start",
-		"week":  "ds.period_start + interval '6 days'",
-		"month": "(ds.period_start + interval '1 month' - interval '1 day')::date",
+	periodEndExclusiveExpr := map[string]string{
+		"day":   "ds.period_start + interval '1 day'",
+		"week":  "ds.period_start + interval '1 week'",
+		"month": "ds.period_start + interval '1 month'",
 	}
 
 	// Build base filter for lint_results subqueries
@@ -279,7 +279,7 @@ func (r *adoptionRepository) GetTimeline(ctx context.Context, params TimelineQue
 	query := fmt.Sprintf(`WITH date_series AS (
     SELECT generate_series(
         date_trunc('%s', ?::date),
-        date_trunc('%s', ?::date),
+        date_trunc('%s', (?::timestamp - interval '1 microsecond')::date),
         '1 %s'::interval
     )::date AS period_start
 ),
@@ -290,7 +290,7 @@ period_rules AS (
     SELECT
         ds.period_start,
         r.code AS rule_code,
-        %s AS period_end
+        %s AS period_end_exclusive
     FROM date_series ds
     CROSS JOIN rules r
 )
@@ -300,14 +300,16 @@ SELECT
     (
         SELECT COUNT(DISTINCT api_id)
         FROM lint_results
-        WHERE created_at < pr.period_end + interval '1 day' AND %s
+<<<<<<< HEAD
+        WHERE created_at < pr.period_end_exclusive AND %s
     ) AS total_apis,
     (
         SELECT COUNT(DISTINCT sub.api_id)
         FROM (
             SELECT DISTINCT ON (api_id) id, api_id
             FROM lint_results
-            WHERE created_at < pr.period_end + interval '1 day' AND %s
+<<<<<<< HEAD
+            WHERE created_at < pr.period_end_exclusive AND %s
             ORDER BY api_id, created_at DESC
         ) sub
         WHERE NOT EXISTS (
@@ -320,7 +322,7 @@ FROM period_rules pr
 ORDER BY pr.rule_code, pr.period_start`,
 		granularity, granularity, granularity,
 		strings.Join(ruleCodePlaceholders, ","),
-		periodEndExpr[granularity],
+		periodEndExclusiveExpr[granularity],
 		periodFormat[granularity],
 		baseWhere,
 		baseWhere,

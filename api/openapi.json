@@ -2536,6 +2536,17 @@
       "get": {
         "description": "Returns list of APIs with their compliance status",
         "operationId": "getAdoptionApis",
+        "security": [
+          {},
+          {
+            "apiKey": []
+          },
+          {
+            "clientCredentials": [
+              "apis:read"
+            ]
+          }
+        ],
         "parameters": [
           {
             "in": "query",
@@ -2640,6 +2651,17 @@
       "get": {
         "description": "Returns adoption rate per ADR rule",
         "operationId": "getAdoptionRules",
+        "security": [
+          {},
+          {
+            "apiKey": []
+          },
+          {
+            "clientCredentials": [
+              "apis:read"
+            ]
+          }
+        ],
         "parameters": [
           {
             "in": "query",
@@ -2728,6 +2750,17 @@
       "get": {
         "description": "Returns overall adoption KPIs for the selected period",
         "operationId": "getAdoptionSummary",
+        "security": [
+          {},
+          {
+            "apiKey": []
+          },
+          {
+            "clientCredentials": [
+              "apis:read"
+            ]
+          }
+        ],
         "parameters": [
           {
             "in": "query",
@@ -2800,6 +2833,17 @@
       "get": {
         "description": "Returns adoption over time for charts",
         "operationId": "getAdoptionTimeline",
+        "security": [
+          {},
+          {
+            "apiKey": []
+          },
+          {
+            "clientCredentials": [
+              "apis:read"
+            ]
+          }
+        ],
         "parameters": [
           {
             "in": "query",

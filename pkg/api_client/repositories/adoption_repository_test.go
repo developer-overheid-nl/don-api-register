@@ -31,7 +31,7 @@ func TestLatestResultsCTE_BuildsSQLWithFiltersAndArgsOrder(t *testing.T) {
 
 	assert.Contains(t, cte, "WITH latest_results AS")
 	assert.Contains(t, cte, "SELECT DISTINCT ON (lr.api_id) lr.api_id, lr.successes")
-	assert.Contains(t, cte, "lr.created_at <= ? AND lr.adr_version = ?")
+	assert.Contains(t, cte, "lr.created_at < ? AND lr.adr_version = ?")
 	assert.Contains(t, cte, "lr.api_id IN (?,?)")
 	assert.Contains(t, cte, "SELECT id FROM apis WHERE organisation_id = ?")
 	assert.Contains(t, cte, "ORDER BY lr.api_id, lr.created_at DESC")

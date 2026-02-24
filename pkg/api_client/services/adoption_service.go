@@ -57,13 +57,19 @@ func (s *AdoptionService) GetRules(ctx context.Context, p *models.AdoptionRulesP
 		return nil, err
 	}
 
+	// Validate severity according to adr-adoption-plan.md: only "error" or "warning" are allowed.
+	severity := strings.ToLower(strings.TrimSpace(p.Severity))
+	if severity != "" && severity != "error" && severity != "warning" {
+		return nil, fmt.Errorf("invalid severity %q: must be \"error\" or \"warning\"", p.Severity)
+	}
+
 	params := repositories.AdoptionQueryParams{
 		AdrVersion:   p.AdrVersion,
 		EndDate:      endDate,
 		ApiIds:       splitCSV(p.ApiIds),
 		Organisation: trimOptional(p.Organisation),
 		RuleCodes:    splitCSV(p.RuleCodes),
-		Severity:     trimOptional(p.Severity),
+		Severity:     severity,
 	}
 
 	rows, totalApis, err := s.repo.GetRules(ctx, params)

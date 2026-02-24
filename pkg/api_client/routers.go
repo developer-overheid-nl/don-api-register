@@ -182,21 +182,6 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController, statsCo
 		tonic.Handler(controller.CreateOrganisation, 201),
 	)
 
-	privateApis.GET("/lint-results",
-		[]fizz.OperationOption{
-			fizz.ID("listLintResults"),
-			fizz.Summary("List all lint results"),
-			fizz.Description("Returns all lint results."),
-			fizz.WithOptionalSecurity(),
-			fizz.Security(&openapi.SecurityRequirement{
-				"clientCredentials": {"apis:read"},
-			}),
-			apiVersionHeaderOption,
-			badRequestResponse,
-		},
-		tonic.Handler(controller.ListLintResults, 200),
-	)
-
 	privateApis.POST("/apis",
 		[]fizz.OperationOption{
 			fizz.ID("createApi"),

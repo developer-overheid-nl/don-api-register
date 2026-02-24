@@ -431,9 +431,9 @@ LEFT JOIN api_violations av ON av.api_id = lr.api_id` + whereClause
 
 	// Data query with pagination
 	offset := (params.Page - 1) * params.PerPage
-	dataQuery := baseQuery + whereClause + fmt.Sprintf(" ORDER BY a.title LIMIT %d OFFSET %d", params.PerPage, offset)
+	dataQuery := baseQuery + whereClause + " ORDER BY a.title LIMIT ? OFFSET ?"
 	dataArgs := append(cteArgs, filterArgs...)
-
+	dataArgs = append(dataArgs, params.PerPage, offset)
 	var rows []ApiRow
 	if err := r.db.WithContext(ctx).Raw(dataQuery, dataArgs...).Scan(&rows).Error; err != nil {
 		return nil, 0, fmt.Errorf("apis query failed: %w", err)

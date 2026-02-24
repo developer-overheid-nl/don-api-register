@@ -41,7 +41,7 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, p *models.ListApisParams)
 	return apis, nil
 }
 
-// SearchApis handles GET /apis/search
+// SearchApis handles GET /apis/_search
 func (c *APIsAPIController) SearchApis(ctx *gin.Context, p *models.ListApisSearchParams) ([]models.ApiSummary, error) {
 	if p.Page < 1 {
 		p.Page = 1

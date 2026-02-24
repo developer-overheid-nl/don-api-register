@@ -252,7 +252,7 @@ func parseDateRange(startStr, endStr string) (time.Time, time.Time, error) {
 		return time.Time{}, time.Time{}, fmt.Errorf("invalid endDate: %w", err)
 	}
 	// Set end to end of day
-	end = end.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+	end = end.Add(24 * time.Hour)
 	return start, end, nil
 }
 

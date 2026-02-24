@@ -58,9 +58,15 @@ func (s *AdoptionService) GetRules(ctx context.Context, p *models.AdoptionRulesP
 	}
 
 	// Validate severity according to adr-adoption-plan.md: only "error" or "warning" are allowed.
-	severity := strings.ToLower(strings.TrimSpace(p.Severity))
-	if severity != "" && severity != "error" && severity != "warning" {
-		return nil, fmt.Errorf("invalid severity %q: must be \"error\" or \"warning\"", p.Severity)
+	var severity *string
+	if p.Severity != nil {
+		normalized := strings.ToLower(strings.TrimSpace(*p.Severity))
+		if normalized != "" && normalized != "error" && normalized != "warning" {
+			return nil, fmt.Errorf("invalid severity %q: must be \"error\" or \"warning\"", *p.Severity)
+		}
+		if normalized != "" {
+			severity = &normalized
+		}
 	}
 
 	params := repositories.AdoptionQueryParams{

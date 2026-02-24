@@ -300,14 +300,14 @@ SELECT
     (
         SELECT COUNT(DISTINCT api_id)
         FROM lint_results
-        WHERE created_at <= pr.period_end AND %s
+        WHERE created_at < pr.period_end + interval '1 day' AND %s
     ) AS total_apis,
     (
         SELECT COUNT(DISTINCT sub.api_id)
         FROM (
             SELECT DISTINCT ON (api_id) id, api_id
             FROM lint_results
-            WHERE created_at <= pr.period_end AND %s
+            WHERE created_at < pr.period_end + interval '1 day' AND %s
             ORDER BY api_id, created_at DESC
         ) sub
         WHERE NOT EXISTS (

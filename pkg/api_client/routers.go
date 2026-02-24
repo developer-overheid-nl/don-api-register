@@ -220,6 +220,13 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController, statsCo
 			fizz.ID("getAdoptionSummary"),
 			fizz.Summary("Get adoption summary"),
 			fizz.Description("Returns overall adoption KPIs for the selected period"),
+			fizz.WithOptionalSecurity(),
+			fizz.Security(&openapi.SecurityRequirement{
+				"apiKey": []string{},
+			}),
+			fizz.Security(&openapi.SecurityRequirement{
+				"clientCredentials": {"apis:read"},
+			}),
 			apiVersionHeaderOption,
 			badRequestResponse,
 		},
@@ -230,6 +237,13 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController, statsCo
 			fizz.ID("getAdoptionRules"),
 			fizz.Summary("Get adoption per rule"),
 			fizz.Description("Returns adoption rate per ADR rule"),
+			fizz.WithOptionalSecurity(),
+			fizz.Security(&openapi.SecurityRequirement{
+				"apiKey": []string{},
+			}),
+			fizz.Security(&openapi.SecurityRequirement{
+				"clientCredentials": {"apis:read"},
+			}),
 			apiVersionHeaderOption,
 			badRequestResponse,
 		},
@@ -240,6 +254,13 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController, statsCo
 			fizz.ID("getAdoptionTimeline"),
 			fizz.Summary("Get adoption timeline"),
 			fizz.Description("Returns adoption over time for charts"),
+			fizz.WithOptionalSecurity(),
+			fizz.Security(&openapi.SecurityRequirement{
+				"apiKey": []string{},
+			}),
+			fizz.Security(&openapi.SecurityRequirement{
+				"clientCredentials": {"apis:read"},
+			}),
 			apiVersionHeaderOption,
 			badRequestResponse,
 		},
@@ -250,6 +271,13 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController, statsCo
 			fizz.ID("getAdoptionApis"),
 			fizz.Summary("Get APIs with adoption status"),
 			fizz.Description("Returns list of APIs with their compliance status"),
+			fizz.WithOptionalSecurity(),
+			fizz.Security(&openapi.SecurityRequirement{
+				"apiKey": []string{},
+			}),
+			fizz.Security(&openapi.SecurityRequirement{
+				"clientCredentials": {"apis:read"},
+			}),
 			apiVersionHeaderOption,
 			badRequestResponse,
 		},

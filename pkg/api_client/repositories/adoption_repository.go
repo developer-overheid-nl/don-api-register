@@ -84,7 +84,7 @@ func NewAdoptionRepository(db *gorm.DB) AdoptionRepository {
 func latestResultsCTE(params AdoptionQueryParams, selectCols string) (string, []interface{}) {
 	var args []interface{}
 
-	where := "lr.created_at < ? AND lr.adr_version = ?"
+	where := "lr.created_at < ? AND lr.ruleset_version = ?"
 	args = append(args, params.EndDate, params.AdrVersion)
 
 	if len(params.ApiIds) > 0 {
@@ -130,7 +130,7 @@ FROM latest_results`
 	}
 
 	// Count total lint runs in the period [startDate, endDate)
-	runsQuery := `SELECT COUNT(*) FROM lint_results WHERE created_at >= ? AND created_at < ? AND adr_version = ?`
+	runsQuery := `SELECT COUNT(*) FROM lint_results WHERE created_at >= ? AND created_at < ? AND ruleset_version = ?`
 	runsArgs := []interface{}{params.StartDate, params.EndDate, params.AdrVersion}
 
 	if len(params.ApiIds) > 0 {
@@ -251,7 +251,7 @@ func (r *adoptionRepository) GetTimeline(ctx context.Context, params TimelineQue
 	}
 
 	// Build base filter for lint_results subqueries
-	baseWhere := "adr_version = ?"
+	baseWhere := "ruleset_version = ?"
 	var baseArgs []interface{}
 	baseArgs = append(baseArgs, params.AdrVersion)
 

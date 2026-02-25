@@ -249,11 +249,11 @@ func (s *AdoptionService) GetApis(ctx context.Context, p *models.AdoptionApisPar
 }
 
 func parseDateRange(startStr, endStr string) (time.Time, time.Time, error) {
-	start, err := time.Parse("2006-01-02", startStr)
+	start, err := parseSupportedDate(startStr)
 	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("invalid startDate: %w", err)
 	}
-	end, err := time.Parse("2006-01-02", endStr)
+	end, err := parseSupportedDate(endStr)
 	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("invalid endDate: %w", err)
 	}
@@ -263,6 +263,20 @@ func parseDateRange(startStr, endStr string) (time.Time, time.Time, error) {
 	// Return an exclusive upper bound at the start of the next day.
 	end = end.Add(24 * time.Hour)
 	return start, end, nil
+}
+
+func parseSupportedDate(raw string) (time.Time, error) {
+	value := strings.TrimSpace(raw)
+	layouts := []string{
+		"2006-01-02", // ISO
+		"02-01-2006", // NL (dag-maand-jaar)
+	}
+	for _, layout := range layouts {
+		if t, err := time.Parse(layout, value); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("expected date format YYYY-MM-DD or DD-MM-YYYY")
 }
 
 func splitCSV(s *string) []string {

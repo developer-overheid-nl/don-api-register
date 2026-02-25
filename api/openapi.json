@@ -3117,6 +3117,196 @@
           }
         }
       }
+    },
+    "schemas": {
+      "ModelsAdoptionApis": {
+        "properties": {
+          "adrVersion": {
+            "type": "string"
+          },
+          "apis": {
+            "items": {
+              "$ref": "#/components/schemas/ModelsApiAdoption"
+            },
+            "type": "array"
+          },
+          "period": {
+            "$ref": "#/components/schemas/ModelsPeriod"
+          }
+        },
+        "type": "object"
+      },
+      "ModelsAdoptionRules": {
+        "properties": {
+          "adrVersion": {
+            "type": "string"
+          },
+          "period": {
+            "$ref": "#/components/schemas/ModelsPeriod"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/ModelsRuleAdoption"
+            },
+            "type": "array"
+          },
+          "totalApis": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ModelsAdoptionSummary": {
+        "properties": {
+          "adrVersion": {
+            "type": "string"
+          },
+          "compliantApis": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "overallAdoptionRate": {
+            "format": "double",
+            "type": "number"
+          },
+          "period": {
+            "$ref": "#/components/schemas/ModelsPeriod"
+          },
+          "totalApis": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalLintRuns": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ModelsAdoptionTimeline": {
+        "properties": {
+          "adrVersion": {
+            "type": "string"
+          },
+          "granularity": {
+            "type": "string"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/ModelsTimelineSeries"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "ModelsApiAdoption": {
+        "properties": {
+          "apiId": {
+            "type": "string"
+          },
+          "apiTitle": {
+            "type": "string"
+          },
+          "isCompliant": {
+            "type": "boolean"
+          },
+          "lastLintDate": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "organisation": {
+            "type": "string"
+          },
+          "totalViolations": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalWarnings": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "violatedRules": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "ModelsPeriod": {
+        "properties": {
+          "end": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ModelsRuleAdoption": {
+        "properties": {
+          "adoptionRate": {
+            "format": "double",
+            "type": "number"
+          },
+          "code": {
+            "type": "string"
+          },
+          "compliantApis": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "violatingApis": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ModelsTimelinePoint": {
+        "properties": {
+          "adoptionRate": {
+            "format": "double",
+            "type": "number"
+          },
+          "compliantApis": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "period": {
+            "type": "string"
+          },
+          "totalApis": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ModelsTimelineSeries": {
+        "properties": {
+          "dataPoints": {
+            "items": {
+              "$ref": "#/components/schemas/ModelsTimelinePoint"
+            },
+            "type": "array"
+          },
+          "ruleCode": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
     }
   }
 }

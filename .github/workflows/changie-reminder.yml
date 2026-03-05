@@ -63,8 +63,8 @@ jobs:
             ```
             Verwacht pad: `.changes/unreleased/*.yaml`
 
-      - name: Update reminder (fragment found)
-        if: steps.check.outputs.has_fragment == 'true' && steps.fc.outputs.comment-id != ''
+      - name: Create/Update reminder (fragment found)
+        if: steps.check.outputs.has_fragment == 'true'
         uses: peter-evans/create-or-update-comment@v5
         with:
           issue-number: ${{ github.event.pull_request.number }}

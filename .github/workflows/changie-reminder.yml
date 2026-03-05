@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
-  pull-requests: read
+  pull-requests: write
   issues: write
 
 jobs:
@@ -48,6 +48,7 @@ jobs:
 
       - name: Create/Update reminder (missing fragment)
         if: steps.check.outputs.has_fragment == 'false'
+        continue-on-error: true
         uses: peter-evans/create-or-update-comment@v5
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -65,6 +66,7 @@ jobs:
 
       - name: Create/Update reminder (fragment found)
         if: steps.check.outputs.has_fragment == 'true'
+        continue-on-error: true
         uses: peter-evans/create-or-update-comment@v5
         with:
           issue-number: ${{ github.event.pull_request.number }}

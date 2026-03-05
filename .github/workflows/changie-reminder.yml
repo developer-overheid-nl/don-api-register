@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Check if PR contains a changie fragment
         id: check
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const owner = context.repo.owner;
@@ -72,4 +72,4 @@ jobs:
           edit-mode: replace
           body: |
             <!-- changie-reminder -->
-            ✅ Changie-fragment gevonden. Jij wint vandaag.
+            ✅ Changie-fragment gevonden.

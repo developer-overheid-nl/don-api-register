@@ -37,3 +37,30 @@ Nieuwe APIs worden na een succesvolle POST ook naar Typesense gestuurd, zodat ze
 ## Dagelijkse OAS-refresh
 
 Bij het opstarten van de server wordt automatisch een aparte service gestart die direct een refresh-run uitvoert. Daarna draait de job iedere ochtend om **07:00** en haalt alle geregistreerde APIs opnieuw op. Zodra de OAS is gewijzigd, volgen exact dezelfde stappen als bij een POST: validatie, regeneratie van artifacts (Bruno, Postman en OAS-bestanden) en het opruimen van verouderde bestanden. Er zijn geen extra omgevingsvariabelen nodig.
+
+## Changelog (Changie)
+
+Voor user-facing wijzigingen (fix/feature/breaking) verwachten we per PR een Changie-fragment in `.changes/unreleased`.
+
+Eenmalig installeren:
+
+```bash
+go install github.com/miniscruff/changie@latest
+```
+
+Fragment aanmaken:
+
+```bash
+changie new
+```
+
+Normaal is een fragment niet nodig voor interne refactors zonder zichtbaar effect, docs-only wijzigingen en CI-only tweaks.
+
+Bij een release kun je de fragments bundelen in `CHANGELOG.md`:
+
+```bash
+changie batch <version>
+```
+
+Dit gebeurt ook automatisch bij elke merge naar `main` via GitHub Actions:
+`changie batch auto` en daarna `changie merge`, inclusief commit terug naar `main`.

@@ -1,0 +1,127 @@
+name: changie
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  remind:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if PR contains a changie fragment
+        id: check
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pull_number = context.payload.pull_request.number;
+
+            // Default Changie fragments location
+            const fragmentRe = /^\.changes\/unreleased\/.+\.ya?ml$/i;
+
+            let page = 1;
+            let found = false;
+
+            while (!found) {
+              const { data } = await github.rest.pulls.listFiles({
+                owner, repo, pull_number, per_page: 100, page
+              });
+              if (!data.length) break;
+              found = data.some(f => f.status !== "removed" && fragmentRe.test(f.filename));
+              page++;
+            }
+
+            core.setOutput("has_fragment", found ? "true" : "false");
+
+      - name: Find existing reminder comment
+        id: fc
+        uses: peter-evans/find-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "<!-- changie-reminder -->"
+
+      - name: Create/Update reminder (missing fragment)
+        if: steps.check.outputs.has_fragment == 'false'
+        continue-on-error: true
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            <!-- changie-reminder -->
+            👋 Deze PR mist nog een Changie changelog-fragment.
+
+            Voeg er een toe:
+            ```bash
+            changie new
+            ```
+            Verwacht pad: `.changes/unreleased/*.yaml`
+
+      - name: Create/Update reminder (fragment found)
+        if: steps.check.outputs.has_fragment == 'true'
+        continue-on-error: true
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            <!-- changie-reminder -->
+            ✅ Changie-fragment gevonden.
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.25"
+
+      - name: Install Changie
+        run: go install github.com/miniscruff/changie@latest
+
+      - name: Check for unreleased fragments
+        id: fragments
+        run: |
+          if find .changes/unreleased -maxdepth 1 -type f \( -name '*.yaml' -o -name '*.yml' \) | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Batch and merge changelog
+        if: steps.fragments.outputs.found == 'true'
+        run: |
+          changie batch auto
+          changie merge
+
+      - name: Commit and push changelog
+        if: steps.fragments.outputs.found == 'true'
+        run: |
+          if git diff --quiet; then
+            echo "No changelog updates to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md .changes
+          git commit -m "chore(changelog): auto-update after merge [skip ci]"
+          git push

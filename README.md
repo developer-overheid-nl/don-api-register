@@ -63,4 +63,4 @@ changie batch <version>
 ```
 
 Dit gebeurt ook automatisch bij elke merge naar `main` via GitHub Actions:
-`changie batch auto` en daarna `changie merge`, inclusief commit terug naar `main`.
+`changie batch auto` en daarna `changie merge`, waarna automatisch een PR met de changelog-updates wordt aangemaakt.

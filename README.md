@@ -61,3 +61,6 @@ Bij een release kun je de fragments bundelen in `CHANGELOG.md`:
 ```bash
 changie batch <version>
 ```
+
+Dit gebeurt ook automatisch bij elke merge naar `main` via GitHub Actions:
+`changie batch auto` en daarna `changie merge`, inclusief commit terug naar `main`.

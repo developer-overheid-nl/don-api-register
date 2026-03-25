@@ -65,6 +65,20 @@ changie batch <version>
 Dit gebeurt ook automatisch bij elke merge naar `main` via GitHub Actions:
 `changie batch auto` en daarna `changie merge`, waarna automatisch een PR met de changelog-updates wordt aangemaakt.
 
+## Deployen
+
+De deployment van deze site verloopt via GitHub Actions en een aparte infra
+repository.
+
+### Benodigde variabelen en secrets
+
+- Organization variable `INFRA_REPO`, bijvoorbeeld
+  `developer-overheid-nl/don-infra`.
+- Repository variable `KUSTOMIZE_PATH`, met als basispad bijvoorbeeld
+  `apps/api/overlays/`.
+- Secrets `RELEASE_PROCES_APP_ID` en `RELEASE_PROCES_APP_PRIVATE_KEY` voor het
+  aanpassen van de infra repository.
+
 ### Deploy naar test
 
 De testdeploy draait via

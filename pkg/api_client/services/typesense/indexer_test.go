@@ -35,7 +35,11 @@ func TestPublishApi_SendsDocument(t *testing.T) {
 		capturedPath = r.URL.Path
 		capturedAction = r.URL.Query().Get("action")
 		capturedKey = r.Header.Get("X-TYPESENSE-API-KEY")
-		defer r.Body.Close()
+		defer func() {
+			if err := r.Body.Close(); err != nil {
+				t.Errorf("failed to close request body: %v", err)
+			}
+		}()
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatalf("failed to read request body: %v", err)

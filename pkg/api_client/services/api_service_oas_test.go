@@ -219,12 +219,13 @@ func TestPersistOASArtifacts_AcceptsJSONOriginal(t *testing.T) {
 func TestBackfillOASArtifacts_GeneratesWhenMissing(t *testing.T) {
 	srv := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/yaml")
-		fmt.Fprint(w, `openapi: 3.1.0
+		_, err := fmt.Fprint(w, `openapi: 3.1.0
 info:
   title: Demo
   version: "1.0"
 paths: {}
 `)
+		require.NoError(t, err)
 	}))
 
 	repo := &artifactRepoStub{

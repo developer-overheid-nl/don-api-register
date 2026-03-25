@@ -156,10 +156,13 @@ func fetchRawOAS(ctx context.Context, input tools.OASInput, opts FetchOpts) ([]b
 		if err != nil {
 			return nil, "", fmt.Errorf("kan OAS niet ophalen: %w", err)
 		}
-		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			return nil, "", fmt.Errorf("kan OAS niet lezen: %w", err)
+		body, readErr := io.ReadAll(resp.Body)
+		closeErr := resp.Body.Close()
+		if readErr != nil {
+			return nil, "", fmt.Errorf("kan OAS niet lezen: %w", readErr)
+		}
+		if closeErr != nil {
+			return nil, "", fmt.Errorf("kan OAS response body niet sluiten: %w", closeErr)
 		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 			return nil, "", fmt.Errorf("kan OAS niet ophalen: status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))

@@ -1,0 +1,3 @@
+kind: Changed
+body: Pinned GitHub Actions workflows to commit SHAs and aligned the test and production deploy image builds with the CI Docker build.
+time: 2026-03-25T13:22:48.0103+01:00

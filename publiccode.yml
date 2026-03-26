@@ -2,23 +2,39 @@
 # metadata file that makes public software easily discoverable.
 # More info at https://github.com/publiccodeyml/publiccode.yml
 
-publiccodeYmlVersion: "0.4"
+publiccodeYmlVersion: "0.5"
 
 name: API van het API register
 url: "https://github.com/developer-overheid-nl/don-api-register"
-softwareType: standalone/web
-releaseDate: "1970-01-01"
+landingURL: "https://apis.developer.overheid.nl"
+softwareType: standalone/backend
+releaseDate: "2025-04-02"
 platforms:
   - web
 
 categories:
-  - collaboration
-developmentStatus: beta
+  - it-management
+developmentStatus: stable
 
 description:
   nl:
-    # Mand!
+    # Mand! Maximaal 150 karakters
     shortDescription: API van het API register (apis.developer.overheid.nl)
+
+    # Minimaal 150 karakters, max 10000
+    longDescription: >
+      Het API register biedt een centrale catalogus van APIs die worden aangeboden door de Nederlandse overheid.
+      Via deze backend-API kunnen APIs worden geregistreerd, opgevraagd en beheerd. Nieuwe registraties worden
+      automatisch gevalideerd en geïndexeerd in Typesense zodat ze vindbaar zijn via de zoekfunctie op
+      apis.developer.overheid.nl. De service synchroniseert dagelijks de OpenAPI-specificaties van alle
+      geregistreerde APIs en genereert automatisch artifacts zoals Bruno- en Postman-collecties.
+
+    features:
+      - Registratie en beheer van overheids-APIs
+      - Validatie van OpenAPI-specificaties
+      - Automatische dagelijkse refresh van OAS-bestanden
+      - Integratie met Typesense voor zoekfunctionaliteit
+      - Generatie van Bruno- en Postman-collecties
 
 legal:
   license: EUPL-1.2

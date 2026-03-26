@@ -28,7 +28,7 @@ func buildToolsURL(endpoint string) (*url.URL, error) {
 	return pu, nil
 }
 
-func doToolsJSONRequest(ctx context.Context, endpoint string, payload any, accept string) ([]byte, http.Header, error) {
+func doToolsJSONRequest(ctx context.Context, endpoint string, payload any, accept string) (data []byte, headers http.Header, err error) {
 	pu, err := buildToolsURL(endpoint)
 	if err != nil {
 		return nil, nil, err
@@ -55,9 +55,13 @@ func doToolsJSONRequest(ctx context.Context, endpoint string, payload any, accep
 	if err != nil {
 		return nil, nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close tools response body: %w", closeErr)
+		}
+	}()
 
-	data, err := io.ReadAll(resp.Body)
+	data, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, nil, err
 	}

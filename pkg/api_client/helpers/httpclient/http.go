@@ -33,7 +33,7 @@ type TooIObject struct {
 var HTTPClient = http.DefaultClient
 
 // FetchOrganisationLabel retrieves the organisation label from the TOOI service.
-func FetchOrganisationLabel(ctx context.Context, uriOrType string, optionalId ...string) (string, error) {
+func FetchOrganisationLabel(ctx context.Context, uriOrType string, optionalId ...string) (label string, err error) {
 	var uri string
 	if strings.HasPrefix(uriOrType, "https://identifier.overheid.nl/tooi/id/") {
 		uri = uriOrType
@@ -53,7 +53,11 @@ func FetchOrganisationLabel(ctx context.Context, uriOrType string, optionalId ..
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close organisation response body: %w", closeErr)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("organisation not found: %s", uri)
 	}

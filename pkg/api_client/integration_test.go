@@ -173,7 +173,9 @@ func (e *integrationEnv) doJSONRequest(t *testing.T, method, path string, payloa
 
 func decodeBody[T any](t *testing.T, resp *http.Response) T {
 	t.Helper()
-	defer resp.Body.Close()
+	defer func() {
+		require.NoError(t, resp.Body.Close())
+	}()
 
 	var out T
 	data, err := io.ReadAll(resp.Body)

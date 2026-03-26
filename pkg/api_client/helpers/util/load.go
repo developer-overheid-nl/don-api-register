@@ -12,12 +12,16 @@ type OpenAPIInfo struct {
 	} `json:"info"`
 }
 
-func LoadOASVersion(path string) (string, error) {
+func LoadOASVersion(path string) (version string, err error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return "", fmt.Errorf("could not open OAS file: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("could not close OAS file: %w", closeErr)
+		}
+	}()
 
 	var oas OpenAPIInfo
 	if err := json.NewDecoder(f).Decode(&oas); err != nil {

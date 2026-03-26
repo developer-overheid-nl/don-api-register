@@ -121,7 +121,7 @@ func parseDefaultTags() []string {
 }
 
 // PublishApi pushes the provided API to Typesense for full-text search.
-func PublishApi(ctx context.Context, api *models.Api) error {
+func PublishApi(ctx context.Context, api *models.Api) (err error) {
 	if api == nil {
 		return fmt.Errorf("typesense: api is nil")
 	}
@@ -150,10 +150,17 @@ func PublishApi(ctx context.Context, api *models.Api) error {
 	if err != nil {
 		return fmt.Errorf("typesense: request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("typesense: close response body: %w", closeErr)
+		}
+	}()
 
 	if resp.StatusCode >= http.StatusMultipleChoices {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		body, readErr := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		if readErr != nil {
+			return fmt.Errorf("typesense: read error response: %w", readErr)
+		}
 		return fmt.Errorf("typesense: indexing failed with status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 

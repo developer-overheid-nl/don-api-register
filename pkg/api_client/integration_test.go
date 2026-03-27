@@ -130,7 +130,10 @@ func newIntegrationEnv(t *testing.T) *integrationEnv {
 	repo := repositories.NewApiRepository(db)
 	svc := services.NewAPIsAPIService(repo)
 	controller := handler.NewAPIsAPIController(svc)
-	router := api_client.NewRouter("test-version", controller)
+	adoptionRepo := repositories.NewAdoptionRepository(db)
+	adoptionService := services.NewAdoptionService(adoptionRepo)
+	statsController := handler.NewStatisticsController(adoptionService)
+	router := api_client.NewRouter("test-version", controller, statsController)
 
 	server := httptest.NewServer(router)
 	t.Cleanup(func() { server.Close() })

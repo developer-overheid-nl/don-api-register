@@ -40,7 +40,7 @@ var (
 	)
 )
 
-func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.Fizz {
+func NewRouter(apiVersion string, controller *handler.APIsAPIController, statsController *handler.StatisticsController) *fizz.Fizz {
 	//gin.SetMode(gin.ReleaseMode)
 	g := gin.Default()
 
@@ -182,21 +182,6 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.CreateOrganisation, 201),
 	)
 
-	privateApis.GET("/lint-results",
-		[]fizz.OperationOption{
-			fizz.ID("listLintResults"),
-			fizz.Summary("List all lint results"),
-			fizz.Description("Returns all lint results."),
-			fizz.WithOptionalSecurity(),
-			fizz.Security(&openapi.SecurityRequirement{
-				"clientCredentials": {"apis:read"},
-			}),
-			apiVersionHeaderOption,
-			badRequestResponse,
-		},
-		tonic.Handler(controller.ListLintResults, 200),
-	)
-
 	privateApis.POST("/apis",
 		[]fizz.OperationOption{
 			fizz.ID("createApi"),
@@ -226,6 +211,77 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 			notFoundResponse,
 		},
 		tonic.Handler(controller.UpdateApi, 200),
+	)
+
+	// Statistics endpoints
+	statsGroup := f.Group("/v1/statistics", "Statistics", "ADR adoption statistics endpoints")
+	statsGroup.GET("/summary",
+		[]fizz.OperationOption{
+			fizz.ID("getAdoptionSummary"),
+			fizz.Summary("Get adoption summary"),
+			fizz.Description("Returns overall adoption KPIs for the selected period"),
+			fizz.WithOptionalSecurity(),
+			fizz.Security(&openapi.SecurityRequirement{
+				"apiKey": []string{},
+			}),
+			fizz.Security(&openapi.SecurityRequirement{
+				"clientCredentials": {"apis:read"},
+			}),
+			apiVersionHeaderOption,
+			badRequestResponse,
+		},
+		tonic.Handler(statsController.GetSummary, 200),
+	)
+	statsGroup.GET("/rules",
+		[]fizz.OperationOption{
+			fizz.ID("getAdoptionRules"),
+			fizz.Summary("Get adoption per rule"),
+			fizz.Description("Returns adoption rate per ADR rule"),
+			fizz.WithOptionalSecurity(),
+			fizz.Security(&openapi.SecurityRequirement{
+				"apiKey": []string{},
+			}),
+			fizz.Security(&openapi.SecurityRequirement{
+				"clientCredentials": {"apis:read"},
+			}),
+			apiVersionHeaderOption,
+			badRequestResponse,
+		},
+		tonic.Handler(statsController.GetRules, 200),
+	)
+	statsGroup.GET("/timeline",
+		[]fizz.OperationOption{
+			fizz.ID("getAdoptionTimeline"),
+			fizz.Summary("Get adoption timeline"),
+			fizz.Description("Returns adoption over time for charts"),
+			fizz.WithOptionalSecurity(),
+			fizz.Security(&openapi.SecurityRequirement{
+				"apiKey": []string{},
+			}),
+			fizz.Security(&openapi.SecurityRequirement{
+				"clientCredentials": {"apis:read"},
+			}),
+			apiVersionHeaderOption,
+			badRequestResponse,
+		},
+		tonic.Handler(statsController.GetTimeline, 200),
+	)
+	statsGroup.GET("/apis",
+		[]fizz.OperationOption{
+			fizz.ID("getAdoptionApis"),
+			fizz.Summary("Get APIs with adoption status"),
+			fizz.Description("Returns list of APIs with their compliance status"),
+			fizz.WithOptionalSecurity(),
+			fizz.Security(&openapi.SecurityRequirement{
+				"apiKey": []string{},
+			}),
+			fizz.Security(&openapi.SecurityRequirement{
+				"clientCredentials": {"apis:read"},
+			}),
+			apiVersionHeaderOption,
+			badRequestResponse,
+		},
+		tonic.Handler(statsController.GetApis, 200),
 	)
 
 	// 6) OpenAPI documentatie

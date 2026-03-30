@@ -3,7 +3,7 @@ module github.com/developer-overheid-nl/don-api-register
 go 1.25.5
 
 require (
-	github.com/gin-contrib/cors v1.7.6
+	github.com/gin-contrib/cors v1.7.7
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/lib/pq v1.12.0
 	github.com/loopfz/gadgeto v0.11.6
@@ -70,7 +70,7 @@ require (
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/sync v0.20.0
-	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
 )

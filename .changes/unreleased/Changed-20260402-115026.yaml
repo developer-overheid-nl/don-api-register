@@ -1,0 +1,3 @@
+kind: Changed
+body: De OpenAPI aangepast; verplaats de geplande OAS-refresh naar jobs; nieuwe PDOK-harvester job toegevoegd; voeg testdekking toe voor de harvest-job; en corrigeer de deploy-workflows zodat de image-tag in don-infra op newName wordt bijgewerkt.
+time: 2026-04-02T11:50:26.714807+02:00

@@ -61,8 +61,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	publicApis.GET("/apis/_search",
 		[]fizz.OperationOption{
 			fizz.ID("searchApis"),
-			fizz.Summary("Search apis"),
-			fizz.Description("Returns a list of repositories matching the search query."),
+			fizz.Summary("Search APIs"),
+			fizz.Description("Returns a list of APIs matching the search query."),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"clientCredentials": []string{},
@@ -75,8 +75,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	publicApis.GET("/apis",
 		[]fizz.OperationOption{
 			fizz.ID("listApis"),
-			fizz.Summary("List all APIs"),
-			fizz.Description("List all APIs"),
+			fizz.Summary("List APIs"),
+			fizz.Description("Returns a list of APIs included in the register."),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"apiKey": []string{},
@@ -93,8 +93,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	publicApis.GET("/apis/:id",
 		[]fizz.OperationOption{
 			fizz.ID("retreiveApi"),
-			fizz.Summary("Retrieve a specific API"),
-			fizz.Description("Retrieve a specific API"),
+			fizz.Summary("Get API by id"),
+			fizz.Description("Returns a single API by id."),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"apiKey": []string{},
@@ -151,8 +151,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	publicOrganisations.GET("/organisations",
 		[]fizz.OperationOption{
 			fizz.ID("listOrganisations"),
-			fizz.Summary("List all organisations"),
-			fizz.Description("List all organisations"),
+			fizz.Summary("List organisations"),
+			fizz.Description("Returns a list of organisations included in the register."),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"apiKey": []string{},
@@ -185,8 +185,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	privateApis.GET("/lint-results",
 		[]fizz.OperationOption{
 			fizz.ID("listLintResults"),
-			fizz.Summary("List all lint results"),
-			fizz.Description("Returns all lint results."),
+			fizz.Summary("List lint results"),
+			fizz.Description("Returns all stored lint results for registered APIs."),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"clientCredentials": {"apis:read"},
@@ -200,8 +200,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	privateApis.POST("/apis",
 		[]fizz.OperationOption{
 			fizz.ID("createApi"),
-			fizz.Summary("Register a new API"),
-			fizz.Description("Register a new API"),
+			fizz.Summary("Register API"),
+			fizz.Description("Registers a new API in the register from its OpenAPI document."),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"clientCredentials": {"apis:write"},
@@ -215,8 +215,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	privateApis.PUT("/apis/:id",
 		[]fizz.OperationOption{
 			fizz.ID("updateApi"),
-			fizz.Summary("Update a specific API"),
-			fizz.Description("Update a specific API"),
+			fizz.Summary("Update API"),
+			fizz.Description("Updates an existing API by id."),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"clientCredentials": {"apis:write"},

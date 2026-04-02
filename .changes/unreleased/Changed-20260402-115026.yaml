@@ -1,0 +1,3 @@
+kind: Changed
+body: De OpenAPI aangepast, verplaats de geplande OAS-refresh naar jobs, Nieuwe PDOK-harvester job toegevoegd en voeg testdekking toe voor de harvest-job.
+time: 2026-04-02T11:50:26.714807+02:00

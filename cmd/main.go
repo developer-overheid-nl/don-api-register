@@ -23,6 +23,7 @@ import (
 
 	api "github.com/developer-overheid-nl/don-api-register/pkg/api_client"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/database"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/jobs"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 )
@@ -137,10 +138,12 @@ func main() {
 		log.Fatalf("[typesense-sync] bulk publish failed: %v", err)
 	}
 
-	refreshSvc := services.NewOASRefreshService(APIsAPIService, context.Background())
+	refreshJob := jobs.NewOASRefreshJob(APIsAPIService, context.Background())
+	harvesterService := services.NewHarvesterService(APIsAPIService)
+	jobs.SchedulePDOKHarvest(context.Background(), harvesterService)
 	defer func() {
-		if refreshSvc != nil {
-			refreshSvc.Stop()
+		if refreshJob != nil {
+			refreshJob.Stop()
 		}
 	}()
 

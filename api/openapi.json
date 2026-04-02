@@ -61,42 +61,18 @@
           "Public endpoints",
           "APIs"
         ],
-        "summary": "List all APIs",
-        "description": "List all APIs",
+        "summary": "List APIs",
+        "description": "Returns a list of APIs included in the register.",
         "operationId": "listApis",
         "parameters": [
           {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "description": "Page number (1-based).",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1
-            }
+            "$ref": "#/components/parameters/Page"
           },
           {
-            "name": "perPage",
-            "in": "query",
-            "required": false,
-            "description": "Number of results per page.",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20
-            }
+            "$ref": "#/components/parameters/PerPage"
           },
           {
-            "name": "organisation",
-            "in": "query",
-            "required": false,
-            "description": "Filter on organisation URI.",
-            "schema": {
-              "type": "string",
-              "format": "uri"
-            }
+            "$ref": "#/components/parameters/Organisation"
           },
           {
             "name": "ids",
@@ -111,303 +87,40 @@
         ],
         "responses": {
           "200": {
+            "description": "OK",
             "headers": {
               "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
+                "$ref": "#/components/headers/ApiVersion"
               },
               "Link": {
-                "description": "Links to the previous, next, last or first pages",
-                "schema": {
-                  "type": "string",
-                  "example": "<https://api.developer.overheid.nl/api-register/v1/apis?page=2>; rel='prev', <https://api.developer.overheid.nl/api-register/v1/apis?page=3>; rel='next'",
-                  "externalDocs": {
-                    "description": "W3C reference",
-                    "url": "https://www.w3.org/wiki/LinkHeader"
-                  }
-                }
+                "$ref": "#/components/headers/Link"
               },
               "Total-Count": {
-                "description": "Total number of items available",
-                "schema": {
-                  "type": "integer",
-                  "example": 124
-                }
+                "$ref": "#/components/headers/TotalCount"
               },
               "Current-Page": {
-                "description": "Current page number",
-                "schema": {
-                  "type": "integer",
-                  "example": 1
-                }
+                "$ref": "#/components/headers/CurrentPage"
               },
               "Per-Page": {
-                "description": "Number of items per page",
-                "schema": {
-                  "type": "integer",
-                  "example": 10
-                }
+                "$ref": "#/components/headers/PerPage"
               },
               "Total-Pages": {
-                "description": "Total number of pages available",
-                "schema": {
-                  "type": "integer",
-                  "example": 13
-                }
+                "$ref": "#/components/headers/TotalPages"
               }
             },
-            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "title": "API",
-                    "description": "An API from the catalog",
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "description": "The unique identifier for an API",
-                        "type": "string",
-                        "readOnly": true,
-                        "examples": [
-                          "dicF0B3HR"
-                        ]
-                      },
-                      "contact": {
-                        "title": "Contact",
-                        "description": "Contact details",
-                        "type": "object",
-                        "properties": {
-                          "email": {
-                            "type": "string",
-                            "format": "email",
-                            "description": "The email address of the contact",
-                            "examples": [
-                              "developer.overheid@geonovum.nl"
-                            ]
-                          },
-                          "name": {
-                            "type": "string",
-                            "description": "The name of the contact",
-                            "examples": [
-                              "Developer Overheid"
-                            ]
-                          },
-                          "url": {
-                            "type": "string",
-                            "format": "uri",
-                            "description": "The URL of the contact",
-                            "examples": [
-                              "https://developer.overheid.nl"
-                            ]
-                          }
-                        },
-                        "required": [
-                          "email",
-                          "name",
-                          "url"
-                        ]
-                      },
-                      "title": {
-                        "description": "The title of the API",
-                        "type": "string",
-                        "examples": [
-                          "API register API v1"
-                        ]
-                      },
-                      "description": {
-                        "description": "The description of the API",
-                        "type": "string",
-                        "examples": [
-                          "This is version 1 of the API register. This description can also contain Markdown."
-                        ]
-                      },
-                      "organisation": {
-                        "title": "Organisation summary",
-                        "description": "An organisation from the catalog",
-                        "type": "object",
-                        "properties": {
-                          "uri": {
-                            "title": "Organisation URI",
-                            "description": "The unique identifier for an organisation",
-                            "type": "string",
-                            "format": "uri",
-                            "examples": [
-                              "https://developer.overheid.nl"
-                            ]
-                          },
-                          "label": {
-                            "description": "The label of the organisation",
-                            "type": "string",
-                            "examples": [
-                              "developer.overheid.nl"
-                            ]
-                          }
-                        },
-                        "required": [
-                          "uri",
-                          "label"
-                        ]
-                      },
-                      "adrScore": {
-                        "description": "The ADR score of the API",
-                        "type": [
-                          "number",
-                          "null"
-                        ],
-                        "minimum": 0,
-                        "maximum": 100,
-                        "examples": [
-                          85
-                        ]
-                      },
-                      "lifecycle": {
-                        "title": "Lifecycle",
-                        "description": "The lifecycle status of the API",
-                        "type": "object",
-                        "properties": {
-                          "status": {
-                            "type": "string",
-                            "description": "The lifecycle status",
-                            "enum": [
-                              "active",
-                              "deprecated",
-                              "sunset",
-                              "retired"
-                            ],
-                            "examples": [
-                              "deprecated",
-                              "sunset",
-                              "retired"
-                            ]
-                          },
-                          "version": {
-                            "type": "string",
-                            "description": "The version of the API",
-                            "examples": [
-                              "1.0.0"
-                            ]
-                          },
-                          "from": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
-                            "format": "date",
-                            "description": "The date from which the lifecycle status is/has been deprecated, sunset or retired.",
-                            "examples": [
-                              "2025-01-15"
-                            ]
-                          }
-                        },
-                        "required": [
-                          "status",
-                          "version"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "id",
-                      "contact",
-                      "title",
-                      "description",
-                      "organisation",
-                      "adrScore",
-                      "lifecycle"
-                    ]
+                    "$ref": "#/components/schemas/ApiSummary"
                   }
                 }
               }
             }
           },
           "400": {
-            "headers": {
-              "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
-              }
-            },
-            "description": "Bad request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "title": "Problem JSON",
-                  "description": "Problem JSON schema representing errors and status code",
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "integer",
-                      "description": "The HTTP status code generated by the origin server for this occurrence of the problem",
-                      "example": 400
-                    },
-                    "title": {
-                      "type": "string",
-                      "description": "A short, human-readable summary of the problem type",
-                      "example": "Request validation failed"
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "description": "List of errors encountered during processing",
-                        "properties": {
-                          "in": {
-                            "type": "string",
-                            "description": "Location of the error (e.g., body, query, header)",
-                            "enum": [
-                              "body",
-                              "query"
-                            ]
-                          },
-                          "location": {
-                            "type": "string",
-                            "description": "Location in the document where the error occurred (JSON Pointer)",
-                            "example": "#/foo[0]/bar"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "A code representing the type of error",
-                            "example": "date.format"
-                          },
-                          "detail": {
-                            "type": "string",
-                            "description": "A detailed message describing the error",
-                            "example": "must be ISO 8601"
-                          }
-                        },
-                        "required": [
-                          "in",
-                          "location",
-                          "code",
-                          "detail"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "title"
-                  ]
-                }
-              }
-            }
+            "$ref": "#/components/responses/400"
           }
         }
       },
@@ -424,413 +137,36 @@
           "Private endpoints",
           "APIs"
         ],
-        "summary": "Register a new API",
-        "description": "Register a new API",
+        "summary": "Register API",
+        "description": "Registers a new API in the register from its OpenAPI document.",
         "operationId": "createApi",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "title": "API Input",
-                "description": "An OSS repository from the catalog",
-                "type": "object",
-                "properties": {
-                  "oasUrl": {
-                    "title": "OAS Url",
-                    "description": "The URL of the OAS document",
-                    "type": "string",
-                    "format": "uri",
-                    "examples": [
-                      "https://api.developer.overheid.nl/api-register/v1/openapi.json"
-                    ]
-                  },
-                  "organisationUri": {
-                    "title": "Organisation URI",
-                    "description": "The unique identifier for an organisation",
-                    "type": "string",
-                    "format": "uri",
-                    "examples": [
-                      "https://developer.overheid.nl"
-                    ]
-                  },
-                  "contact": {
-                    "title": "Contact",
-                    "description": "Contact details",
-                    "type": "object",
-                    "properties": {
-                      "email": {
-                        "type": "string",
-                        "format": "email",
-                        "description": "The email address of the contact",
-                        "examples": [
-                          "developer.overheid@geonovum.nl"
-                        ]
-                      },
-                      "name": {
-                        "type": "string",
-                        "description": "The name of the contact",
-                        "examples": [
-                          "Developer Overheid"
-                        ]
-                      },
-                      "url": {
-                        "type": "string",
-                        "format": "uri",
-                        "description": "The URL of the contact",
-                        "examples": [
-                          "https://developer.overheid.nl"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "email",
-                      "name",
-                      "url"
-                    ]
-                  }
-                },
-                "required": [
-                  "oasUrl",
-                  "organisationUri"
-                ]
+                "$ref": "#/components/schemas/ApiInput"
               }
             }
           }
         },
         "responses": {
           "201": {
+            "description": "Created",
             "headers": {
               "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
+                "$ref": "#/components/headers/ApiVersion"
               }
             },
-            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "API",
-                  "description": "An API from the catalog",
-                  "type": "object",
-                  "allOf": [
-                    {
-                      "title": "API",
-                      "description": "An API from the catalog",
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "description": "The unique identifier for an API",
-                          "type": "string",
-                          "readOnly": true,
-                          "examples": [
-                            "dicF0B3HR"
-                          ]
-                        },
-                        "contact": {
-                          "title": "Contact",
-                          "description": "Contact details",
-                          "type": "object",
-                          "properties": {
-                            "email": {
-                              "type": "string",
-                              "format": "email",
-                              "description": "The email address of the contact",
-                              "examples": [
-                                "developer.overheid@geonovum.nl"
-                              ]
-                            },
-                            "name": {
-                              "type": "string",
-                              "description": "The name of the contact",
-                              "examples": [
-                                "Developer Overheid"
-                              ]
-                            },
-                            "url": {
-                              "type": "string",
-                              "format": "uri",
-                              "description": "The URL of the contact",
-                              "examples": [
-                                "https://developer.overheid.nl"
-                              ]
-                            }
-                          },
-                          "required": [
-                            "email",
-                            "name",
-                            "url"
-                          ]
-                        },
-                        "title": {
-                          "description": "The title of the API",
-                          "type": "string",
-                          "examples": [
-                            "API register API v1"
-                          ]
-                        },
-                        "description": {
-                          "description": "The description of the API",
-                          "type": "string",
-                          "examples": [
-                            "This is version 1 of the API register. This description can also contain Markdown."
-                          ]
-                        },
-                        "organisation": {
-                          "title": "Organisation summary",
-                          "description": "An organisation from the catalog",
-                          "type": "object",
-                          "properties": {
-                            "uri": {
-                              "title": "Organisation URI",
-                              "description": "The unique identifier for an organisation",
-                              "type": "string",
-                              "format": "uri",
-                              "examples": [
-                                "https://developer.overheid.nl"
-                              ]
-                            },
-                            "label": {
-                              "description": "The label of the organisation",
-                              "type": "string",
-                              "examples": [
-                                "developer.overheid.nl"
-                              ]
-                            }
-                          },
-                          "required": [
-                            "uri",
-                            "label"
-                          ]
-                        },
-                        "adrScore": {
-                          "description": "The ADR score of the API",
-                          "type": [
-                            "number",
-                            "null"
-                          ],
-                          "minimum": 0,
-                          "maximum": 100,
-                          "examples": [
-                            85
-                          ]
-                        },
-                        "lifecycle": {
-                          "title": "Lifecycle",
-                          "description": "The lifecycle status of the API",
-                          "type": "object",
-                          "properties": {
-                            "status": {
-                              "type": "string",
-                              "description": "The lifecycle status",
-                              "enum": [
-                                "active",
-                                "deprecated",
-                                "sunset",
-                                "retired"
-                              ],
-                              "examples": [
-                                "deprecated",
-                                "sunset",
-                                "retired"
-                              ]
-                            },
-                            "version": {
-                              "type": "string",
-                              "description": "The version of the API",
-                              "examples": [
-                                "1.0.0"
-                              ]
-                            },
-                            "from": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
-                              "format": "date",
-                              "description": "The date from which the lifecycle status is/has been deprecated, sunset or retired.",
-                              "examples": [
-                                "2025-01-15"
-                              ]
-                            }
-                          },
-                          "required": [
-                            "status",
-                            "version"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "contact",
-                        "title",
-                        "description",
-                        "organisation",
-                        "adrScore",
-                        "lifecycle"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "oasUrl": {
-                          "description": "The URL of the OAS document",
-                          "type": [
-                            "string",
-                            "null"
-                          ],
-                          "format": "uri",
-                          "examples": [
-                            "https://api.developer.overheid.nl/api-register/v1/openapi.json"
-                          ]
-                        },
-                        "auth": {
-                          "type": "array",
-                          "description": "The authentication methods supported by the API",
-                          "items": {
-                            "type": "string",
-                            "examples": [
-                              "OAuth2",
-                              "API Key"
-                            ]
-                          }
-                        },
-                        "docsUrl": {
-                          "type": [
-                            "string",
-                            "null"
-                          ],
-                          "description": "The URL to the documentation of the API",
-                          "format": "uri",
-                          "examples": [
-                            "https://developer.overheid.nl/kennisbank/"
-                          ]
-                        },
-                        "servers": {
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "url": {
-                                "type": "string",
-                                "format": "uri",
-                                "description": "The URL of the server",
-                                "examples": [
-                                  "https://api.developer.overheid.nl/api-register/v1"
-                                ]
-                              },
-                              "description": {
-                                "type": "string",
-                                "description": "A description of the server",
-                                "examples": [
-                                  "Production server"
-                                ]
-                              }
-                            },
-                            "required": [
-                              "url",
-                              "description"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "oasUrl",
-                        "auth",
-                        "docsUrl",
-                        "servers"
-                      ]
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ApiDetail"
                 }
               }
             }
           },
           "400": {
-            "headers": {
-              "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
-              }
-            },
-            "description": "Bad request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "title": "Problem JSON",
-                  "description": "Problem JSON schema representing errors and status code",
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "integer",
-                      "description": "The HTTP status code generated by the origin server for this occurrence of the problem",
-                      "example": 400
-                    },
-                    "title": {
-                      "type": "string",
-                      "description": "A short, human-readable summary of the problem type",
-                      "example": "Request validation failed"
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "description": "List of errors encountered during processing",
-                        "properties": {
-                          "in": {
-                            "type": "string",
-                            "description": "Location of the error (e.g., body, query, header)",
-                            "enum": [
-                              "body",
-                              "query"
-                            ]
-                          },
-                          "location": {
-                            "type": "string",
-                            "description": "Location in the document where the error occurred (JSON Pointer)",
-                            "example": "#/foo[0]/bar"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "A code representing the type of error",
-                            "example": "date.format"
-                          },
-                          "detail": {
-                            "type": "string",
-                            "description": "A detailed message describing the error",
-                            "example": "must be ISO 8601"
-                          }
-                        },
-                        "required": [
-                          "in",
-                          "location",
-                          "code",
-                          "detail"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "title"
-                  ]
-                }
-              }
-            }
+            "$ref": "#/components/responses/400"
           }
         }
       }
@@ -841,42 +177,18 @@
           "Public endpoints",
           "APIs"
         ],
-        "summary": "Search apis",
-        "description": "Returns a list of repositories matching the search query.",
+        "summary": "Search APIs",
+        "description": "Returns a list of APIs matching the search query.",
         "operationId": "searchApis",
         "parameters": [
           {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "description": "Page number (1-based).",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1
-            }
+            "$ref": "#/components/parameters/Page"
           },
           {
-            "name": "perPage",
-            "in": "query",
-            "required": false,
-            "description": "Number of results per page.",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20
-            }
+            "$ref": "#/components/parameters/PerPage"
           },
           {
-            "name": "organisation",
-            "in": "query",
-            "required": false,
-            "description": "Filter on organisation URI.",
-            "schema": {
-              "type": "string",
-              "format": "uri"
-            }
+            "$ref": "#/components/parameters/Organisation"
           },
           {
             "name": "q",
@@ -890,303 +202,40 @@
         ],
         "responses": {
           "200": {
+            "description": "OK",
             "headers": {
               "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
+                "$ref": "#/components/headers/ApiVersion"
               },
               "Link": {
-                "description": "Links to the previous, next, last or first pages",
-                "schema": {
-                  "type": "string",
-                  "example": "<https://api.developer.overheid.nl/api-register/v1/apis?page=2>; rel='prev', <https://api.developer.overheid.nl/api-register/v1/apis?page=3>; rel='next'",
-                  "externalDocs": {
-                    "description": "W3C reference",
-                    "url": "https://www.w3.org/wiki/LinkHeader"
-                  }
-                }
+                "$ref": "#/components/headers/Link"
               },
               "Total-Count": {
-                "description": "Total number of items available",
-                "schema": {
-                  "type": "integer",
-                  "example": 124
-                }
+                "$ref": "#/components/headers/TotalCount"
               },
               "Current-Page": {
-                "description": "Current page number",
-                "schema": {
-                  "type": "integer",
-                  "example": 1
-                }
+                "$ref": "#/components/headers/CurrentPage"
               },
               "Per-Page": {
-                "description": "Number of items per page",
-                "schema": {
-                  "type": "integer",
-                  "example": 10
-                }
+                "$ref": "#/components/headers/PerPage"
               },
               "Total-Pages": {
-                "description": "Total number of pages available",
-                "schema": {
-                  "type": "integer",
-                  "example": 13
-                }
+                "$ref": "#/components/headers/TotalPages"
               }
             },
-            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "title": "API",
-                    "description": "An API from the catalog",
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "description": "The unique identifier for an API",
-                        "type": "string",
-                        "readOnly": true,
-                        "examples": [
-                          "dicF0B3HR"
-                        ]
-                      },
-                      "contact": {
-                        "title": "Contact",
-                        "description": "Contact details",
-                        "type": "object",
-                        "properties": {
-                          "email": {
-                            "type": "string",
-                            "format": "email",
-                            "description": "The email address of the contact",
-                            "examples": [
-                              "developer.overheid@geonovum.nl"
-                            ]
-                          },
-                          "name": {
-                            "type": "string",
-                            "description": "The name of the contact",
-                            "examples": [
-                              "Developer Overheid"
-                            ]
-                          },
-                          "url": {
-                            "type": "string",
-                            "format": "uri",
-                            "description": "The URL of the contact",
-                            "examples": [
-                              "https://developer.overheid.nl"
-                            ]
-                          }
-                        },
-                        "required": [
-                          "email",
-                          "name",
-                          "url"
-                        ]
-                      },
-                      "title": {
-                        "description": "The title of the API",
-                        "type": "string",
-                        "examples": [
-                          "API register API v1"
-                        ]
-                      },
-                      "description": {
-                        "description": "The description of the API",
-                        "type": "string",
-                        "examples": [
-                          "This is version 1 of the API register. This description can also contain Markdown."
-                        ]
-                      },
-                      "organisation": {
-                        "title": "Organisation summary",
-                        "description": "An organisation from the catalog",
-                        "type": "object",
-                        "properties": {
-                          "uri": {
-                            "title": "Organisation URI",
-                            "description": "The unique identifier for an organisation",
-                            "type": "string",
-                            "format": "uri",
-                            "examples": [
-                              "https://developer.overheid.nl"
-                            ]
-                          },
-                          "label": {
-                            "description": "The label of the organisation",
-                            "type": "string",
-                            "examples": [
-                              "developer.overheid.nl"
-                            ]
-                          }
-                        },
-                        "required": [
-                          "uri",
-                          "label"
-                        ]
-                      },
-                      "adrScore": {
-                        "description": "The ADR score of the API",
-                        "type": [
-                          "number",
-                          "null"
-                        ],
-                        "minimum": 0,
-                        "maximum": 100,
-                        "examples": [
-                          85
-                        ]
-                      },
-                      "lifecycle": {
-                        "title": "Lifecycle",
-                        "description": "The lifecycle status of the API",
-                        "type": "object",
-                        "properties": {
-                          "status": {
-                            "type": "string",
-                            "description": "The lifecycle status",
-                            "enum": [
-                              "active",
-                              "deprecated",
-                              "sunset",
-                              "retired"
-                            ],
-                            "examples": [
-                              "deprecated",
-                              "sunset",
-                              "retired"
-                            ]
-                          },
-                          "version": {
-                            "type": "string",
-                            "description": "The version of the API",
-                            "examples": [
-                              "1.0.0"
-                            ]
-                          },
-                          "from": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
-                            "format": "date",
-                            "description": "The date from which the lifecycle status is/has been deprecated, sunset or retired.",
-                            "examples": [
-                              "2025-01-15"
-                            ]
-                          }
-                        },
-                        "required": [
-                          "status",
-                          "version"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "id",
-                      "contact",
-                      "title",
-                      "description",
-                      "organisation",
-                      "adrScore",
-                      "lifecycle"
-                    ]
+                    "$ref": "#/components/schemas/ApiSummary"
                   }
                 }
               }
             }
           },
           "400": {
-            "headers": {
-              "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
-              }
-            },
-            "description": "Bad request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "title": "Problem JSON",
-                  "description": "Problem JSON schema representing errors and status code",
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "integer",
-                      "description": "The HTTP status code generated by the origin server for this occurrence of the problem",
-                      "example": 400
-                    },
-                    "title": {
-                      "type": "string",
-                      "description": "A short, human-readable summary of the problem type",
-                      "example": "Request validation failed"
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "description": "List of errors encountered during processing",
-                        "properties": {
-                          "in": {
-                            "type": "string",
-                            "description": "Location of the error (e.g., body, query, header)",
-                            "enum": [
-                              "body",
-                              "query"
-                            ]
-                          },
-                          "location": {
-                            "type": "string",
-                            "description": "Location in the document where the error occurred (JSON Pointer)",
-                            "example": "#/foo[0]/bar"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "A code representing the type of error",
-                            "example": "date.format"
-                          },
-                          "detail": {
-                            "type": "string",
-                            "description": "A detailed message describing the error",
-                            "example": "must be ISO 8601"
-                          }
-                        },
-                        "required": [
-                          "in",
-                          "location",
-                          "code",
-                          "detail"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "title"
-                  ]
-                }
-              }
-            }
+            "$ref": "#/components/responses/400"
           }
         }
       }
@@ -1206,23 +255,14 @@
           "APIs"
         ],
         "summary": "List all lint results",
-        "description": "Returns all lint results.",
+        "description": "Returns all stored lint results for registered APIs.",
         "operationId": "listLintResults",
         "responses": {
           "200": {
             "description": "OK",
             "headers": {
               "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
+                "$ref": "#/components/headers/ApiVersion"
               }
             },
             "content": {
@@ -1232,10 +272,10 @@
                   "items": {
                     "type": "object",
                     "properties": {
-                      "ID": {
+                      "id": {
                         "type": "string"
                       },
-                      "ApiID": {
+                      "apiId": {
                         "type": "string"
                       },
                       "successes": {
@@ -1247,7 +287,7 @@
                       "warnings": {
                         "type": "integer"
                       },
-                      "CreatedAt": {
+                      "createdAt": {
                         "type": "string",
                         "format": "date-time"
                       },
@@ -1274,7 +314,7 @@
                             "code": {
                               "type": "string"
                             },
-                            "CreatedAt": {
+                            "createdAt": {
                               "type": "string",
                               "format": "date-time"
                             },
@@ -1312,7 +352,7 @@
                             "column",
                             "severity",
                             "code",
-                            "CreatedAt"
+                            "createdAt"
                           ]
                         }
                       },
@@ -1321,12 +361,12 @@
                       }
                     },
                     "required": [
-                      "ID",
-                      "ApiID",
+                      "id",
+                      "apiId",
                       "successes",
                       "failures",
                       "warnings",
-                      "CreatedAt"
+                      "createdAt"
                     ]
                   }
                 }
@@ -1334,84 +374,7 @@
             }
           },
           "400": {
-            "headers": {
-              "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
-              }
-            },
-            "description": "Bad request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "title": "Problem JSON",
-                  "description": "Problem JSON schema representing errors and status code",
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "integer",
-                      "description": "The HTTP status code generated by the origin server for this occurrence of the problem",
-                      "example": 400
-                    },
-                    "title": {
-                      "type": "string",
-                      "description": "A short, human-readable summary of the problem type",
-                      "example": "Request validation failed"
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "description": "List of errors encountered during processing",
-                        "properties": {
-                          "in": {
-                            "type": "string",
-                            "description": "Location of the error (e.g., body, query, header)",
-                            "enum": [
-                              "body",
-                              "query"
-                            ]
-                          },
-                          "location": {
-                            "type": "string",
-                            "description": "Location in the document where the error occurred (JSON Pointer)",
-                            "example": "#/foo[0]/bar"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "A code representing the type of error",
-                            "example": "date.format"
-                          },
-                          "detail": {
-                            "type": "string",
-                            "description": "A detailed message describing the error",
-                            "example": "must be ISO 8601"
-                          }
-                        },
-                        "required": [
-                          "in",
-                          "location",
-                          "code",
-                          "detail"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "title"
-                  ]
-                }
-              }
-            }
+            "$ref": "#/components/responses/400"
           }
         }
       }
@@ -1444,343 +407,27 @@
           "Public endpoints",
           "APIs"
         ],
-        "summary": "Retrieve a specific API",
-        "description": "Retrieve a specific API",
+        "summary": "Get API by id",
+        "description": "Returns a single API by id.",
         "operationId": "retreiveApi",
         "responses": {
           "200": {
             "description": "OK",
             "headers": {
               "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
+                "$ref": "#/components/headers/ApiVersion"
               }
             },
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "API",
-                  "description": "An API from the catalog",
-                  "type": "object",
-                  "allOf": [
-                    {
-                      "title": "API",
-                      "description": "An API from the catalog",
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "description": "The unique identifier for an API",
-                          "type": "string",
-                          "readOnly": true,
-                          "examples": [
-                            "dicF0B3HR"
-                          ]
-                        },
-                        "contact": {
-                          "title": "Contact",
-                          "description": "Contact details",
-                          "type": "object",
-                          "properties": {
-                            "email": {
-                              "type": "string",
-                              "format": "email",
-                              "description": "The email address of the contact",
-                              "examples": [
-                                "developer.overheid@geonovum.nl"
-                              ]
-                            },
-                            "name": {
-                              "type": "string",
-                              "description": "The name of the contact",
-                              "examples": [
-                                "Developer Overheid"
-                              ]
-                            },
-                            "url": {
-                              "type": "string",
-                              "format": "uri",
-                              "description": "The URL of the contact",
-                              "examples": [
-                                "https://developer.overheid.nl"
-                              ]
-                            }
-                          },
-                          "required": [
-                            "email",
-                            "name",
-                            "url"
-                          ]
-                        },
-                        "title": {
-                          "description": "The title of the API",
-                          "type": "string",
-                          "examples": [
-                            "API register API v1"
-                          ]
-                        },
-                        "description": {
-                          "description": "The description of the API",
-                          "type": "string",
-                          "examples": [
-                            "This is version 1 of the API register. This description can also contain Markdown."
-                          ]
-                        },
-                        "organisation": {
-                          "title": "Organisation summary",
-                          "description": "An organisation from the catalog",
-                          "type": "object",
-                          "properties": {
-                            "uri": {
-                              "title": "Organisation URI",
-                              "description": "The unique identifier for an organisation",
-                              "type": "string",
-                              "format": "uri",
-                              "examples": [
-                                "https://developer.overheid.nl"
-                              ]
-                            },
-                            "label": {
-                              "description": "The label of the organisation",
-                              "type": "string",
-                              "examples": [
-                                "developer.overheid.nl"
-                              ]
-                            }
-                          },
-                          "required": [
-                            "uri",
-                            "label"
-                          ]
-                        },
-                        "adrScore": {
-                          "description": "The ADR score of the API",
-                          "type": [
-                            "number",
-                            "null"
-                          ],
-                          "minimum": 0,
-                          "maximum": 100,
-                          "examples": [
-                            85
-                          ]
-                        },
-                        "lifecycle": {
-                          "title": "Lifecycle",
-                          "description": "The lifecycle status of the API",
-                          "type": "object",
-                          "properties": {
-                            "status": {
-                              "type": "string",
-                              "description": "The lifecycle status",
-                              "enum": [
-                                "active",
-                                "deprecated",
-                                "sunset",
-                                "retired"
-                              ],
-                              "examples": [
-                                "deprecated",
-                                "sunset",
-                                "retired"
-                              ]
-                            },
-                            "version": {
-                              "type": "string",
-                              "description": "The version of the API",
-                              "examples": [
-                                "1.0.0"
-                              ]
-                            },
-                            "from": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
-                              "format": "date",
-                              "description": "The date from which the lifecycle status is/has been deprecated, sunset or retired.",
-                              "examples": [
-                                "2025-01-15"
-                              ]
-                            }
-                          },
-                          "required": [
-                            "status",
-                            "version"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "contact",
-                        "title",
-                        "description",
-                        "organisation",
-                        "adrScore",
-                        "lifecycle"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "oasUrl": {
-                          "description": "The URL of the OAS document",
-                          "type": [
-                            "string",
-                            "null"
-                          ],
-                          "format": "uri",
-                          "examples": [
-                            "https://api.developer.overheid.nl/api-register/v1/openapi.json"
-                          ]
-                        },
-                        "auth": {
-                          "type": "array",
-                          "description": "The authentication methods supported by the API",
-                          "items": {
-                            "type": "string",
-                            "examples": [
-                              "OAuth2",
-                              "API Key"
-                            ]
-                          }
-                        },
-                        "docsUrl": {
-                          "type": [
-                            "string",
-                            "null"
-                          ],
-                          "description": "The URL to the documentation of the API",
-                          "format": "uri",
-                          "examples": [
-                            "https://developer.overheid.nl/kennisbank/"
-                          ]
-                        },
-                        "servers": {
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "url": {
-                                "type": "string",
-                                "format": "uri",
-                                "description": "The URL of the server",
-                                "examples": [
-                                  "https://api.developer.overheid.nl/api-register/v1"
-                                ]
-                              },
-                              "description": {
-                                "type": "string",
-                                "description": "A description of the server",
-                                "examples": [
-                                  "Production server"
-                                ]
-                              }
-                            },
-                            "required": [
-                              "url",
-                              "description"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "oasUrl",
-                        "auth",
-                        "docsUrl",
-                        "servers"
-                      ]
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ApiDetail"
                 }
               }
             }
           },
           "404": {
-            "headers": {
-              "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
-              }
-            },
-            "description": "Resource does not exist",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "title": "Problem JSON",
-                  "description": "Problem JSON schema representing errors and status code",
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "integer",
-                      "description": "The HTTP status code generated by the origin server for this occurrence of the problem",
-                      "example": 400
-                    },
-                    "title": {
-                      "type": "string",
-                      "description": "A short, human-readable summary of the problem type",
-                      "example": "Request validation failed"
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "description": "List of errors encountered during processing",
-                        "properties": {
-                          "in": {
-                            "type": "string",
-                            "description": "Location of the error (e.g., body, query, header)",
-                            "enum": [
-                              "body",
-                              "query"
-                            ]
-                          },
-                          "location": {
-                            "type": "string",
-                            "description": "Location in the document where the error occurred (JSON Pointer)",
-                            "example": "#/foo[0]/bar"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "A code representing the type of error",
-                            "example": "date.format"
-                          },
-                          "detail": {
-                            "type": "string",
-                            "description": "A detailed message describing the error",
-                            "example": "must be ISO 8601"
-                          }
-                        },
-                        "required": [
-                          "in",
-                          "location",
-                          "code",
-                          "detail"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "title"
-                  ]
-                }
-              }
-            }
+            "$ref": "#/components/responses/404"
           }
         }
       },
@@ -1797,493 +444,39 @@
           "Private endpoints",
           "APIs"
         ],
-        "summary": "Update a specific API",
-        "description": "Update a specific API",
+        "summary": "Update API",
+        "description": "Updates an existing API by id.",
         "operationId": "updateApi",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "title": "API Input",
-                "description": "An OSS repository from the catalog",
-                "type": "object",
-                "properties": {
-                  "oasUrl": {
-                    "title": "OAS Url",
-                    "description": "The URL of the OAS document",
-                    "type": "string",
-                    "format": "uri",
-                    "examples": [
-                      "https://api.developer.overheid.nl/api-register/v1/openapi.json"
-                    ]
-                  },
-                  "organisationUri": {
-                    "title": "Organisation URI",
-                    "description": "The unique identifier for an organisation",
-                    "type": "string",
-                    "format": "uri",
-                    "examples": [
-                      "https://developer.overheid.nl"
-                    ]
-                  },
-                  "contact": {
-                    "title": "Contact",
-                    "description": "Contact details",
-                    "type": "object",
-                    "properties": {
-                      "email": {
-                        "type": "string",
-                        "format": "email",
-                        "description": "The email address of the contact",
-                        "examples": [
-                          "developer.overheid@geonovum.nl"
-                        ]
-                      },
-                      "name": {
-                        "type": "string",
-                        "description": "The name of the contact",
-                        "examples": [
-                          "Developer Overheid"
-                        ]
-                      },
-                      "url": {
-                        "type": "string",
-                        "format": "uri",
-                        "description": "The URL of the contact",
-                        "examples": [
-                          "https://developer.overheid.nl"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "email",
-                      "name",
-                      "url"
-                    ]
-                  }
-                },
-                "required": [
-                  "oasUrl",
-                  "organisationUri"
-                ]
+                "$ref": "#/components/schemas/ApiInput"
               }
             }
           }
         },
         "responses": {
           "200": {
+            "description": "OK",
             "headers": {
               "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
+                "$ref": "#/components/headers/ApiVersion"
               }
             },
-            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "API",
-                  "description": "An API from the catalog",
-                  "type": "object",
-                  "allOf": [
-                    {
-                      "title": "API",
-                      "description": "An API from the catalog",
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "description": "The unique identifier for an API",
-                          "type": "string",
-                          "readOnly": true,
-                          "examples": [
-                            "dicF0B3HR"
-                          ]
-                        },
-                        "contact": {
-                          "title": "Contact",
-                          "description": "Contact details",
-                          "type": "object",
-                          "properties": {
-                            "email": {
-                              "type": "string",
-                              "format": "email",
-                              "description": "The email address of the contact",
-                              "examples": [
-                                "developer.overheid@geonovum.nl"
-                              ]
-                            },
-                            "name": {
-                              "type": "string",
-                              "description": "The name of the contact",
-                              "examples": [
-                                "Developer Overheid"
-                              ]
-                            },
-                            "url": {
-                              "type": "string",
-                              "format": "uri",
-                              "description": "The URL of the contact",
-                              "examples": [
-                                "https://developer.overheid.nl"
-                              ]
-                            }
-                          },
-                          "required": [
-                            "email",
-                            "name",
-                            "url"
-                          ]
-                        },
-                        "title": {
-                          "description": "The title of the API",
-                          "type": "string",
-                          "examples": [
-                            "API register API v1"
-                          ]
-                        },
-                        "description": {
-                          "description": "The description of the API",
-                          "type": "string",
-                          "examples": [
-                            "This is version 1 of the API register. This description can also contain Markdown."
-                          ]
-                        },
-                        "organisation": {
-                          "title": "Organisation summary",
-                          "description": "An organisation from the catalog",
-                          "type": "object",
-                          "properties": {
-                            "uri": {
-                              "title": "Organisation URI",
-                              "description": "The unique identifier for an organisation",
-                              "type": "string",
-                              "format": "uri",
-                              "examples": [
-                                "https://developer.overheid.nl"
-                              ]
-                            },
-                            "label": {
-                              "description": "The label of the organisation",
-                              "type": "string",
-                              "examples": [
-                                "developer.overheid.nl"
-                              ]
-                            }
-                          },
-                          "required": [
-                            "uri",
-                            "label"
-                          ]
-                        },
-                        "adrScore": {
-                          "description": "The ADR score of the API",
-                          "type": [
-                            "number",
-                            "null"
-                          ],
-                          "minimum": 0,
-                          "maximum": 100,
-                          "examples": [
-                            85
-                          ]
-                        },
-                        "lifecycle": {
-                          "title": "Lifecycle",
-                          "description": "The lifecycle status of the API",
-                          "type": "object",
-                          "properties": {
-                            "status": {
-                              "type": "string",
-                              "description": "The lifecycle status",
-                              "enum": [
-                                "active",
-                                "deprecated",
-                                "sunset",
-                                "retired"
-                              ],
-                              "examples": [
-                                "deprecated",
-                                "sunset",
-                                "retired"
-                              ]
-                            },
-                            "version": {
-                              "type": "string",
-                              "description": "The version of the API",
-                              "examples": [
-                                "1.0.0"
-                              ]
-                            },
-                            "from": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
-                              "format": "date",
-                              "description": "The date from which the lifecycle status is/has been deprecated, sunset or retired.",
-                              "examples": [
-                                "2025-01-15"
-                              ]
-                            }
-                          },
-                          "required": [
-                            "status",
-                            "version"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "contact",
-                        "title",
-                        "description",
-                        "organisation",
-                        "adrScore",
-                        "lifecycle"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "oasUrl": {
-                          "description": "The URL of the OAS document",
-                          "type": [
-                            "string",
-                            "null"
-                          ],
-                          "format": "uri",
-                          "examples": [
-                            "https://api.developer.overheid.nl/api-register/v1/openapi.json"
-                          ]
-                        },
-                        "auth": {
-                          "type": "array",
-                          "description": "The authentication methods supported by the API",
-                          "items": {
-                            "type": "string",
-                            "examples": [
-                              "OAuth2",
-                              "API Key"
-                            ]
-                          }
-                        },
-                        "docsUrl": {
-                          "type": [
-                            "string",
-                            "null"
-                          ],
-                          "description": "The URL to the documentation of the API",
-                          "format": "uri",
-                          "examples": [
-                            "https://developer.overheid.nl/kennisbank/"
-                          ]
-                        },
-                        "servers": {
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "url": {
-                                "type": "string",
-                                "format": "uri",
-                                "description": "The URL of the server",
-                                "examples": [
-                                  "https://api.developer.overheid.nl/api-register/v1"
-                                ]
-                              },
-                              "description": {
-                                "type": "string",
-                                "description": "A description of the server",
-                                "examples": [
-                                  "Production server"
-                                ]
-                              }
-                            },
-                            "required": [
-                              "url",
-                              "description"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "oasUrl",
-                        "auth",
-                        "docsUrl",
-                        "servers"
-                      ]
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ApiDetail"
                 }
               }
             }
           },
           "400": {
-            "headers": {
-              "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
-              }
-            },
-            "description": "Bad request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "title": "Problem JSON",
-                  "description": "Problem JSON schema representing errors and status code",
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "integer",
-                      "description": "The HTTP status code generated by the origin server for this occurrence of the problem",
-                      "example": 400
-                    },
-                    "title": {
-                      "type": "string",
-                      "description": "A short, human-readable summary of the problem type",
-                      "example": "Request validation failed"
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "description": "List of errors encountered during processing",
-                        "properties": {
-                          "in": {
-                            "type": "string",
-                            "description": "Location of the error (e.g., body, query, header)",
-                            "enum": [
-                              "body",
-                              "query"
-                            ]
-                          },
-                          "location": {
-                            "type": "string",
-                            "description": "Location in the document where the error occurred (JSON Pointer)",
-                            "example": "#/foo[0]/bar"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "A code representing the type of error",
-                            "example": "date.format"
-                          },
-                          "detail": {
-                            "type": "string",
-                            "description": "A detailed message describing the error",
-                            "example": "must be ISO 8601"
-                          }
-                        },
-                        "required": [
-                          "in",
-                          "location",
-                          "code",
-                          "detail"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "title"
-                  ]
-                }
-              }
-            }
+            "$ref": "#/components/responses/400"
           },
           "404": {
-            "headers": {
-              "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
-              }
-            },
-            "description": "Resource does not exist",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "title": "Problem JSON",
-                  "description": "Problem JSON schema representing errors and status code",
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "integer",
-                      "description": "The HTTP status code generated by the origin server for this occurrence of the problem",
-                      "example": 400
-                    },
-                    "title": {
-                      "type": "string",
-                      "description": "A short, human-readable summary of the problem type",
-                      "example": "Request validation failed"
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "description": "List of errors encountered during processing",
-                        "properties": {
-                          "in": {
-                            "type": "string",
-                            "description": "Location of the error (e.g., body, query, header)",
-                            "enum": [
-                              "body",
-                              "query"
-                            ]
-                          },
-                          "location": {
-                            "type": "string",
-                            "description": "Location in the document where the error occurred (JSON Pointer)",
-                            "example": "#/foo[0]/bar"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "A code representing the type of error",
-                            "example": "date.format"
-                          },
-                          "detail": {
-                            "type": "string",
-                            "description": "A detailed message describing the error",
-                            "example": "must be ISO 8601"
-                          }
-                        },
-                        "required": [
-                          "in",
-                          "location",
-                          "code",
-                          "detail"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "title"
-                  ]
-                }
-              }
-            }
+            "$ref": "#/components/responses/404"
           }
         }
       }
@@ -2324,16 +517,7 @@
             "description": "OK",
             "headers": {
               "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
+                "$ref": "#/components/headers/ApiVersion"
               }
             },
             "content": {
@@ -2397,16 +581,7 @@
             "description": "OK",
             "headers": {
               "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
+                "$ref": "#/components/headers/ApiVersion"
               },
               "OAS-Version": {
                 "description": "Returned OAS version (e.g. 3.0 or 3.1).",
@@ -2464,16 +639,7 @@
             "description": "OK",
             "headers": {
               "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
+                "$ref": "#/components/headers/ApiVersion"
               }
             },
             "content": {
@@ -2505,56 +671,23 @@
           "Public endpoints",
           "Organisations"
         ],
-        "summary": "List all organisations",
-        "description": "List all organisations",
+        "summary": "List organisations",
+        "description": "Returns a list of organisations included in the register.",
         "operationId": "listOrganisations",
         "responses": {
           "200": {
+            "description": "OK",
             "headers": {
               "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
+                "$ref": "#/components/headers/ApiVersion"
               }
             },
-            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "title": "Organisation summary",
-                    "description": "An organisation from the catalog",
-                    "type": "object",
-                    "properties": {
-                      "uri": {
-                        "title": "Organisation URI",
-                        "description": "The unique identifier for an organisation",
-                        "type": "string",
-                        "format": "uri",
-                        "examples": [
-                          "https://developer.overheid.nl"
-                        ]
-                      },
-                      "label": {
-                        "description": "The label of the organisation",
-                        "type": "string",
-                        "examples": [
-                          "developer.overheid.nl"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "uri",
-                      "label"
-                    ]
+                    "$ref": "#/components/schemas/OrganisationSummary"
                   }
                 }
               }
@@ -2585,52 +718,19 @@
           "content": {
             "application/json": {
               "schema": {
-                "title": "Organisation summary",
-                "description": "An organisation from the catalog",
-                "type": "object",
-                "properties": {
-                  "uri": {
-                    "title": "Organisation URI",
-                    "description": "The unique identifier for an organisation",
-                    "type": "string",
-                    "format": "uri",
-                    "examples": [
-                      "https://developer.overheid.nl"
-                    ]
-                  },
-                  "label": {
-                    "description": "The label of the organisation",
-                    "type": "string",
-                    "examples": [
-                      "developer.overheid.nl"
-                    ]
-                  }
-                },
-                "required": [
-                  "uri",
-                  "label"
-                ]
+                "$ref": "#/components/schemas/OrganisationSummary"
               }
             }
           }
         },
         "responses": {
           "201": {
+            "description": "Created",
             "headers": {
               "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
+                "$ref": "#/components/headers/ApiVersion"
               }
             },
-            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -2639,31 +739,7 @@
                   "type": "object",
                   "allOf": [
                     {
-                      "title": "Organisation summary",
-                      "description": "An organisation from the catalog",
-                      "type": "object",
-                      "properties": {
-                        "uri": {
-                          "title": "Organisation URI",
-                          "description": "The unique identifier for an organisation",
-                          "type": "string",
-                          "format": "uri",
-                          "examples": [
-                            "https://developer.overheid.nl"
-                          ]
-                        },
-                        "label": {
-                          "description": "The label of the organisation",
-                          "type": "string",
-                          "examples": [
-                            "developer.overheid.nl"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "uri",
-                        "label"
-                      ]
+                      "$ref": "#/components/schemas/OrganisationSummary"
                     }
                   ]
                 }
@@ -2671,90 +747,475 @@
             }
           },
           "400": {
-            "headers": {
-              "API-Version": {
-                "description": "Semver of this API",
-                "schema": {
-                  "type": "string",
-                  "example": "1.0.0",
-                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-                  "externalDocs": {
-                    "description": " /core/version-header: Return the full version number in a response header",
-                    "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-                  }
-                }
-              }
-            },
-            "description": "Bad request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "title": "Problem JSON",
-                  "description": "Problem JSON schema representing errors and status code",
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "integer",
-                      "description": "The HTTP status code generated by the origin server for this occurrence of the problem",
-                      "example": 400
-                    },
-                    "title": {
-                      "type": "string",
-                      "description": "A short, human-readable summary of the problem type",
-                      "example": "Request validation failed"
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "description": "List of errors encountered during processing",
-                        "properties": {
-                          "in": {
-                            "type": "string",
-                            "description": "Location of the error (e.g., body, query, header)",
-                            "enum": [
-                              "body",
-                              "query"
-                            ]
-                          },
-                          "location": {
-                            "type": "string",
-                            "description": "Location in the document where the error occurred (JSON Pointer)",
-                            "example": "#/foo[0]/bar"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "A code representing the type of error",
-                            "example": "date.format"
-                          },
-                          "detail": {
-                            "type": "string",
-                            "description": "A detailed message describing the error",
-                            "example": "must be ISO 8601"
-                          }
-                        },
-                        "required": [
-                          "in",
-                          "location",
-                          "code",
-                          "detail"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "status",
-                    "title"
-                  ]
-                }
-              }
-            }
+            "$ref": "#/components/responses/400"
           }
         }
       }
     }
   },
   "components": {
+    "headers": {
+      "ApiVersion": {
+        "description": "Semver of this API",
+        "schema": {
+          "type": "string",
+          "example": "1.0.0",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+          "externalDocs": {
+            "description": " /core/version-header: Return the full version number in a response header",
+            "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
+          }
+        }
+      },
+      "Link": {
+        "description": "Links to the previous, next, last or first pages",
+        "schema": {
+          "type": "string",
+          "example": "<https://api.developer.overheid.nl/api-register/v1/apis?page=2>; rel='prev', <https://api.developer.overheid.nl/api-register/v1/apis?page=3>; rel='next'",
+          "externalDocs": {
+            "description": "W3C reference",
+            "url": "https://www.w3.org/wiki/LinkHeader"
+          }
+        }
+      },
+      "TotalCount": {
+        "description": "Total number of items available",
+        "schema": {
+          "type": "integer",
+          "example": 124
+        }
+      },
+      "CurrentPage": {
+        "description": "Current page number",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        }
+      },
+      "PerPage": {
+        "description": "Number of items per page",
+        "schema": {
+          "type": "integer",
+          "example": 10
+        }
+      },
+      "TotalPages": {
+        "description": "Total number of pages available",
+        "schema": {
+          "type": "integer",
+          "example": 13
+        }
+      }
+    },
+    "parameters": {
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "description": "Page number (1-based).",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "PerPage": {
+        "name": "perPage",
+        "in": "query",
+        "required": false,
+        "description": "Number of results per page.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        }
+      },
+      "Organisation": {
+        "name": "organisation",
+        "in": "query",
+        "required": false,
+        "description": "Filter on organisation URI.",
+        "schema": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "schemas": {
+      "Contact": {
+        "title": "Contact",
+        "description": "Contact details",
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "The email address of the contact",
+            "examples": [
+              "developer.overheid@geonovum.nl"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the contact",
+            "examples": [
+              "Developer Overheid"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The URL of the contact",
+            "examples": [
+              "https://developer.overheid.nl"
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "name",
+          "url"
+        ]
+      },
+      "OrganisationSummary": {
+        "title": "Organisation summary",
+        "description": "An organisation from the catalog",
+        "type": "object",
+        "properties": {
+          "uri": {
+            "title": "Organisation URI",
+            "description": "The unique identifier for an organisation",
+            "type": "string",
+            "format": "uri",
+            "examples": [
+              "https://developer.overheid.nl"
+            ]
+          },
+          "label": {
+            "description": "The label of the organisation",
+            "type": "string",
+            "examples": [
+              "developer.overheid.nl"
+            ]
+          }
+        },
+        "required": [
+          "uri",
+          "label"
+        ]
+      },
+      "Lifecycle": {
+        "title": "Lifecycle",
+        "description": "The lifecycle status of the API",
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "The lifecycle status",
+            "enum": [
+              "active",
+              "deprecated",
+              "sunset",
+              "retired"
+            ],
+            "examples": [
+              "deprecated",
+              "sunset",
+              "retired"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "description": "The version of the API",
+            "examples": [
+              "1.0.0"
+            ]
+          },
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The date from which the lifecycle status is/has been deprecated, sunset or retired.",
+            "examples": [
+              "2025-01-15"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "version"
+        ]
+      },
+      "Server": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The URL of the server",
+            "examples": [
+              "https://api.developer.overheid.nl/api-register/v1"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "A description of the server",
+            "examples": [
+              "Production server"
+            ]
+          }
+        },
+        "required": [
+          "url",
+          "description"
+        ]
+      },
+      "ApiSummary": {
+        "title": "API",
+        "description": "An API from the catalog",
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "The unique identifier for an API",
+            "type": "string",
+            "readOnly": true,
+            "examples": [
+              "dicF0B3HR"
+            ]
+          },
+          "contact": {
+            "$ref": "#/components/schemas/Contact"
+          },
+          "title": {
+            "description": "The title of the API",
+            "type": "string",
+            "examples": [
+              "API register API v1"
+            ]
+          },
+          "description": {
+            "description": "The description of the API",
+            "type": "string",
+            "examples": [
+              "This is version 1 of the API register. This description can also contain Markdown."
+            ]
+          },
+          "organisation": {
+            "$ref": "#/components/schemas/OrganisationSummary"
+          },
+          "adrScore": {
+            "description": "The ADR score of the API",
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "examples": [
+              85
+            ]
+          },
+          "lifecycle": {
+            "$ref": "#/components/schemas/Lifecycle"
+          }
+        },
+        "required": [
+          "id",
+          "contact",
+          "title",
+          "description",
+          "organisation",
+          "adrScore",
+          "lifecycle"
+        ]
+      },
+      "ApiDetail": {
+        "title": "API",
+        "description": "An API from the catalog",
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiSummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "oasUrl": {
+                "description": "The URL of the OAS document",
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uri",
+                "examples": [
+                  "https://api.developer.overheid.nl/api-register/v1/openapi.json"
+                ]
+              },
+              "auth": {
+                "type": "array",
+                "description": "The authentication methods supported by the API",
+                "items": {
+                  "type": "string",
+                  "examples": [
+                    "OAuth2",
+                    "API Key"
+                  ]
+                }
+              },
+              "docsUrl": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The URL to the documentation of the API",
+                "format": "uri",
+                "examples": [
+                  "https://developer.overheid.nl/kennisbank/"
+                ]
+              },
+              "servers": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Server"
+                }
+              }
+            },
+            "required": [
+              "oasUrl",
+              "auth",
+              "docsUrl",
+              "servers"
+            ]
+          }
+        ]
+      },
+      "ApiInput": {
+        "title": "API Input",
+        "description": "Input for registering or updating an API from its OpenAPI document",
+        "type": "object",
+        "properties": {
+          "oasUrl": {
+            "title": "OAS Url",
+            "description": "The URL of the OAS document",
+            "type": "string",
+            "format": "uri",
+            "examples": [
+              "https://api.developer.overheid.nl/api-register/v1/openapi.json"
+            ]
+          },
+          "organisationUri": {
+            "title": "Organisation URI",
+            "description": "The unique identifier for an organisation",
+            "type": "string",
+            "format": "uri",
+            "examples": [
+              "https://developer.overheid.nl"
+            ]
+          },
+          "contact": {
+            "$ref": "#/components/schemas/Contact"
+          }
+        },
+        "required": [
+          "oasUrl",
+          "organisationUri"
+        ]
+      },
+      "ProblemJson": {
+        "title": "Problem JSON",
+        "description": "Problem JSON schema representing errors and status code",
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "description": "The HTTP status code generated by the origin server for this occurrence of the problem",
+            "example": 400
+          },
+          "title": {
+            "type": "string",
+            "description": "A short, human-readable summary of the problem type",
+            "example": "Request validation failed"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "List of errors encountered during processing",
+              "properties": {
+                "in": {
+                  "type": "string",
+                  "description": "Location of the error (e.g., body, query, header)",
+                  "enum": [
+                    "body",
+                    "query"
+                  ]
+                },
+                "location": {
+                  "type": "string",
+                  "description": "Location in the document where the error occurred (JSON Pointer)",
+                  "example": "#/foo[0]/bar"
+                },
+                "code": {
+                  "type": "string",
+                  "description": "A code representing the type of error",
+                  "example": "date.format"
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "A detailed message describing the error",
+                  "example": "must be ISO 8601"
+                }
+              },
+              "required": [
+                "in",
+                "location",
+                "code",
+                "detail"
+              ]
+            }
+          }
+        },
+        "required": [
+          "status",
+          "title"
+        ]
+      }
+    },
+    "responses": {
+      "400": {
+        "description": "Bad request",
+        "headers": {
+          "API-Version": {
+            "$ref": "#/components/headers/ApiVersion"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemJson"
+            }
+          }
+        }
+      },
+      "404": {
+        "description": "Resource does not exist",
+        "headers": {
+          "API-Version": {
+            "$ref": "#/components/headers/ApiVersion"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemJson"
+            }
+          }
+        }
+      }
+    },
     "securitySchemes": {
       "apiKey": {
         "type": "apiKey",
@@ -2768,178 +1229,12 @@
           "clientCredentials": {
             "scopes": {
               "apis:read": "Read access to APIs",
-              "apis:write": "Write access to APIIs",
+              "apis:write": "Write access to APIs",
               "organisations:read": "Read access to organisations",
               "organisations:write": "Write access to organisations",
-              "tools": "Access to tools",
-              "repositories:read": "Read access to repositories",
-              "repositories:write": "Write access to repositories",
-              "gitOrganisations:read": "Read access to git organisations",
-              "gitOrganisations:write": "Write access to git organisations"
+              "tools": "Access to tools"
             },
             "tokenUrl": "https://auth.developer.overheid.nl/realms/don/protocol/openid-connect/token"
-          }
-        }
-      }
-    },
-    "responses": {
-      "400": {
-        "headers": {
-          "API-Version": {
-            "description": "Semver of this API",
-            "schema": {
-              "type": "string",
-              "example": "1.0.0",
-              "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-              "externalDocs": {
-                "description": " /core/version-header: Return the full version number in a response header",
-                "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-              }
-            }
-          }
-        },
-        "description": "Bad request",
-        "content": {
-          "application/problem+json": {
-            "schema": {
-              "title": "Problem JSON",
-              "description": "Problem JSON schema representing errors and status code",
-              "type": "object",
-              "properties": {
-                "status": {
-                  "type": "integer",
-                  "description": "The HTTP status code generated by the origin server for this occurrence of the problem",
-                  "example": 400
-                },
-                "title": {
-                  "type": "string",
-                  "description": "A short, human-readable summary of the problem type",
-                  "example": "Request validation failed"
-                },
-                "errors": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "description": "List of errors encountered during processing",
-                    "properties": {
-                      "in": {
-                        "type": "string",
-                        "description": "Location of the error (e.g., body, query, header)",
-                        "enum": [
-                          "body",
-                          "query"
-                        ]
-                      },
-                      "location": {
-                        "type": "string",
-                        "description": "Location in the document where the error occurred (JSON Pointer)",
-                        "example": "#/foo[0]/bar"
-                      },
-                      "code": {
-                        "type": "string",
-                        "description": "A code representing the type of error",
-                        "example": "date.format"
-                      },
-                      "detail": {
-                        "type": "string",
-                        "description": "A detailed message describing the error",
-                        "example": "must be ISO 8601"
-                      }
-                    },
-                    "required": [
-                      "in",
-                      "location",
-                      "code",
-                      "detail"
-                    ]
-                  }
-                }
-              },
-              "required": [
-                "status",
-                "title"
-              ]
-            }
-          }
-        }
-      },
-      "404": {
-        "headers": {
-          "API-Version": {
-            "description": "Semver of this API",
-            "schema": {
-              "type": "string",
-              "example": "1.0.0",
-              "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-              "externalDocs": {
-                "description": " /core/version-header: Return the full version number in a response header",
-                "url": "https://logius-standaarden.github.io/API-Design-Rules/#/core/version-header"
-              }
-            }
-          }
-        },
-        "description": "Resource does not exist",
-        "content": {
-          "application/problem+json": {
-            "schema": {
-              "title": "Problem JSON",
-              "description": "Problem JSON schema representing errors and status code",
-              "type": "object",
-              "properties": {
-                "status": {
-                  "type": "integer",
-                  "description": "The HTTP status code generated by the origin server for this occurrence of the problem",
-                  "example": 400
-                },
-                "title": {
-                  "type": "string",
-                  "description": "A short, human-readable summary of the problem type",
-                  "example": "Request validation failed"
-                },
-                "errors": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "description": "List of errors encountered during processing",
-                    "properties": {
-                      "in": {
-                        "type": "string",
-                        "description": "Location of the error (e.g., body, query, header)",
-                        "enum": [
-                          "body",
-                          "query"
-                        ]
-                      },
-                      "location": {
-                        "type": "string",
-                        "description": "Location in the document where the error occurred (JSON Pointer)",
-                        "example": "#/foo[0]/bar"
-                      },
-                      "code": {
-                        "type": "string",
-                        "description": "A code representing the type of error",
-                        "example": "date.format"
-                      },
-                      "detail": {
-                        "type": "string",
-                        "description": "A detailed message describing the error",
-                        "example": "must be ISO 8601"
-                      }
-                    },
-                    "required": [
-                      "in",
-                      "location",
-                      "code",
-                      "detail"
-                    ]
-                  }
-                }
-              },
-              "required": [
-                "status",
-                "title"
-              ]
-            }
           }
         }
       }

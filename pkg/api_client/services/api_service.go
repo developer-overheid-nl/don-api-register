@@ -225,7 +225,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 		return nil, problem.NewBadRequest(requestBody.OasUrl, err.Error())
 	}
 
-	// 3) Build & validate
+	// 3) Build & validate.
 	var label string
 	var shouldSaveOrg bool
 	if org, err := s.repo.FindOrganisationByURI(context.Background(), requestBody.OrganisationUri); err != nil {

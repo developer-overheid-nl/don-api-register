@@ -107,10 +107,6 @@ func (s *stubRepo) DeleteArtifactsByKind(ctx context.Context, apiID, kind string
 	return nil
 }
 
-func stringPtr(value string) *string {
-	return &value
-}
-
 func TestGetOasDocument_InvalidVersion(t *testing.T) {
 	repo := &stubRepo{}
 	service := services.NewAPIsAPIService(repo)
@@ -385,11 +381,12 @@ func TestUpdateOasUri_PersistsUpdatedFields(t *testing.T) {
 	}
 
 	service := services.NewAPIsAPIService(repo)
+	overrideSunset := "2027-12-31"
 	input := &models.UpdateApiInput{
 		Id:              "api-123",
 		OasUrl:          srv.URL,
 		OrganisationUri: orgURI,
-		Sunset:          stringPtr("2027-12-31"),
+		Sunset:          &overrideSunset,
 		Contact: models.Contact{
 			Name:  "Fallback Naam",
 			Email: "fallback@example.com",

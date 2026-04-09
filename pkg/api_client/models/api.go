@@ -131,12 +131,14 @@ type ApiOasParams struct {
 
 type UpdateApiInput struct {
 	Id              string  `path:"id"` // <-- uit path param
-	OasUrl          string  `json:"oasUrl" binding:"required_without=OasBody,omitempty,url"`
-	OasBody         string  `json:"oasBody,omitempty" binding:"required_without=OasUrl"`
+	OasUrl          string  `json:"oasUrl" binding:"required_without_all=OasBody Sunset Deprecated,omitempty,url"`
+	OasBody         string  `json:"oasBody,omitempty" binding:"required_without_all=OasUrl Sunset Deprecated"`
 	ArazzoUrl       string  `json:"arazzoUrl,omitempty"`
 	ArazzoBody      string  `json:"arazzoBody,omitempty"`
 	OrganisationUri string  `json:"organisationUri" binding:"required,url"`
 	Contact         Contact `json:"contact"`
+	Sunset          *string `json:"sunset,omitempty"`
+	Deprecated      *string `json:"deprecated,omitempty"`
 }
 
 type OrganisationSummary struct {

@@ -62,6 +62,10 @@ func humanReason(fe validator.FieldError) string {
 	switch fe.Tag() {
 	case "required":
 		return "is verplicht"
+	case "required_without", "required_without_all":
+		return "is verplicht wanneer geen OAS of lifecycle-datum is opgegeven"
+	case "datetime":
+		return "Moet een geldige datum zijn (YYYY-MM-DD)"
 	case "url":
 		return "Moet een geldige URL zijn (bijv. https://…)"
 	default:

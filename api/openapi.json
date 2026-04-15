@@ -943,7 +943,7 @@
           "sunset": {
             "type": "string",
             "format": "date",
-            "description": "The date on which the API will be taken offline.",
+            "description": "The date from which the API will be/has been taken offline.",
             "examples": [
               "2027-11-11"
             ]

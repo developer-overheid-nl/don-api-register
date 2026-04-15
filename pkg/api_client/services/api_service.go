@@ -894,14 +894,11 @@ func validateLifecycleOverrides(body *models.UpdateApiInput) error {
 	return nil
 }
 
-func validateLifecycleDate(name string, value *string) error {
-	if value == nil {
+func validateLifecycleDate(name string, value models.OptionalString) error {
+	if !value.Set || value.Value == nil {
 		return nil
 	}
-	trimmed := strings.TrimSpace(*value)
-	if trimmed == "" {
-		return nil
-	}
+	trimmed := strings.TrimSpace(*value.Value)
 	if _, err := time.Parse(time.DateOnly, trimmed); err != nil {
 		return problem.NewBadRequest(trimmed, fmt.Sprintf("%s moet in formaat YYYY-MM-DD zijn", name),
 			problem.InvalidParam{Name: name, Reason: "Moet een geldige datum zijn (YYYY-MM-DD)"},
@@ -914,11 +911,19 @@ func applyLifecycleOverrides(api *models.Api, body *models.UpdateApiInput) {
 	if api == nil || body == nil {
 		return
 	}
-	if body.Sunset != nil {
-		api.Sunset = strings.TrimSpace(*body.Sunset)
+	if body.Sunset.Set {
+		if body.Sunset.Value == nil {
+			api.Sunset = ""
+		} else {
+			api.Sunset = strings.TrimSpace(*body.Sunset.Value)
+		}
 	}
-	if body.Deprecated != nil {
-		api.Deprecated = strings.TrimSpace(*body.Deprecated)
+	if body.Deprecated.Set {
+		if body.Deprecated.Value == nil {
+			api.Deprecated = ""
+		} else {
+			api.Deprecated = strings.TrimSpace(*body.Deprecated.Value)
+		}
 	}
 }
 

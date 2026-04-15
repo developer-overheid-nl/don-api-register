@@ -161,14 +161,12 @@ func TestUpdateOasUri_LifecycleOnlyUpdateWithoutOAS(t *testing.T) {
 		},
 	}
 
-	sunset := "2027-11-11"
-	deprecated := "2026-10-10"
 	service := services.NewAPIsAPIService(repo)
 	summary, err := service.UpdateOasUri(context.Background(), &models.UpdateApiInput{
 		Id:              "api-123",
 		OrganisationUri: orgURI,
-		Sunset:          &sunset,
-		Deprecated:      &deprecated,
+		Sunset:          models.NewOptionalString("2027-11-11"),
+		Deprecated:      models.NewOptionalString("2026-10-10"),
 	})
 
 	assert.NoError(t, err)
@@ -195,12 +193,11 @@ func TestUpdateOasUri_InvalidLifecycleDate(t *testing.T) {
 		},
 	}
 
-	invalid := "11-11-2027"
 	service := services.NewAPIsAPIService(repo)
 	summary, err := service.UpdateOasUri(context.Background(), &models.UpdateApiInput{
 		Id:              "api-123",
 		OrganisationUri: orgURI,
-		Sunset:          &invalid,
+		Sunset:          models.NewOptionalString("11-11-2027"),
 	})
 
 	assert.Nil(t, summary)
@@ -381,12 +378,11 @@ func TestUpdateOasUri_PersistsUpdatedFields(t *testing.T) {
 	}
 
 	service := services.NewAPIsAPIService(repo)
-	overrideSunset := "2027-12-31"
 	input := &models.UpdateApiInput{
 		Id:              "api-123",
 		OasUrl:          srv.URL,
 		OrganisationUri: orgURI,
-		Sunset:          &overrideSunset,
+		Sunset:          models.NewOptionalString("2027-12-31"),
 		Contact: models.Contact{
 			Name:  "Fallback Naam",
 			Email: "fallback@example.com",

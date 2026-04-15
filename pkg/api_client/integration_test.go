@@ -376,9 +376,9 @@ func TestUpdateApi_LifecycleOnlyWithoutOAS(t *testing.T) {
 	})
 
 	t.Run("clear sunset without oas", func(t *testing.T) {
-		resp := env.doJSONRequest(t, http.MethodPut, "/v1/apis/"+apiID, map[string]string{
+		resp := env.doJSONRequest(t, http.MethodPut, "/v1/apis/"+apiID, map[string]any{
 			"organisationUri": org.Uri,
-			"sunset":          "",
+			"sunset":          nil,
 		})
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 

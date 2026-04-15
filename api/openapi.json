@@ -1199,21 +1199,27 @@
             "$ref": "#/components/schemas/Contact"
           },
           "sunset": {
-            "type": "string",
-            "pattern": "^$|^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
-            "description": "Manual override for the sunset date (YYYY-MM-DD). Send an empty string to clear the value.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Manual override for the sunset date (YYYY-MM-DD). Send null to clear the value.",
             "examples": [
               "2027-11-11",
-              ""
+              null
             ]
           },
           "deprecated": {
-            "type": "string",
-            "pattern": "^$|^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
-            "description": "Manual override for the deprecated date (YYYY-MM-DD). Send an empty string to clear the value.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Manual override for the deprecated date (YYYY-MM-DD). Send null to clear the value.",
             "examples": [
               "2025-10-10",
-              ""
+              null
             ]
           }
         },

@@ -935,7 +935,7 @@
           "deprecated": {
             "type": "string",
             "format": "date",
-            "description": "The date from which the API is or will be deprecated.",
+            "description": "The date from which the API is will be/has been deprecated.",
             "examples": [
               "2025-10-10"
             ]

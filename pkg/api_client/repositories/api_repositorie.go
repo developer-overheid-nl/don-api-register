@@ -182,6 +182,23 @@ func (r *apiRepository) GetApiByID(ctx context.Context, id string) (*models.Api,
 func (r *apiRepository) UpdateApi(ctx context.Context, api models.Api) error {
 	return r.db.WithContext(ctx).Model(&models.Api{}).
 		Where("id = ?", api.Id).
+		Select(
+			"OasUri",
+			"OasHash",
+			"DocsUrl",
+			"Title",
+			"Description",
+			"Auth",
+			"AdrScore",
+			"RepositoryUri",
+			"ContactName",
+			"ContactUrl",
+			"ContactEmail",
+			"OrganisationID",
+			"Version",
+			"Sunset",
+			"Deprecated",
+		).
 		Updates(api).Error
 }
 

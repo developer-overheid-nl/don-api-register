@@ -1,0 +1,3 @@
+kind: Changed
+body: Maak sunset- en deprecated-datums via PUT handmatig wijzigbaar zonder bereikbare OAS en werk de OpenAPI-documentatie hiervoor bij.
+time: 2026-04-09T14:54:49.018076+02:00

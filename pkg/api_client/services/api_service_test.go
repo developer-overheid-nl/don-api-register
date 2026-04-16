@@ -22,7 +22,7 @@ type stubRepo struct {
 	getByID      func(ctx context.Context, id string) (*models.Api, error)
 	getLintRes   func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	listLintRes  func(ctx context.Context) ([]models.LintResult, error)
-	getApis      func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
+	getApis      func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error)
 	searchApis   func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
 	saveServer   func(server models.Server) error
 	saveApi      func(api *models.Api) error
@@ -31,6 +31,7 @@ type stubRepo struct {
 	allApis      func(ctx context.Context) ([]models.Api, error)
 	updateApi    func(ctx context.Context, api models.Api) error
 	delArtifacts func(ctx context.Context, apiID, kind string, keep []string) error
+	filterCounts func(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error)
 }
 
 func (s *stubRepo) FindByOasUrl(ctx context.Context, url string) (*models.Api, error) {
@@ -54,8 +55,8 @@ func (s *stubRepo) ListLintResults(ctx context.Context) ([]models.LintResult, er
 	}
 	return []models.LintResult{}, nil
 }
-func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
-	return s.getApis(ctx, page, perPage, organisation, ids)
+func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
+	return s.getApis(ctx, page, perPage, p)
 }
 func (s *stubRepo) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
 	if s.searchApis != nil {
@@ -104,6 +105,12 @@ func (s *stubRepo) DeleteArtifactsByKind(ctx context.Context, apiID, kind string
 		return s.delArtifacts(ctx, apiID, kind, keep)
 	}
 	return nil
+}
+func (s *stubRepo) GetApiFilterCounts(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error) {
+	if s.filterCounts != nil {
+		return s.filterCounts(ctx, p)
+	}
+	return &models.ApiFilterCounts{}, nil
 }
 
 func TestGetOasDocument_InvalidVersion(t *testing.T) {
@@ -491,7 +498,7 @@ func TestListApis_Pagination(t *testing.T) {
 
 	pagination := models.Pagination{CurrentPage: 1, RecordsPerPage: 2, TotalPages: 1, TotalRecords: 2}
 	repo := &stubRepo{
-		getApis: func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
+		getApis: func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
 			return apis, pagination, nil
 		},
 	}
@@ -506,12 +513,12 @@ func TestListApis_Pagination(t *testing.T) {
 
 func TestListApis_UsesApisFilter(t *testing.T) {
 	repo := &stubRepo{
-		getApis: func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
-			if ids == nil {
+		getApis: func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
+			if p == nil || p.Ids == nil {
 				t.Fatal("expected ids filter to be passed")
 			}
-			if want := "a1,a2"; *ids != want {
-				t.Fatalf("expected ids %q, got %q", want, *ids)
+			if want := "a1,a2"; *p.Ids != want {
+				t.Fatalf("expected ids %q, got %q", want, *p.Ids)
 			}
 			return []models.Api{}, models.Pagination{}, nil
 		},
@@ -521,6 +528,69 @@ func TestListApis_UsesApisFilter(t *testing.T) {
 	params := &models.ListApisParams{Page: 1, PerPage: 10, Ids: &raw}
 	_, _, err := service.ListApis(context.Background(), params)
 	assert.NoError(t, err)
+}
+
+func TestListApis_ForwardsAllFilters(t *testing.T) {
+	orgURI := "https://org.example.com"
+	repo := &stubRepo{
+		getApis: func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
+			if assert.NotNil(t, p.Organisation) {
+				assert.Equal(t, orgURI, *p.Organisation)
+			}
+			assert.Equal(t, []string{"active"}, p.Status)
+			assert.Equal(t, []string{"1.0.0"}, p.OasVersion)
+			assert.Equal(t, []string{"2.0.0"}, p.Version)
+			assert.Equal(t, []string{"88"}, p.AdrScore)
+			assert.Equal(t, []string{"oauth2"}, p.Auth)
+			return []models.Api{}, models.Pagination{}, nil
+		},
+	}
+	service := services.NewAPIsAPIService(repo)
+
+	params := &models.ListApisParams{
+		Page:         1,
+		PerPage:      10,
+		Organisation: &orgURI,
+		Status:       []string{"active"},
+		OasVersion:   []string{"1.0.0"},
+		Version:      []string{"2.0.0"},
+		AdrScore:     []string{"88"},
+		Auth:         []string{"oauth2"},
+	}
+	_, _, err := service.ListApis(context.Background(), params)
+	assert.NoError(t, err)
+}
+
+func TestGetApiFilters_ReturnsRequestedGroups(t *testing.T) {
+	repo := &stubRepo{
+		filterCounts: func(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error) {
+			return &models.ApiFilterCounts{
+				Status:     []models.FilterCount{{Value: "active", Count: 2}},
+				OasVersion: []models.FilterCount{{Value: "1.0.0", Count: 1}},
+				AdrScore:   []models.FilterCount{{Value: "88", Count: 1}},
+				Auth:       []models.FilterCount{{Value: "oauth2", Count: 1}},
+			}, nil
+		},
+	}
+	service := services.NewAPIsAPIService(repo)
+
+	groups, err := service.GetApiFilters(context.Background(), &models.ApiFiltersParams{Status: []string{"active"}})
+	assert.NoError(t, err)
+
+	keys := make([]string, len(groups))
+	for i, g := range groups {
+		keys[i] = g.Key
+	}
+	assert.Contains(t, keys, "status")
+	assert.Contains(t, keys, "oasVersion")
+	assert.Contains(t, keys, "adrScore")
+	assert.Contains(t, keys, "auth")
+	for _, g := range groups {
+		if g.Key == "status" {
+			assert.Equal(t, "multi-select", g.Type)
+			assert.True(t, g.Options[0].Selected)
+		}
+	}
 }
 
 func TestSearchApis_TrimsQueryAndAppliesDefaultLimit(t *testing.T) {

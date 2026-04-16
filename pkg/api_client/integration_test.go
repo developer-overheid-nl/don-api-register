@@ -261,6 +261,63 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		require.Equal(t, apiID, results[0].Id)
 	})
 
+	legacyScore := 88
+	legacyID := uuid.NewString()
+	legacy := &models.Api{
+		Id:             legacyID,
+		Title:          "Legacy API",
+		Description:    "Deprecated API voor filtertests",
+		OasUri:         "https://voorbeelden.example.com/apis/legacy/openapi.yaml",
+		OasHash:        "hash-legacy",
+		ContactName:    "Legacy Team",
+		ContactEmail:   "legacy@example.com",
+		ContactUrl:     "https://voorbeelden.example.com/legacy-contact",
+		OrganisationID: &org.Uri,
+		AdrScore:       &legacyScore,
+		Version:        "2.0.0",
+		Auth:           "oauth2",
+		Deprecated:     time.Now().AddDate(0, 0, -1).Format(time.DateOnly),
+	}
+	require.NoError(t, env.repo.Save(legacy))
+
+	t.Run("list api filters", func(t *testing.T) {
+		resp := env.doRequest(t, http.MethodGet, "/v1/apis/filters?status=deprecated")
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, "test-version", resp.Header.Get("API-Version"))
+
+		groups := decodeBody[[]models.FilterGroup](t, resp)
+		require.Len(t, groups, 4)
+
+		byKey := map[string]models.FilterGroup{}
+		for _, group := range groups {
+			byKey[group.Key] = group
+		}
+		require.Contains(t, byKey, "status")
+		require.Contains(t, byKey, "oasVersion")
+		require.Contains(t, byKey, "adrScore")
+		require.Contains(t, byKey, "auth")
+
+		var deprecatedSelected bool
+		for _, option := range byKey["status"].Options {
+			if option.Value == "deprecated" {
+				deprecatedSelected = option.Selected
+			}
+		}
+		require.True(t, deprecatedSelected)
+	})
+
+	t.Run("filter apis", func(t *testing.T) {
+		resp := env.doRequest(t, http.MethodGet, "/v1/apis?status=deprecated&oasVersion=2.0.0&auth=oauth2&adrScore=88")
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, "1", resp.Header.Get("Total-Count"))
+
+		summaries := decodeBody[[]models.ApiSummary](t, resp)
+		require.Len(t, summaries, 1)
+		require.Equal(t, legacyID, summaries[0].Id)
+		require.Equal(t, "deprecated", summaries[0].Lifecycle.Status)
+		require.Equal(t, "2.0.0", summaries[0].Lifecycle.Version)
+	})
+
 	t.Run("list organisations", func(t *testing.T) {
 		resp := env.doRequest(t, http.MethodGet, "/v1/organisations")
 		require.Equal(t, http.StatusOK, resp.StatusCode)

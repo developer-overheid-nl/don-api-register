@@ -5,14 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"gorm.io/gorm"
 )
 
 type ApiRepository interface {
-	GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
+	GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error)
 	SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
 	GetApiByID(ctx context.Context, oasUrl string) (*models.Api, error)
 	Save(api *models.Api) error
@@ -31,10 +34,24 @@ type ApiRepository interface {
 	GetOasArtifact(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error)
 	GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error)
 	DeleteArtifactsByKind(ctx context.Context, apiID, kind string, keepIDs []string) error
+	GetApiFilterCounts(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error)
 }
 
 type apiRepository struct {
 	db *gorm.DB
+}
+
+type apiFilterMatcher struct {
+	params          *models.ApiFiltersParams
+	organisation    string
+	ids             map[string]bool
+	status          map[string]bool
+	oasVersion      map[string]bool
+	adrScore        map[int]bool
+	adrScoreUnknown bool
+	adrScoreInvalid bool
+	auth            map[string]bool
+	now             time.Time
 }
 
 func NewApiRepository(db *gorm.DB) ApiRepository {
@@ -52,49 +69,268 @@ func (r *apiRepository) Save(api *models.Api) error {
 	return r.db.Create(api).Error
 }
 
-func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
-	offset := (page - 1) * perPage
-
-	db := r.db
-	if organisation != nil && strings.TrimSpace(*organisation) != "" {
-		db = db.Where("organisation_id = ?", strings.TrimSpace(*organisation))
+func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
+	if page < 1 {
+		page = 1
 	}
-	if ids != nil {
-		idsSlice := strings.Split(*ids, ",")
-		for i := range idsSlice {
-			idsSlice[i] = strings.TrimSpace(idsSlice[i])
-		}
-		db = db.Where("id IN ?", idsSlice)
+	if perPage <= 0 {
+		perPage = 10
 	}
-
-	var totalRecords int64
-	if err := db.Model(&models.Api{}).Count(&totalRecords).Error; err != nil {
-		return nil, models.Pagination{}, err
-	}
+	matcher := compileApiFilters(p)
 
 	var apis []models.Api
-	if err := db.Limit(perPage).Preload("Servers").Preload("Organisation").Offset(offset).Order("title").Find(&apis).Error; err != nil {
+	if err := applyApiOrdering(r.db.WithContext(ctx)).
+		Preload("Servers").
+		Preload("Organisation").
+		Find(&apis).Error; err != nil {
 		return nil, models.Pagination{}, err
 	}
 
-	totalPages := int(math.Ceil(float64(totalRecords) / float64(perPage)))
+	filtered := make([]models.Api, 0, len(apis))
+	for _, api := range apis {
+		if apiMatchesCompiledFilters(api, matcher, "") {
+			filtered = append(filtered, api)
+		}
+	}
+
+	totalRecords := len(filtered)
+	totalPages := 0
+	if totalRecords > 0 {
+		totalPages = int(math.Ceil(float64(totalRecords) / float64(perPage)))
+	}
 	pagination := models.Pagination{
 		CurrentPage:    page,
 		RecordsPerPage: perPage,
 		TotalPages:     totalPages,
-		TotalRecords:   int(totalRecords),
+		TotalRecords:   totalRecords,
 	}
 
 	if page < totalPages {
 		next := page + 1
 		pagination.Next = &next
 	}
-	if page > 1 {
+	if page > 1 && totalPages > 0 {
 		prev := page - 1
 		pagination.Previous = &prev
 	}
 
-	return apis, pagination, nil
+	offset := (page - 1) * perPage
+	if offset >= totalRecords {
+		return []models.Api{}, pagination, nil
+	}
+
+	end := offset + perPage
+	if end > totalRecords {
+		end = totalRecords
+	}
+
+	return filtered[offset:end], pagination, nil
+}
+
+func applyApiOrdering(db *gorm.DB) *gorm.DB {
+	return db.Order("title")
+}
+
+func (r *apiRepository) GetApiFilterCounts(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error) {
+	matcher := compileApiFilters(p)
+
+	var apis []models.Api
+	if err := r.db.WithContext(ctx).
+		Preload("Organisation").
+		Find(&apis).Error; err != nil {
+		return nil, err
+	}
+
+	result := &models.ApiFilterCounts{}
+	result.Status = countApisByFieldWithFilters(apis, matcher, "status", func(api models.Api) string {
+		return api.LifecycleStatus(matcher.now)
+	})
+	result.OasVersion = countApisByFieldWithFilters(apis, matcher, "oasVersion", func(api models.Api) string {
+		if strings.TrimSpace(api.Version) == "" {
+			return "unknown"
+		}
+		return api.Version
+	})
+	result.AdrScore = countApisByFieldWithFilters(apis, matcher, "adrScore", func(api models.Api) string {
+		if api.AdrScore == nil {
+			return "unknown"
+		}
+		return strconv.Itoa(*api.AdrScore)
+	})
+	result.Auth = countApisByFieldWithFilters(apis, matcher, "auth", func(api models.Api) string {
+		return normalizedAuthValue(api.Auth)
+	})
+
+	return result, nil
+}
+
+func countApisByFieldWithFilters(apis []models.Api, matcher *apiFilterMatcher, exclude string, getValue func(models.Api) string) []models.FilterCount {
+	counts := make(map[string]int)
+	for _, api := range apis {
+		if !apiMatchesCompiledFilters(api, matcher, exclude) {
+			continue
+		}
+		if val := strings.TrimSpace(getValue(api)); val != "" {
+			counts[val]++
+		}
+	}
+	result := make([]models.FilterCount, 0, len(counts))
+	for val, count := range counts {
+		result = append(result, models.FilterCount{Value: val, Count: count})
+	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Count == result[j].Count {
+			return result[i].Value < result[j].Value
+		}
+		return result[i].Count > result[j].Count
+	})
+	return result
+}
+
+func compileApiFilters(p *models.ApiFiltersParams) *apiFilterMatcher {
+	if p == nil {
+		p = &models.ApiFiltersParams{}
+	}
+
+	matcher := &apiFilterMatcher{
+		params:     p,
+		status:     selectedLowerFilterSet(p.Status),
+		oasVersion: selectedFilterSet(p.OasVersion, p.Version),
+		auth:       selectedFilterSet(normalizeAuthValues(p.Auth)),
+		now:        time.Now(),
+	}
+	if p.Organisation != nil {
+		matcher.organisation = strings.TrimSpace(*p.Organisation)
+	}
+	if p.Ids != nil {
+		matcher.ids = selectedFilterSet([]string{*p.Ids})
+	}
+	matcher.adrScore, matcher.adrScoreUnknown, matcher.adrScoreInvalid = selectedScoreSet(p.AdrScore)
+
+	return matcher
+}
+
+func apiMatchesCompiledFilters(api models.Api, matcher *apiFilterMatcher, exclude string) bool {
+	if matcher == nil || matcher.params == nil {
+		return true
+	}
+	if matcher.organisation != "" {
+		if api.OrganisationID == nil || *api.OrganisationID != matcher.organisation {
+			return false
+		}
+	}
+	if len(matcher.ids) > 0 && !matcher.ids[api.Id] {
+		return false
+	}
+	if exclude != "status" && len(matcher.status) > 0 {
+		if !matcher.status[api.LifecycleStatus(matcher.now)] {
+			return false
+		}
+	}
+	if exclude != "oasVersion" && len(matcher.oasVersion) > 0 {
+		version := strings.TrimSpace(api.Version)
+		if version == "" {
+			version = "unknown"
+		}
+		if !matcher.oasVersion[version] {
+			return false
+		}
+	}
+	if exclude != "adrScore" && (len(matcher.adrScore) > 0 || matcher.adrScoreUnknown || matcher.adrScoreInvalid) {
+		if matcher.adrScoreInvalid {
+			return false
+		}
+		if api.AdrScore == nil {
+			if !matcher.adrScoreUnknown {
+				return false
+			}
+		} else if !matcher.adrScore[*api.AdrScore] {
+			return false
+		}
+	}
+	if exclude != "auth" && len(matcher.auth) > 0 {
+		if !matcher.auth[normalizedAuthValue(api.Auth)] {
+			return false
+		}
+	}
+	return true
+}
+
+func selectedFilterSet(groups ...[]string) map[string]bool {
+	values := make(map[string]bool)
+	for _, group := range groups {
+		for _, raw := range group {
+			for _, val := range strings.Split(raw, ",") {
+				trimmed := strings.TrimSpace(val)
+				if trimmed != "" {
+					values[trimmed] = true
+				}
+			}
+		}
+	}
+	return values
+}
+
+func selectedLowerFilterSet(groups ...[]string) map[string]bool {
+	values := selectedFilterSet(groups...)
+	lowered := make(map[string]bool, len(values))
+	for val := range values {
+		lowered[strings.ToLower(val)] = true
+	}
+	return lowered
+}
+
+func selectedScoreSet(values []string) (map[int]bool, bool, bool) {
+	scores := make(map[int]bool)
+	unknown := false
+	invalid := false
+	for _, raw := range values {
+		for _, val := range strings.Split(raw, ",") {
+			trimmed := strings.TrimSpace(val)
+			if trimmed == "" {
+				continue
+			}
+			if strings.EqualFold(trimmed, "unknown") {
+				unknown = true
+				continue
+			}
+			score, err := strconv.Atoi(trimmed)
+			if err != nil || score < 0 || score > 100 {
+				invalid = true
+				continue
+			}
+			scores[score] = true
+		}
+	}
+	return scores, unknown, invalid
+}
+
+func normalizeAuthValues(values []string) []string {
+	normalized := make([]string, 0, len(values))
+	for _, raw := range values {
+		for _, val := range strings.Split(raw, ",") {
+			trimmed := strings.TrimSpace(val)
+			if trimmed == "" {
+				continue
+			}
+			normalized = append(normalized, normalizedAuthValue(trimmed))
+		}
+	}
+	return normalized
+}
+
+func normalizedAuthValue(value string) string {
+	trimmed := strings.ToLower(strings.TrimSpace(value))
+	switch trimmed {
+	case "":
+		return "none"
+	case "apikey", "api-key", "api key":
+		return "api_key"
+	case "openidconnect", "openid-connect":
+		return "openid"
+	default:
+		return trimmed
+	}
 }
 
 func (r *apiRepository) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {

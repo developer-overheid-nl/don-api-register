@@ -153,8 +153,10 @@ func (s *APIsAPIService) ListLintResults(ctx context.Context) ([]models.LintResu
 }
 
 func (s *APIsAPIService) ListApis(ctx context.Context, p *models.ListApisParams) ([]models.ApiSummary, models.Pagination, error) {
-	idFilter := p.FilterIDs()
-	apis, pagination, err := s.repo.GetApis(ctx, p.Page, p.PerPage, p.Organisation, idFilter)
+	if p == nil {
+		p = &models.ListApisParams{}
+	}
+	apis, pagination, err := s.repo.GetApis(ctx, p.Page, p.PerPage, p.ApiFilters())
 	if err != nil {
 		return nil, models.Pagination{}, err
 	}
@@ -165,6 +167,28 @@ func (s *APIsAPIService) ListApis(ctx context.Context, p *models.ListApisParams)
 	}
 
 	return dtos, pagination, nil
+}
+
+func (s *APIsAPIService) GetApiFilters(ctx context.Context, p *models.ApiFiltersParams) ([]models.FilterGroup, error) {
+	if p == nil {
+		p = &models.ApiFiltersParams{}
+	}
+	counts, err := s.repo.GetApiFilterCounts(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+	groups := []models.FilterGroup{
+		buildStatusGroup(p, counts),
+		buildOasVersionGroup(p, counts),
+		buildAdrScoreGroup(p, counts),
+		buildAuthGroup(p, counts),
+	}
+	for _, g := range groups {
+		if err := g.Validate(); err != nil {
+			return nil, err
+		}
+	}
+	return groups, nil
 }
 
 func (s *APIsAPIService) SearchApis(ctx context.Context, p *models.ListApisSearchParams) ([]models.ApiSummary, models.Pagination, error) {

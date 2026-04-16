@@ -22,7 +22,7 @@ type artifactRepoStub struct {
 	updates []models.Api
 }
 
-func (a *artifactRepoStub) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
+func (a *artifactRepoStub) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
 	return nil, models.Pagination{}, nil
 }
 func (a *artifactRepoStub) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
@@ -102,6 +102,9 @@ func (a *artifactRepoStub) DeleteArtifactsByKind(ctx context.Context, apiID, kin
 	}
 	a.saved = filtered
 	return nil
+}
+func (a *artifactRepoStub) GetApiFilterCounts(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error) {
+	return &models.ApiFilterCounts{}, nil
 }
 
 func TestPersistOASArtifacts_StoresOriginalAndConverted(t *testing.T) {

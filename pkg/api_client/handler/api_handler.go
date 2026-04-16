@@ -41,6 +41,11 @@ func (c *APIsAPIController) ListApis(ctx *gin.Context, p *models.ListApisParams)
 	return apis, nil
 }
 
+// ListApiFilters handles GET /apis/filters
+func (c *APIsAPIController) ListApiFilters(ctx *gin.Context, p *models.ApiFiltersParams) ([]models.FilterGroup, error) {
+	return c.Service.GetApiFilters(ctx.Request.Context(), p)
+}
+
 // SearchApis handles GET /apis/_search
 func (c *APIsAPIController) SearchApis(ctx *gin.Context, p *models.ListApisSearchParams) ([]models.ApiSummary, error) {
 	if p.Page < 1 {

@@ -17,7 +17,7 @@
     },
     {
       "description": "Test",
-      "url": "https://api.don.apps.digilab.network/api-register/v1"
+      "url": "https://api.projects.digilab.network/api-register/v1"
     }
   ],
   "security": [
@@ -160,7 +160,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiDetail"
+                  "$ref": "#/components/schemas/ApiSummary"
                 }
               }
             }
@@ -445,13 +445,13 @@
           "APIs"
         ],
         "summary": "Update API",
-        "description": "Updates an existing API by id.",
+        "description": "Updates an existing API by id. When no OAS document is supplied, only lifecycle fields can be changed.",
         "operationId": "updateApi",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ApiInput"
+                "$ref": "#/components/schemas/ApiUpdateInput"
               }
             }
           }
@@ -467,7 +467,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiDetail"
+                  "$ref": "#/components/schemas/ApiSummary"
                 }
               }
             }
@@ -932,15 +932,20 @@
               "1.0.0"
             ]
           },
-          "from": {
-            "type": [
-              "string",
-              "null"
-            ],
+          "deprecated": {
+            "type": "string",
             "format": "date",
-            "description": "The date from which the lifecycle status is/has been deprecated, sunset or retired.",
+            "description": "The date from which the API is will be/has been deprecated.",
             "examples": [
-              "2025-01-15"
+              "2025-10-10"
+            ]
+          },
+          "sunset": {
+            "type": "string",
+            "format": "date",
+            "description": "The date from which the API will be/has been taken offline.",
+            "examples": [
+              "2027-11-11"
             ]
           }
         },
@@ -1094,7 +1099,7 @@
       },
       "ApiInput": {
         "title": "API Input",
-        "description": "Input for registering or updating an API from its OpenAPI document",
+        "description": "Input for registering an API from its OpenAPI or Arazzo document",
         "type": "object",
         "properties": {
           "oasUrl": {
@@ -1105,6 +1110,22 @@
             "examples": [
               "https://api.developer.overheid.nl/api-register/v1/openapi.json"
             ]
+          },
+          "oasBody": {
+            "title": "OAS Body",
+            "description": "The inline OAS document in JSON or YAML format",
+            "type": "string"
+          },
+          "arazzoUrl": {
+            "title": "Arazzo Url",
+            "description": "The URL of the Arazzo document",
+            "type": "string",
+            "format": "uri"
+          },
+          "arazzoBody": {
+            "title": "Arazzo Body",
+            "description": "The inline Arazzo document in JSON or YAML format",
+            "type": "string"
           },
           "organisationUri": {
             "title": "Organisation URI",
@@ -1119,8 +1140,112 @@
             "$ref": "#/components/schemas/Contact"
           }
         },
+        "anyOf": [
+          {
+            "required": [
+              "oasUrl"
+            ]
+          },
+          {
+            "required": [
+              "oasBody"
+            ]
+          }
+        ],
         "required": [
-          "oasUrl",
+          "organisationUri"
+        ]
+      },
+      "ApiUpdateInput": {
+        "title": "API Update Input",
+        "description": "Input for updating an API from its OpenAPI document or by overriding lifecycle dates",
+        "type": "object",
+        "properties": {
+          "oasUrl": {
+            "title": "OAS Url",
+            "description": "The URL of the OAS document",
+            "type": "string",
+            "format": "uri",
+            "examples": [
+              "https://api.developer.overheid.nl/api-register/v1/openapi.json"
+            ]
+          },
+          "oasBody": {
+            "title": "OAS Body",
+            "description": "The inline OAS document in JSON or YAML format",
+            "type": "string"
+          },
+          "arazzoUrl": {
+            "title": "Arazzo Url",
+            "description": "The URL of the Arazzo document",
+            "type": "string",
+            "format": "uri"
+          },
+          "arazzoBody": {
+            "title": "Arazzo Body",
+            "description": "The inline Arazzo document in JSON or YAML format",
+            "type": "string"
+          },
+          "organisationUri": {
+            "title": "Organisation URI",
+            "description": "The unique identifier for an organisation",
+            "type": "string",
+            "format": "uri",
+            "examples": [
+              "https://developer.overheid.nl"
+            ]
+          },
+          "contact": {
+            "$ref": "#/components/schemas/Contact"
+          },
+          "sunset": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Manual override for the sunset date (YYYY-MM-DD). Send null to clear the value.",
+            "examples": [
+              "2027-11-11",
+              null
+            ]
+          },
+          "deprecated": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Manual override for the deprecated date (YYYY-MM-DD). Send null to clear the value.",
+            "examples": [
+              "2025-10-10",
+              null
+            ]
+          }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "oasUrl"
+            ]
+          },
+          {
+            "required": [
+              "oasBody"
+            ]
+          },
+          {
+            "required": [
+              "sunset"
+            ]
+          },
+          {
+            "required": [
+              "deprecated"
+            ]
+          }
+        ],
+        "required": [
           "organisationUri"
         ]
       },

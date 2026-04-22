@@ -182,6 +182,7 @@ func (s *APIsAPIService) GetApiFilters(ctx context.Context, p *models.ApiFilters
 		buildOasVersionGroup(p, counts),
 		buildAdrScoreGroup(p, counts),
 		buildAuthGroup(p, counts),
+		buildOrganisationGroup(p, counts),
 	}
 	for _, g := range groups {
 		if err := g.Validate(); err != nil {

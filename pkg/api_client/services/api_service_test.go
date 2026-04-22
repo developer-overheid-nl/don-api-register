@@ -538,7 +538,7 @@ func TestListApis_ForwardsAllFilters(t *testing.T) {
 				assert.Equal(t, orgURI, *p.Organisation)
 			}
 			assert.Equal(t, []string{"active"}, p.Status)
-			assert.Equal(t, []string{"1.0.0"}, p.OasVersion)
+			assert.Equal(t, []string{"3.0.0"}, p.OasVersion)
 			assert.Equal(t, []string{"2.0.0"}, p.Version)
 			assert.Equal(t, []string{"88"}, p.AdrScore)
 			assert.Equal(t, []string{"oauth2"}, p.Auth)
@@ -552,7 +552,7 @@ func TestListApis_ForwardsAllFilters(t *testing.T) {
 		PerPage:      10,
 		Organisation: &orgURI,
 		Status:       []string{"active"},
-		OasVersion:   []string{"1.0.0"},
+		OasVersion:   []string{"3.0.0"},
 		Version:      []string{"2.0.0"},
 		AdrScore:     []string{"88"},
 		Auth:         []string{"oauth2"},
@@ -565,10 +565,11 @@ func TestGetApiFilters_ReturnsRequestedGroups(t *testing.T) {
 	repo := &stubRepo{
 		filterCounts: func(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error) {
 			return &models.ApiFilterCounts{
-				Status:     []models.FilterCount{{Value: "active", Count: 2}},
-				OasVersion: []models.FilterCount{{Value: "1.0.0", Count: 1}},
-				AdrScore:   []models.FilterCount{{Value: "88", Count: 1}},
-				Auth:       []models.FilterCount{{Value: "oauth2", Count: 1}},
+				Organisation: []models.FilterCount{{Value: "https://org.example", Label: "Voorbeeld Org", Count: 3}},
+				Status:       []models.FilterCount{{Value: "active", Count: 2}},
+				OasVersion:   []models.FilterCount{{Value: "3.0.0", Count: 1}},
+				AdrScore:     []models.FilterCount{{Value: "88", Count: 1}},
+				Auth:         []models.FilterCount{{Value: "oauth2", Count: 1}},
 			}, nil
 		},
 	}
@@ -581,11 +582,16 @@ func TestGetApiFilters_ReturnsRequestedGroups(t *testing.T) {
 	for i, g := range groups {
 		keys[i] = g.Key
 	}
+	assert.Contains(t, keys, "organisation")
 	assert.Contains(t, keys, "status")
 	assert.Contains(t, keys, "oasVersion")
 	assert.Contains(t, keys, "adrScore")
 	assert.Contains(t, keys, "auth")
 	for _, g := range groups {
+		if g.Key == "organisation" {
+			assert.Equal(t, "single-select", g.Type)
+			assert.Equal(t, "Voorbeeld Org", g.Options[0].Label)
+		}
 		if g.Key == "status" {
 			assert.Equal(t, "multi-select", g.Type)
 			assert.True(t, g.Options[0].Selected)

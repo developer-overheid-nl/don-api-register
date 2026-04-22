@@ -12,6 +12,7 @@ import (
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"gorm.io/gorm"
+	"sigs.k8s.io/yaml"
 )
 
 type ApiRepository interface {
@@ -86,9 +87,14 @@ func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, p *model
 		return nil, models.Pagination{}, err
 	}
 
+	oasVersions, err := r.loadOriginalOASVersions(ctx, apis)
+	if err != nil {
+		return nil, models.Pagination{}, err
+	}
+
 	filtered := make([]models.Api, 0, len(apis))
 	for _, api := range apis {
-		if apiMatchesCompiledFilters(api, matcher, "") {
+		if apiMatchesCompiledFilters(api, matcher, "", oasVersions) {
 			filtered = append(filtered, api)
 		}
 	}
@@ -141,50 +147,169 @@ func (r *apiRepository) GetApiFilterCounts(ctx context.Context, p *models.ApiFil
 		return nil, err
 	}
 
+	oasVersions, err := r.loadOriginalOASVersions(ctx, apis)
+	if err != nil {
+		return nil, err
+	}
+
 	result := &models.ApiFilterCounts{}
+	result.Organisation = countApisByFieldWithFiltersAndLabel(apis, matcher, "organisation", func(api models.Api) string {
+		if api.OrganisationID == nil {
+			return ""
+		}
+		return *api.OrganisationID
+	}, func(api models.Api) string {
+		if api.Organisation == nil {
+			if api.OrganisationID == nil {
+				return ""
+			}
+			return *api.OrganisationID
+		}
+		if strings.TrimSpace(api.Organisation.Label) == "" {
+			return api.Organisation.Uri
+		}
+		return api.Organisation.Label
+	}, false, oasVersions)
 	result.Status = countApisByFieldWithFilters(apis, matcher, "status", func(api models.Api) string {
 		return api.LifecycleStatus(matcher.now)
-	})
+	}, oasVersions)
 	result.OasVersion = countApisByFieldWithFilters(apis, matcher, "oasVersion", func(api models.Api) string {
-		if strings.TrimSpace(api.Version) == "" {
-			return "unknown"
+		if version := apiOpenAPIVersion(api, oasVersions); version != "" {
+			return version
 		}
-		return api.Version
-	})
+		return "unknown"
+	}, oasVersions)
 	result.AdrScore = countApisByFieldWithFilters(apis, matcher, "adrScore", func(api models.Api) string {
 		if api.AdrScore == nil {
 			return "unknown"
 		}
 		return strconv.Itoa(*api.AdrScore)
-	})
+	}, oasVersions)
 	result.Auth = countApisByFieldWithFilters(apis, matcher, "auth", func(api models.Api) string {
 		return normalizedAuthValue(api.Auth)
-	})
+	}, oasVersions)
 
 	return result, nil
 }
 
-func countApisByFieldWithFilters(apis []models.Api, matcher *apiFilterMatcher, exclude string, getValue func(models.Api) string) []models.FilterCount {
-	counts := make(map[string]int)
+func (r *apiRepository) loadOriginalOASVersions(ctx context.Context, apis []models.Api) (map[string]string, error) {
+	apiIDs := make([]string, 0, len(apis))
 	for _, api := range apis {
-		if !apiMatchesCompiledFilters(api, matcher, exclude) {
+		if strings.TrimSpace(api.Id) != "" {
+			apiIDs = append(apiIDs, api.Id)
+		}
+	}
+	if len(apiIDs) == 0 {
+		return map[string]string{}, nil
+	}
+
+	var artifacts []models.ApiArtifact
+	if err := r.db.WithContext(ctx).
+		Where("kind = ? AND source = ? AND api_id IN ?", "oas", "original", apiIDs).
+		Order("created_at desc").
+		Find(&artifacts).Error; err != nil {
+		return nil, err
+	}
+
+	versions := make(map[string]string, len(artifacts))
+	for _, art := range artifacts {
+		if versions[art.ApiID] != "" {
+			continue
+		}
+		if version := parseOpenAPIVersion(art.Data); version != "" {
+			versions[art.ApiID] = version
+		}
+	}
+	return versions, nil
+}
+
+func parseOpenAPIVersion(data []byte) string {
+	if len(data) == 0 {
+		return ""
+	}
+
+	var payload struct {
+		OpenAPI string `json:"openapi" yaml:"openapi"`
+	}
+	if err := yaml.Unmarshal(data, &payload); err != nil {
+		return ""
+	}
+	return strings.TrimSpace(payload.OpenAPI)
+}
+
+func apiOpenAPIVersion(api models.Api, oasVersions map[string]string) string {
+	if oasVersions == nil {
+		return ""
+	}
+	return strings.TrimSpace(oasVersions[api.Id])
+}
+
+func countApisByFieldWithFilters(apis []models.Api, matcher *apiFilterMatcher, exclude string, getValue func(models.Api) string, oasVersions map[string]string) []models.FilterCount {
+	return countApisByFieldWithFiltersAndLabel(apis, matcher, exclude, getValue, nil, true, oasVersions)
+}
+
+func countApisByFieldWithFiltersAndLabel(
+	apis []models.Api,
+	matcher *apiFilterMatcher,
+	exclude string,
+	getValue func(models.Api) string,
+	getLabel func(models.Api) string,
+	sortByCount bool,
+	oasVersions map[string]string,
+) []models.FilterCount {
+	counts := make(map[string]int)
+	labels := make(map[string]string)
+	for _, api := range apis {
+		if !apiMatchesCompiledFilters(api, matcher, exclude, oasVersions) {
 			continue
 		}
 		if val := strings.TrimSpace(getValue(api)); val != "" {
 			counts[val]++
+			if getLabel == nil {
+				continue
+			}
+			label := strings.TrimSpace(getLabel(api))
+			if label == "" {
+				label = val
+			}
+			if labels[val] == "" {
+				labels[val] = label
+			}
 		}
 	}
 	result := make([]models.FilterCount, 0, len(counts))
 	for val, count := range counts {
-		result = append(result, models.FilterCount{Value: val, Count: count})
+		result = append(result, models.FilterCount{
+			Value: val,
+			Label: labels[val],
+			Count: count,
+		})
 	}
-	sort.Slice(result, func(i, j int) bool {
-		if result[i].Count == result[j].Count {
-			return result[i].Value < result[j].Value
-		}
-		return result[i].Count > result[j].Count
-	})
+	sortFilterCounts(result, sortByCount)
 	return result
+}
+
+func sortFilterCounts(counts []models.FilterCount, sortByCount bool) {
+	sort.Slice(counts, func(i, j int) bool {
+		if sortByCount && counts[i].Count != counts[j].Count {
+			return counts[i].Count > counts[j].Count
+		}
+
+		iKey := filterCountSortKey(counts[i])
+		jKey := filterCountSortKey(counts[j])
+		if iKey != jKey {
+			return iKey < jKey
+		}
+		return strings.ToLower(counts[i].Value) < strings.ToLower(counts[j].Value)
+	})
+}
+
+func filterCountSortKey(count models.FilterCount) string {
+	label := strings.TrimSpace(count.Label)
+	if label == "" {
+		label = count.Value
+	}
+	return strings.ToLower(label)
 }
 
 func compileApiFilters(p *models.ApiFiltersParams) *apiFilterMatcher {
@@ -210,11 +335,11 @@ func compileApiFilters(p *models.ApiFiltersParams) *apiFilterMatcher {
 	return matcher
 }
 
-func apiMatchesCompiledFilters(api models.Api, matcher *apiFilterMatcher, exclude string) bool {
+func apiMatchesCompiledFilters(api models.Api, matcher *apiFilterMatcher, exclude string, oasVersions map[string]string) bool {
 	if matcher == nil || matcher.params == nil {
 		return true
 	}
-	if matcher.organisation != "" {
+	if exclude != "organisation" && matcher.organisation != "" {
 		if api.OrganisationID == nil || *api.OrganisationID != matcher.organisation {
 			return false
 		}
@@ -228,7 +353,7 @@ func apiMatchesCompiledFilters(api models.Api, matcher *apiFilterMatcher, exclud
 		}
 	}
 	if exclude != "oasVersion" && len(matcher.oasVersion) > 0 {
-		version := strings.TrimSpace(api.Version)
+		version := apiOpenAPIVersion(api, oasVersions)
 		if version == "" {
 			version = "unknown"
 		}

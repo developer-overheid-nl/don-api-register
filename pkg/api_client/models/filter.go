@@ -38,14 +38,16 @@ func (f FilterGroup) Validate() error {
 
 type FilterCount struct {
 	Value string
+	Label string
 	Count int
 }
 
 type ApiFilterCounts struct {
-	Status     []FilterCount
-	OasVersion []FilterCount
-	AdrScore   []FilterCount
-	Auth       []FilterCount
+	Organisation []FilterCount
+	Status       []FilterCount
+	OasVersion   []FilterCount
+	AdrScore     []FilterCount
+	Auth         []FilterCount
 }
 
 type ApiFiltersParams struct {

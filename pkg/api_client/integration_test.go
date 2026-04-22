@@ -212,6 +212,15 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		Version:        "1.2.3",
 	}
 	require.NoError(t, env.repo.Save(api))
+	require.NoError(t, env.repo.SaveArtifact(ctx, &models.ApiArtifact{
+		ID:      uuid.NewString(),
+		ApiID:   apiID,
+		Kind:    "oas",
+		Source:  "original",
+		Data:    []byte(`{"openapi":"3.1.0"}`),
+		Version: "3.1",
+		Format:  "json",
+	}))
 
 	t.Run("list apis", func(t *testing.T) {
 		resp := env.doRequest(t, http.MethodGet, "/v1/apis")
@@ -279,6 +288,15 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		Deprecated:     time.Now().AddDate(0, 0, -1).Format(time.DateOnly),
 	}
 	require.NoError(t, env.repo.Save(legacy))
+	require.NoError(t, env.repo.SaveArtifact(ctx, &models.ApiArtifact{
+		ID:      uuid.NewString(),
+		ApiID:   legacyID,
+		Kind:    "oas",
+		Source:  "original",
+		Data:    []byte(`{"openapi":"3.0.0"}`),
+		Version: "3.0",
+		Format:  "json",
+	}))
 
 	t.Run("list api filters", func(t *testing.T) {
 		resp := env.doRequest(t, http.MethodGet, "/v1/apis/filters?status=deprecated")
@@ -286,12 +304,13 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		require.Equal(t, "test-version", resp.Header.Get("API-Version"))
 
 		groups := decodeBody[[]models.FilterGroup](t, resp)
-		require.Len(t, groups, 4)
+		require.Len(t, groups, 5)
 
 		byKey := map[string]models.FilterGroup{}
 		for _, group := range groups {
 			byKey[group.Key] = group
 		}
+		require.Contains(t, byKey, "organisation")
 		require.Contains(t, byKey, "status")
 		require.Contains(t, byKey, "oasVersion")
 		require.Contains(t, byKey, "adrScore")
@@ -307,7 +326,7 @@ func TestRealtimeApplicationRun(t *testing.T) {
 	})
 
 	t.Run("filter apis", func(t *testing.T) {
-		resp := env.doRequest(t, http.MethodGet, "/v1/apis?status=deprecated&oasVersion=2.0.0&auth=oauth2&adrScore=88")
+		resp := env.doRequest(t, http.MethodGet, "/v1/apis?status=deprecated&oasVersion=3.0.0&auth=oauth2&adrScore=88")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		require.Equal(t, "1", resp.Header.Get("Total-Count"))
 

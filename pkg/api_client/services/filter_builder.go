@@ -16,6 +16,37 @@ func buildStatusGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCounts
 	}
 }
 
+func buildOrganisationGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCounts) models.FilterGroup {
+	selected := map[string]bool{}
+	if p != nil && p.Organisation != nil {
+		if value := strings.TrimSpace(*p.Organisation); value != "" {
+			selected[value] = true
+		}
+	}
+
+	options := make([]models.FilterOption, 0, len(counts.Organisation))
+	for _, fc := range counts.Organisation {
+		label := fc.Label
+		if label == "" {
+			label = fc.Value
+		}
+		options = append(options, models.FilterOption{
+			Value:    fc.Value,
+			Label:    label,
+			Count:    fc.Count,
+			Selected: selected[fc.Value],
+		})
+	}
+
+	return models.FilterGroup{
+		Key:         "organisation",
+		Label:       "Organisatie",
+		Description: "De organisatie die eigenaar is van de API.",
+		Type:        "single-select",
+		Options:     options,
+	}
+}
+
 func buildOasVersionGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCounts) models.FilterGroup {
 	selected := selectedSet(p.OasVersion, p.Version)
 	options := make([]models.FilterOption, 0, len(counts.OasVersion))
@@ -24,7 +55,7 @@ func buildOasVersionGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCo
 		var desc *string
 		if fc.Value == "unknown" {
 			label = "Onbekend"
-			d := "Er is geen versie uit de OAS bekend."
+			d := "Er is geen OpenAPI-versie bekend."
 			desc = &d
 		}
 		options = append(options, models.FilterOption{
@@ -38,7 +69,7 @@ func buildOasVersionGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCo
 	return models.FilterGroup{
 		Key:         "oasVersion",
 		Label:       "OAS versie",
-		Description: "De API versie uit de OAS info.version.",
+		Description: "De OpenAPI-versie van het document.",
 		Type:        "multi-select",
 		Options:     options,
 	}

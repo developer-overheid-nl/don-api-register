@@ -62,7 +62,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		[]fizz.OperationOption{
 			fizz.ID("searchApis"),
 			fizz.Summary("Search APIs"),
-			fizz.Description("Returns a list of APIs matching the search query."),
+			fizz.Description("Returns a list of APIs matching the search query"),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"clientCredentials": []string{},

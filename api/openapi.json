@@ -17,7 +17,7 @@
     },
     {
       "description": "Test",
-      "url": "https://api.don.apps.digilab.network/api-register/v1"
+      "url": "https://api.don.projects.digilab.network/api-register/v1"
     }
   ],
   "security": [

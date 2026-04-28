@@ -3,10 +3,15 @@ package models
 import "strings"
 
 type ListApisParams struct {
-	Page         int     `query:"page"`
-	PerPage      int     `query:"perPage"`
-	Organisation *string `query:"organisation"`
-	Ids          *string `query:"ids"`
+	Page         int      `query:"page"`
+	PerPage      int      `query:"perPage"`
+	Organisation *string  `query:"organisation"`
+	Ids          *string  `query:"ids"`
+	Status       []string `query:"status"`
+	OasVersion   []string `query:"oasVersion"`
+	Version      []string `query:"version"`
+	AdrScore     []string `query:"adrScore"`
+	Auth         []string `query:"auth"`
 	BaseURL      string
 }
 
@@ -16,6 +21,21 @@ func (p *ListApisParams) FilterIDs() *string {
 		return nil
 	}
 	return trimPointer(p.Ids)
+}
+
+func (p *ListApisParams) ApiFilters() *ApiFiltersParams {
+	if p == nil {
+		return &ApiFiltersParams{}
+	}
+	return &ApiFiltersParams{
+		Organisation: p.Organisation,
+		Ids:          p.FilterIDs(),
+		Status:       append([]string(nil), p.Status...),
+		OasVersion:   append([]string(nil), p.OasVersion...),
+		Version:      append([]string(nil), p.Version...),
+		AdrScore:     append([]string(nil), p.AdrScore...),
+		Auth:         append([]string(nil), p.Auth...),
+	}
 }
 
 func trimPointer(val *string) *string {

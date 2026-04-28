@@ -42,15 +42,50 @@ func FetchParseValidateAndHash(ctx context.Context, input tools.OASInput, opts F
 		return nil, fmt.Errorf("OAS input ontbreekt")
 	}
 
-	raw, contentType, err := bundleOAS(ctx, input)
+	var (
+		raw         []byte
+		contentType string
+		fromBundle  bool
+		err         error
+	)
+
+	raw, contentType, err = bundleOAS(ctx, input)
 	if err != nil {
 		log.Printf("[oas] bundle failed (%v), fallback naar directe fetch", err)
 		raw, contentType, err = fetchRawOAS(ctx, input, opts)
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		fromBundle = true
 	}
 
+	res, err := parseValidateAndHash(raw, contentType)
+	if err == nil {
+		return res, nil
+	}
+	if fromBundle && shouldRetryRawFetchAfterBundleParseError(err) {
+		log.Printf("[oas] bundled parse failed with recursive YAML anchors, retrying raw fetch for %s", input.OasUrl)
+		raw, contentType, retryErr := fetchRawOAS(ctx, input, opts)
+		if retryErr != nil {
+			return nil, retryErr
+		}
+		return parseValidateAndHash(raw, contentType)
+	}
+	return nil, err
+}
+
+func shouldRetryRawFetchAfterBundleParseError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "failed to decode yaml to json") &&
+		strings.Contains(msg, "anchor") &&
+		strings.Contains(msg, "contains itself")
+}
+
+func parseValidateAndHash(raw []byte, contentType string) (*OASResult, error) {
 	// 2) libopenapi config voor (remote) refs
 	cfg := datamodel.DocumentConfiguration{
 		AllowRemoteReferences: true,

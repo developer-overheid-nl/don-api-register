@@ -16,20 +16,21 @@ import (
 
 // stubRepo mocks ApiRepository for controller tests
 type stubRepo struct {
-	listFunc    func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error)
-	searchFunc  func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
-	retrFunc    func(ctx context.Context, id string) (*models.Api, error)
-	lintResFunc func(ctx context.Context, apiID string) ([]models.LintResult, error)
-	listLint    func(ctx context.Context) ([]models.LintResult, error)
-	findOasFunc func(ctx context.Context, oasUrl string) (*models.Api, error)
-	getOrgs     func(ctx context.Context) ([]models.Organisation, int, error)
-	findOrg     func(ctx context.Context, uri string) (*models.Organisation, error)
-	saveOrg     func(org *models.Organisation) error
-	getOasArt   func(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error)
+	listFunc     func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error)
+	searchFunc   func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
+	retrFunc     func(ctx context.Context, id string) (*models.Api, error)
+	lintResFunc  func(ctx context.Context, apiID string) ([]models.LintResult, error)
+	listLint     func(ctx context.Context) ([]models.LintResult, error)
+	findOasFunc  func(ctx context.Context, oasUrl string) (*models.Api, error)
+	getOrgs      func(ctx context.Context) ([]models.Organisation, int, error)
+	findOrg      func(ctx context.Context, uri string) (*models.Organisation, error)
+	saveOrg      func(org *models.Organisation) error
+	getOasArt    func(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error)
+	filterCounts func(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error)
 }
 
-func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
-	return s.listFunc(ctx, page, perPage, organisation, ids)
+func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
+	return s.listFunc(ctx, page, perPage, p)
 }
 func (s *stubRepo) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
 	if s.searchFunc != nil {
@@ -69,8 +70,11 @@ func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation,
 }
 
 // unused
-func (s *stubRepo) Save(api *models.Api) error                                       { return nil }
-func (s *stubRepo) UpdateApi(ctx context.Context, api models.Api) error              { return nil }
+func (s *stubRepo) Save(api *models.Api) error                          { return nil }
+func (s *stubRepo) UpdateApi(ctx context.Context, api models.Api) error { return nil }
+func (s *stubRepo) UpdateOASMetadata(ctx context.Context, apiID string, oas models.OASMetadata) error {
+	return nil
+}
 func (s *stubRepo) SaveServer(server models.Server) error                            { return nil }
 func (s *stubRepo) AllApis(ctx context.Context) ([]models.Api, error)                { return nil, nil }
 func (s *stubRepo) SaveLintResult(ctx context.Context, res *models.LintResult) error { return nil }
@@ -89,6 +93,12 @@ func (s *stubRepo) GetArtifact(ctx context.Context, apiID, kind string) (*models
 }
 func (s *stubRepo) DeleteArtifactsByKind(ctx context.Context, apiID, kind string, keep []string) error {
 	return nil
+}
+func (s *stubRepo) GetApiFilterCounts(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error) {
+	if s.filterCounts != nil {
+		return s.filterCounts(ctx, p)
+	}
+	return &models.ApiFilterCounts{}, nil
 }
 
 func TestGetOas_Handler(t *testing.T) {
@@ -185,7 +195,7 @@ func TestGetOas_InvalidFormat(t *testing.T) {
 }
 func TestListApis_Handler(t *testing.T) {
 	repo := &stubRepo{
-		listFunc: func(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
+		listFunc: func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
 			apis := []models.Api{
 				{
 					Id:           "a1",

@@ -22,7 +22,7 @@ type artifactRepoStub struct {
 	updates []models.Api
 }
 
-func (a *artifactRepoStub) GetApis(ctx context.Context, page, perPage int, organisation *string, ids *string) ([]models.Api, models.Pagination, error) {
+func (a *artifactRepoStub) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
 	return nil, models.Pagination{}, nil
 }
 func (a *artifactRepoStub) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
@@ -34,6 +34,10 @@ func (a *artifactRepoStub) GetApiByID(ctx context.Context, id string) (*models.A
 func (a *artifactRepoStub) Save(api *models.Api) error { return nil }
 func (a *artifactRepoStub) UpdateApi(ctx context.Context, api models.Api) error {
 	a.updates = append(a.updates, api)
+	return nil
+}
+func (a *artifactRepoStub) UpdateOASMetadata(ctx context.Context, apiID string, oas models.OASMetadata) error {
+	a.updates = append(a.updates, models.Api{Id: apiID, OAS: oas})
 	return nil
 }
 func (a *artifactRepoStub) FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api, error) {
@@ -102,6 +106,9 @@ func (a *artifactRepoStub) DeleteArtifactsByKind(ctx context.Context, apiID, kin
 	}
 	a.saved = filtered
 	return nil
+}
+func (a *artifactRepoStub) GetApiFilterCounts(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error) {
+	return &models.ApiFilterCounts{}, nil
 }
 
 func TestPersistOASArtifacts_StoresOriginalAndConverted(t *testing.T) {

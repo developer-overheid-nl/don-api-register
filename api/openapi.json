@@ -62,7 +62,7 @@
           "APIs"
         ],
         "summary": "List APIs",
-        "description": "Returns a list of APIs included in the register.",
+        "description": "Returns a list of APIs included in the register. Supports the same filter query parameters as the filters endpoint.",
         "operationId": "listApis",
         "parameters": [
           {
@@ -75,14 +75,19 @@
             "$ref": "#/components/parameters/Organisation"
           },
           {
-            "name": "ids",
-            "in": "query",
-            "required": false,
-            "description": "Comma-separated list of API IDs.",
-            "schema": {
-              "type": "string",
-              "example": "dicF0B3HR,diC1D4EHR"
-            }
+            "$ref": "#/components/parameters/Ids"
+          },
+          {
+            "$ref": "#/components/parameters/Status"
+          },
+          {
+            "$ref": "#/components/parameters/OasVersion"
+          },
+          {
+            "$ref": "#/components/parameters/AdrScore"
+          },
+          {
+            "$ref": "#/components/parameters/Auth"
           }
         ],
         "responses": {
@@ -161,6 +166,71 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      }
+    },
+    "/apis/filters": {
+      "get": {
+        "security": [
+          {},
+          {
+            "apiKey": []
+          },
+          {
+            "clientCredentials": [
+              "apis:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Public endpoints",
+          "APIs"
+        ],
+        "summary": "List API filters",
+        "description": "Returns all available API filter options with counts. Counts are calculated using the active filters from the request.",
+        "operationId": "listApiFilters",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Organisation"
+          },
+          {
+            "$ref": "#/components/parameters/Ids"
+          },
+          {
+            "$ref": "#/components/parameters/Status"
+          },
+          {
+            "$ref": "#/components/parameters/OasVersion"
+          },
+          {
+            "$ref": "#/components/parameters/AdrScore"
+          },
+          {
+            "$ref": "#/components/parameters/Auth"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "API-Version": {
+                "$ref": "#/components/headers/ApiVersion"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FilterGroup"
+                  }
                 }
               }
             }
@@ -314,6 +384,9 @@
                             "code": {
                               "type": "string"
                             },
+                            "rulesetVersion": {
+                              "type": "string"
+                            },
                             "createdAt": {
                               "type": "string",
                               "format": "date-time"
@@ -355,9 +428,6 @@
                             "createdAt"
                           ]
                         }
-                      },
-                      "rulesetVersion": {
-                        "type": "string"
                       }
                     },
                     "required": [
@@ -840,6 +910,84 @@
           "type": "string",
           "format": "uri"
         }
+      },
+      "Ids": {
+        "name": "ids",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated list of API IDs.",
+        "schema": {
+          "type": "string",
+          "example": "dicF0B3HR,diC1D4EHR"
+        }
+      },
+      "Status": {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "description": "Filter on lifecycle status. Repeat the parameter or use comma-separated values.",
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "active",
+              "deprecated",
+              "sunset",
+              "retired"
+            ]
+          }
+        }
+      },
+      "OasVersion": {
+        "name": "oasVersion",
+        "in": "query",
+        "required": false,
+        "description": "Filter on the API version from the OAS info.version field. Repeat the parameter or use comma-separated values.",
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "AdrScore": {
+        "name": "adrScore",
+        "in": "query",
+        "required": false,
+        "description": "Filter on stored ADR score. Use exact scores or 'unknown' for APIs without a stored score.",
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "examples": [
+              "88",
+              "unknown"
+            ]
+          }
+        }
+      },
+      "Auth": {
+        "name": "auth",
+        "in": "query",
+        "required": false,
+        "description": "Filter on the authentication/security type derived from the OAS security definition.",
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "none",
+              "api_key",
+              "oauth2",
+              "openid",
+              "bearer",
+              "basic",
+              "http",
+              "unknown"
+            ]
+          }
+        }
       }
     },
     "schemas": {
@@ -1095,6 +1243,96 @@
               "servers"
             ]
           }
+        ]
+      },
+      "FilterOption": {
+        "type": "object",
+        "description": "Single selectable filter option with the count for the current filter context.",
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "The query parameter value for this option."
+          },
+          "label": {
+            "type": "string",
+            "description": "Human-readable label for this option."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional explanation of this option."
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of APIs matching this option, given the other active filters.",
+            "minimum": 0
+          },
+          "selected": {
+            "type": "boolean",
+            "description": "Whether this option is currently selected in the request."
+          }
+        },
+        "required": [
+          "value",
+          "label",
+          "count",
+          "selected"
+        ]
+      },
+      "FilterGroup": {
+        "type": "object",
+        "description": "Filter metadata group for API list facets.",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Query parameter key for this filter.",
+            "examples": [
+              "status",
+              "oasVersion",
+              "adrScore",
+              "auth"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "description": "Human-readable filter label."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of what this filter controls."
+          },
+          "type": {
+            "type": "string",
+            "description": "UI control type for the filter.",
+            "enum": [
+              "multi-select",
+              "single-select",
+              "toggle",
+              "date"
+            ]
+          },
+          "value": {
+            "description": "Current value for non-option filters."
+          },
+          "count": {
+            "type": "integer",
+            "description": "Count for toggle or date filters.",
+            "minimum": 0
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterOption"
+            }
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "description",
+          "type"
         ]
       },
       "ApiInput": {

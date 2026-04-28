@@ -110,6 +110,7 @@ func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, re
 	}
 
 	openapi.UpdateApiFromSpec(api, res.Spec, request, orgLabel)
+	applyOASSnapshot(api, res)
 	applyLifecycleOverrides(api, overrides)
 	if api.Organisation == nil && strings.TrimSpace(request.OrganisationUri) != "" {
 		api.Organisation = &models.Organisation{
@@ -175,8 +176,10 @@ func (s *APIsAPIService) ListLintResults(ctx context.Context) ([]models.LintResu
 }
 
 func (s *APIsAPIService) ListApis(ctx context.Context, p *models.ListApisParams) ([]models.ApiSummary, models.Pagination, error) {
-	idFilter := p.FilterIDs()
-	apis, pagination, err := s.repo.GetApis(ctx, p.Page, p.PerPage, p.Organisation, idFilter)
+	if p == nil {
+		p = &models.ListApisParams{}
+	}
+	apis, pagination, err := s.repo.GetApis(ctx, p.Page, p.PerPage, p.ApiFilters())
 	if err != nil {
 		return nil, models.Pagination{}, err
 	}
@@ -187,6 +190,29 @@ func (s *APIsAPIService) ListApis(ctx context.Context, p *models.ListApisParams)
 	}
 
 	return dtos, pagination, nil
+}
+
+func (s *APIsAPIService) GetApiFilters(ctx context.Context, p *models.ApiFiltersParams) ([]models.FilterGroup, error) {
+	if p == nil {
+		p = &models.ApiFiltersParams{}
+	}
+	counts, err := s.repo.GetApiFilterCounts(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+	groups := []models.FilterGroup{
+		buildStatusGroup(p, counts),
+		buildOasVersionGroup(p, counts),
+		buildAdrScoreGroup(p, counts),
+		buildAuthGroup(p, counts),
+		buildOrganisationGroup(p, counts),
+	}
+	for _, g := range groups {
+		if err := g.Validate(); err != nil {
+			return nil, err
+		}
+	}
+	return groups, nil
 }
 
 func (s *APIsAPIService) SearchApis(ctx context.Context, p *models.ListApisSearchParams) ([]models.ApiSummary, models.Pagination, error) {
@@ -248,6 +274,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 		shouldSaveOrg = true
 	}
 	api := openapi.BuildApi(resp.Spec, requestBody, label)
+	applyOASSnapshot(api, resp)
 	if shouldSaveOrg && api.OrganisationID != nil {
 		if err := s.repo.SaveOrganisatie(api.Organisation); err != nil {
 			return nil, problem.NewInternalServerError("kan organisatie niet opslaan: " + err.Error())
@@ -311,13 +338,24 @@ func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
 			Origin: "https://developer.overheid.nl",
 		})
 		if err != nil {
+			if updateErr := s.updateOASMetadataSnapshot(ctx, candidate.Id, candidate.OAS, models.OASMetadata{
+				Version: candidate.OAS.Version,
+				Status:  classifyOASStatus(err),
+				Auth:    currentOASAuth(candidate),
+			}); updateErr != nil {
+				log.Printf("[oas-refresh] kon oas status niet opslaan api=%s: %v", candidate.Id, updateErr)
+			}
 			log.Printf("[oas-refresh] skip api=%s url=%s: %v", candidate.Id, candidate.OasUri, err)
 			continue
 		}
-		//tijdelijk uit
-		// if res.Hash == candidate.OasHash {
-		// 	continue
-		// }
+
+		if err := s.updateOASMetadataSnapshot(ctx, candidate.Id, candidate.OAS, deriveOASSnapshot(candidate.OAS, res)); err != nil {
+			log.Printf("[oas-refresh] kon oas snapshot niet bijwerken api=%s: %v", candidate.Id, err)
+		}
+
+		if res.Hash == candidate.OasHash {
+			continue
+		}
 
 		full, err := s.repo.GetApiByID(ctx, candidate.Id)
 		if err != nil || full == nil {
@@ -434,11 +472,12 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID string, input
 				id = uuid.New().String()
 			}
 			msgs = append(msgs, models.LintMessage{
-				ID:        id,
-				Severity:  m.Severity,
-				Code:      m.Code,
-				Infos:     infos,
-				CreatedAt: m.CreatedAt,
+				ID:             id,
+				Severity:       m.Severity,
+				Code:           m.Code,
+				RulesetVersion: dto.RulesetVersion,
+				Infos:          infos,
+				CreatedAt:      m.CreatedAt,
 			})
 		}
 		score := dto.Score
@@ -449,14 +488,13 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID string, input
 			rid = uuid.New().String()
 		}
 		res := &models.LintResult{
-			ID:             rid,
-			ApiID:          apiID,
-			Successes:      dto.Successes,
-			Failures:       dto.Failures,
-			Warnings:       dto.Warnings,
-			Messages:       msgs,
-			CreatedAt:      dto.CreatedAt,
-			RulesetVersion: dto.RulesetVersion,
+			ID:        rid,
+			ApiID:     apiID,
+			Successes: dto.Successes,
+			Failures:  dto.Failures,
+			Warnings:  dto.Warnings,
+			Messages:  msgs,
+			CreatedAt: dto.CreatedAt,
 		}
 		if err := s.repo.SaveLintResult(ctx, res); err != nil {
 			log.Printf("[lint] save result failed: %v", err)
@@ -850,15 +888,70 @@ func (s *APIsAPIService) BackfillOASArtifacts(ctx context.Context) error {
 		if err := s.persistOASArtifacts(ctx, api.Id, res); err != nil {
 			log.Printf("[backfill] persist failed api=%s: %v", api.Id, err)
 		}
+		applyOASSnapshot(&api, res)
 		if api.OasHash != res.Hash {
 			api.OasHash = res.Hash
-			if err := s.repo.UpdateApi(ctx, api); err != nil {
-				log.Printf("[backfill] update hash failed api=%s: %v", api.Id, err)
-			}
+		}
+		if err := s.repo.UpdateApi(ctx, api); err != nil {
+			log.Printf("[backfill] update hash/oas snapshot failed api=%s: %v", api.Id, err)
 		}
 	}
 
 	return nil
+}
+
+func applyOASSnapshot(api *models.Api, res *openapi.OASResult) {
+	if api == nil || res == nil {
+		return
+	}
+	api.OAS = deriveOASSnapshot(api.OAS, res)
+}
+
+func deriveOASSnapshot(current models.OASMetadata, res *openapi.OASResult) models.OASMetadata {
+	if res == nil {
+		return current
+	}
+	current.Version = strings.TrimSpace(res.Version)
+	current.Status = models.OASStatusValid
+	current.Auth = strings.TrimSpace(openapi.AuthTypeFromSpec(res.Spec))
+	return current
+}
+
+func currentOASAuth(api models.Api) string {
+	if auth := strings.TrimSpace(api.OAS.Auth); auth != "" {
+		return auth
+	}
+	return strings.TrimSpace(api.Auth)
+}
+
+func classifyOASStatus(err error) string {
+	if err == nil {
+		return models.OASStatusValid
+	}
+	msg := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(msg, "kan oas niet ophalen"),
+		strings.Contains(msg, "kan oas niet lezen"),
+		strings.Contains(msg, "geen oasurl opgegeven"):
+		return models.OASStatusUnreachable
+	case strings.Contains(msg, "invalid oas"):
+		return models.OASStatusInvalid
+	default:
+		return models.OASStatusUnknown
+	}
+}
+
+func (s *APIsAPIService) updateOASMetadataSnapshot(ctx context.Context, apiID string, current, next models.OASMetadata) error {
+	current.Version = strings.TrimSpace(current.Version)
+	current.Status = strings.TrimSpace(current.Status)
+	current.Auth = strings.TrimSpace(current.Auth)
+	next.Version = strings.TrimSpace(next.Version)
+	next.Status = strings.TrimSpace(next.Status)
+	next.Auth = strings.TrimSpace(next.Auth)
+	if current == next {
+		return nil
+	}
+	return s.repo.UpdateOASMetadata(ctx, apiID, next)
 }
 
 func deriveOrganisationURI(api *models.Api) string {

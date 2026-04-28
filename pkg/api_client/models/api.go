@@ -12,12 +12,14 @@ package models
 import (
 	"bytes"
 	"encoding/json"
+	"time"
 )
 
 type Api struct {
 	Id             string        `gorm:"column:id;primaryKey"`
 	OasUri         string        `json:"oasUrl,omitempty"`
 	OasHash        string        `json:"-" gorm:"column:oas_hash"`
+	OAS            OASMetadata   `gorm:"embedded;embeddedPrefix:oas_" json:"-"`
 	DocsUrl        string        `json:"docsUrl,omitempty"`
 	Title          string        `json:"title,omitempty"`
 	Description    string        `json:"description,omitempty"`
@@ -34,6 +36,19 @@ type Api struct {
 	Sunset         string        `json:"sunset,omitempty"`
 	Deprecated     string        `json:"deprecated,omitempty"`
 }
+
+type OASMetadata struct {
+	Version string `json:"version,omitempty"`
+	Status  string `json:"status,omitempty"`
+	Auth    string `json:"auth,omitempty"`
+}
+
+const (
+	OASStatusUnknown     = "unknown"
+	OASStatusValid       = "valid"
+	OASStatusInvalid     = "invalid"
+	OASStatusUnreachable = "unreachable"
+)
 
 type Organisation struct {
 	Uri   string `gorm:"column:uri;primaryKey" json:"uri"`
@@ -102,6 +117,27 @@ type Lifecycle struct {
 	Version    string `json:"version"`
 	Sunset     string `json:"sunset,omitempty"`
 	Deprecated string `json:"deprecated,omitempty"`
+}
+
+func (api Api) LifecycleStatus(now time.Time) string {
+	switch {
+	case api.Sunset != "" && parseLifecycleDate(api.Sunset).After(now):
+		return "sunset"
+	case api.Sunset != "" && parseLifecycleDate(api.Sunset).Before(now):
+		return "retired"
+	case api.Deprecated != "" && parseLifecycleDate(api.Deprecated).Before(now):
+		return "deprecated"
+	default:
+		return "active"
+	}
+}
+
+func parseLifecycleDate(value string) time.Time {
+	t, err := time.Parse(time.DateOnly, value)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
 }
 
 // ApiResponse is de externe view van een API

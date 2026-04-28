@@ -51,6 +51,20 @@ func DeriveAuthType(spec *v3.Document) string {
 	return "unknown"
 }
 
+func AuthTypeFromSpec(spec *v3.Document) string {
+	if spec == nil {
+		return ""
+	}
+	hasSecuritySchemes := false
+	if spec.Components != nil && spec.Components.SecuritySchemes != nil {
+		hasSecuritySchemes = orderedmap.Len(spec.Components.SecuritySchemes) > 0
+	}
+	if len(spec.Security) > 0 || hasSecuritySchemes {
+		return DeriveAuthType(spec)
+	}
+	return ""
+}
+
 // extString safely extracts a string extension (e.g. x-sunset) from pb33f YAML node map.
 func extString(m *orderedmap.Map[string, *yaml.Node], key string) string {
 	if m == nil {
@@ -119,19 +133,7 @@ func populateApiFromSpec(api *models.Api, spec *v3.Document, requestBody models.
 		api.DocsUrl = ""
 	}
 
-	if spec != nil {
-		hasSecuritySchemes := false
-		if spec.Components != nil && spec.Components.SecuritySchemes != nil {
-			hasSecuritySchemes = orderedmap.Len(spec.Components.SecuritySchemes) > 0
-		}
-		if len(spec.Security) > 0 || hasSecuritySchemes {
-			api.Auth = DeriveAuthType(spec)
-		} else {
-			api.Auth = ""
-		}
-	} else {
-		api.Auth = ""
-	}
+	api.Auth = AuthTypeFromSpec(spec)
 
 	if spec != nil && len(spec.Servers) > 0 {
 		serversToSave := make([]models.Server, 0, len(spec.Servers))

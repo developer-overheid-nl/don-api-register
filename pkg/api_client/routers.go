@@ -62,7 +62,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		[]fizz.OperationOption{
 			fizz.ID("searchApis"),
 			fizz.Summary("Search APIs"),
-			fizz.Description("Returns a list of APIs matching the search query."),
+			fizz.Description("Returns a list of APIs matching the search query"),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"clientCredentials": []string{},
@@ -76,7 +76,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		[]fizz.OperationOption{
 			fizz.ID("listApis"),
 			fizz.Summary("List APIs"),
-			fizz.Description("Returns a list of APIs included in the register."),
+			fizz.Description("Returns a list of APIs included in the register. Supports the same filter query parameters as the filters endpoint."),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"apiKey": []string{},
@@ -88,6 +88,24 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 			badRequestResponse,
 		},
 		tonic.Handler(controller.ListApis, 200),
+	)
+
+	publicApis.GET("/apis/filters",
+		[]fizz.OperationOption{
+			fizz.ID("listApiFilters"),
+			fizz.Summary("List API filters"),
+			fizz.Description("Returns all available API filter options with counts. Counts are calculated using the active filters from the request."),
+			fizz.WithOptionalSecurity(),
+			fizz.Security(&openapi.SecurityRequirement{
+				"apiKey": []string{},
+			}),
+			fizz.Security(&openapi.SecurityRequirement{
+				"clientCredentials": {"apis:read"},
+			}),
+			apiVersionHeaderOption,
+			badRequestResponse,
+		},
+		tonic.Handler(controller.ListApiFilters, 200),
 	)
 
 	publicApis.GET("/apis/:id",

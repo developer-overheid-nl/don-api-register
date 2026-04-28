@@ -2,15 +2,16 @@
 set -euo pipefail
 
 SOURCE_BASE_URL="${SOURCE_BASE_URL:-https://api.developer.overheid.nl/api-register}"
-TARGET_BASE_URL="${TARGET_BASE_URL:-http://localhost:1337}"
+TARGET_BASE_URL="${TARGET_BASE_URL:-https://api.don.projects.digilab.network/api-register/v1}"
+SOURCE_API_KEY=""
+TARGET_API_KEY=""
+
 PER_PAGE="${PER_PAGE:-100}"
 SLEEP_SECONDS="${SLEEP_SECONDS:-1}"
 OUT="${OUT:-sync-errors.json}"
+SKIP_ORGANISATIONS="0" # Set to "1" or "true" to skip synchronizing organisations
 
-SOURCE_API_KEY="${SOURCE_API_KEY:-}"
-SOURCE_TOKEN="${SOURCE_TOKEN:-}"
-TARGET_API_KEY="${TARGET_API_KEY:-}"
-TARGET_TOKEN="${TARGET_TOKEN:-}"
+
 declare -a SOURCE_AUTH_ARGS=()
 declare -a TARGET_AUTH_ARGS=()
 
@@ -23,8 +24,10 @@ TARGET_BASE_URL="${TARGET_BASE_URL%/}"
 
 org_success=0
 org_failed=0
+org_skipped=0
 api_success=0
 api_failed=0
+api_skipped=0
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -40,9 +43,6 @@ echo '[]' > "$OUT"
 
 build_source_auth_args() {
   SOURCE_AUTH_ARGS=()
-  if [[ -n "$SOURCE_TOKEN" ]]; then
-    SOURCE_AUTH_ARGS+=(-H "Authorization: Bearer ${SOURCE_TOKEN}")
-  fi
   if [[ -n "$SOURCE_API_KEY" ]]; then
     SOURCE_AUTH_ARGS+=(-H "X-API-Key: ${SOURCE_API_KEY}")
   fi
@@ -50,37 +50,55 @@ build_source_auth_args() {
 
 build_target_auth_args() {
   TARGET_AUTH_ARGS=()
-  if [[ -n "$TARGET_TOKEN" ]]; then
-    TARGET_AUTH_ARGS+=(-H "Authorization: Bearer ${TARGET_TOKEN}")
+  TARGET_API_KEY="$(normalise_bearer_token "$TARGET_API_KEY")"
+  if [[ -z "$TARGET_API_KEY" ]]; then
+    echo "TARGET_API_KEY ontbreekt; target POSTs moeten altijd met Bearer token." >&2
+    exit 1
   fi
   if [[ -n "$TARGET_API_KEY" ]]; then
-    TARGET_AUTH_ARGS+=(-H "X-API-Key: ${TARGET_API_KEY}")
+    TARGET_AUTH_ARGS+=(-H "Authorization: Bearer ${TARGET_API_KEY}")
+  fi
+}
+
+normalise_bearer_token() {
+  local token="$1"
+
+  token="${token#Bearer }"
+  token="${token#bearer }"
+  printf '%s' "$token"
+}
+
+require_target_bearer() {
+  TARGET_API_KEY="$(normalise_bearer_token "$TARGET_API_KEY")"
+  if [[ -z "$TARGET_API_KEY" ]]; then
+    prompt_target_auth
+  fi
+  if [[ -z "$TARGET_API_KEY" ]]; then
+    echo "Doel Bearer token ontbreekt. Stop." >&2
+    exit 1
   fi
 }
 
 prompt_source_auth() {
   if [[ ! -t 0 ]]; then
-    echo "Bron-auth ontbreekt of is ongeldig. Zet SOURCE_API_KEY en eventueel SOURCE_TOKEN." >&2
+    echo "Bron-auth ontbreekt of is ongeldig. Zet SOURCE_API_KEY." >&2
     exit 1
   fi
 
   echo
   read -r -s -p "Bron X-API-Key: " SOURCE_API_KEY
   echo
-  read -r -s -p "Bron Bearer token (optioneel, enter om over te slaan): " SOURCE_TOKEN
-  echo
 }
 
 prompt_target_auth() {
   if [[ ! -t 0 ]]; then
-    echo "Doel-auth ontbreekt of is ongeldig. Zet TARGET_API_KEY en/of TARGET_TOKEN." >&2
+    echo "Doel-auth ontbreekt of is ongeldig. Zet TARGET_API_KEY." >&2
     exit 1
   fi
 
   echo
-  read -r -s -p "Doel X-API-Key (optioneel, enter om over te slaan): " TARGET_API_KEY
-  echo
-  read -r -s -p "Doel Bearer token (optioneel, enter om over te slaan): " TARGET_TOKEN
+  read -r -p "Doel Bearer token: " TARGET_API_KEY
+  TARGET_API_KEY="$(normalise_bearer_token "$TARGET_API_KEY")"
   echo
 }
 
@@ -169,6 +187,14 @@ append_error() {
   mv "${OUT}.tmp" "$OUT"
 }
 
+is_already_exists_response() {
+  local status="$1"
+  local body_file="$2"
+
+  [[ "$status" == "400" || "$status" == "409" ]] || return 1
+  grep -Eiq 'bestaat al|already exists|duplicate|unique constraint' "$body_file"
+}
+
 extract_next_page() {
   local headers_file="$1"
   local next_link
@@ -222,6 +248,8 @@ post_target() {
   local body_file
 
   body_file="$(mktemp)"
+  echo "POST URL: ${TARGET_BASE_URL}${path}" >&2
+  echo "POST Header: Authorization: Bearer <redacted>" >&2
   http_code="$(request_target_once "${TARGET_BASE_URL}${path}" "$payload" "$body_file")"
 
   if [[ "$http_code" == "401" ]]; then
@@ -242,6 +270,15 @@ post_target() {
     else
       api_success=$((api_success + 1))
     fi
+  elif is_already_exists_response "$http_code" "$body_file"; then
+    if [[ "$phase" == "organisation" ]]; then
+      org_skipped=$((org_skipped + 1))
+    else
+      api_skipped=$((api_skipped + 1))
+    fi
+    echo "SKIP [${phase}] ${descriptor} -> ${http_code} (bestaat al)"
+    rm -f "$body_file"
+    return 0
   else
     append_error "$phase" "$descriptor" "$payload" "$http_code" "$body_file"
     if [[ "$phase" == "organisation" ]]; then
@@ -299,7 +336,7 @@ sync_organisations() {
 
     payload="$(jq -c '{uri, label}' <<<"$item")"
     uri="$(jq -r '.uri' <<<"$item")"
-    post_target "/v1/organisations" "organisation" "$uri" "$payload"
+    post_target "/organisations" "organisation" "$uri" "$payload"
   done < <(jq -c '.[]' "$body_file")
 
   rm -f "$body_file" "$headers_file"
@@ -343,7 +380,7 @@ sync_apis() {
       fi
 
       payload="$(build_api_payload "$item")"
-      post_target "/v1/apis" "api" "$oas_url" "$payload"
+      post_target "/apis" "api" "$oas_url" "$payload"
     done < <(jq -c '.[]' "$body_file")
 
     next_page="$(extract_next_page "$headers_file")"
@@ -356,6 +393,8 @@ sync_apis() {
   done
 }
 
+require_target_bearer
+
 if [[ -z "$SOURCE_API_KEY" ]]; then
   prompt_source_auth
 fi
@@ -364,11 +403,15 @@ echo "Bron: ${SOURCE_BASE_URL}"
 echo "Doel: ${TARGET_BASE_URL}"
 echo "Errors worden opgeslagen in: ${OUT}"
 
-sync_organisations
+if [[ "$SKIP_ORGANISATIONS" == "1" || "$SKIP_ORGANISATIONS" == "true" ]]; then
+  echo "Organisations overslaan (SKIP_ORGANISATIONS=${SKIP_ORGANISATIONS})."
+else
+  sync_organisations
+fi
 sync_apis
 
 echo
 echo "Klaar."
-echo "Organisations: succes=${org_success}, fouten=${org_failed}"
-echo "APIs: succes=${api_success}, fouten=${api_failed}"
+echo "Organisations: succes=${org_success}, skipped=${org_skipped}, fouten=${org_failed}"
+echo "APIs: succes=${api_success}, skipped=${api_skipped}, fouten=${api_failed}"
 echo "Foutenbestand: ${OUT}"

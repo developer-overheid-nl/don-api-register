@@ -87,6 +87,10 @@ func humanReason(fe validator.FieldError) string {
 	switch fe.Tag() {
 	case "required":
 		return "is verplicht"
+	case "required_without", "required_without_all":
+		return "is verplicht wanneer geen OAS of lifecycle-datum is opgegeven"
+	case "datetime":
+		return "Moet een geldige datum zijn (YYYY-MM-DD)"
 	case "url":
 		return "Moet een geldige URL zijn (bijv. https://…)"
 	default:
@@ -383,5 +387,67 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		require.Equal(t, 404, prob.Status)
 		require.Len(t, prob.Errors, 1)
 		require.Contains(t, prob.Errors[0].Detail, "Postman artifact not found")
+	})
+}
+
+func TestUpdateApi_LifecycleOnlyWithoutOAS(t *testing.T) {
+	env := newIntegrationEnv(t)
+	ctx := context.Background()
+
+	org, err := env.service.CreateOrganisation(ctx, &models.Organisation{
+		Uri:   "https://voorbeelden.example.com/organisaties/lifecycle",
+		Label: "Lifecycle Org",
+	})
+	require.NoError(t, err)
+
+	apiID := uuid.NewString()
+	api := &models.Api{
+		Id:             apiID,
+		Title:          "Lifecycle API",
+		OasUri:         "https://voorbeelden.example.com/apis/lifecycle/openapi.yaml",
+		ContactName:    "Lifecycle Team",
+		ContactEmail:   "lifecycle@example.com",
+		ContactUrl:     "https://voorbeelden.example.com/contact",
+		OrganisationID: &org.Uri,
+		Organisation:   org,
+		Version:        "1.2.3",
+		Sunset:         "2027-01-01",
+		Deprecated:     "2026-01-01",
+	}
+	require.NoError(t, env.repo.Save(api))
+
+	t.Run("set lifecycle fields without oas", func(t *testing.T) {
+		resp := env.doJSONRequest(t, http.MethodPut, "/v1/apis/"+apiID, map[string]string{
+			"organisationUri": org.Uri,
+			"sunset":          "2028-02-02",
+			"deprecated":      "2027-02-02",
+		})
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		summary := decodeBody[models.ApiSummary](t, resp)
+		require.Equal(t, "2028-02-02", summary.Lifecycle.Sunset)
+		require.Equal(t, "2027-02-02", summary.Lifecycle.Deprecated)
+
+		saved, err := env.repo.GetApiByID(ctx, apiID)
+		require.NoError(t, err)
+		require.Equal(t, "2028-02-02", saved.Sunset)
+		require.Equal(t, "2027-02-02", saved.Deprecated)
+		require.Equal(t, "https://voorbeelden.example.com/apis/lifecycle/openapi.yaml", saved.OasUri)
+	})
+
+	t.Run("clear sunset without oas", func(t *testing.T) {
+		resp := env.doJSONRequest(t, http.MethodPut, "/v1/apis/"+apiID, map[string]any{
+			"organisationUri": org.Uri,
+			"sunset":          nil,
+		})
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		summary := decodeBody[models.ApiSummary](t, resp)
+		require.Empty(t, summary.Lifecycle.Sunset)
+
+		saved, err := env.repo.GetApiByID(ctx, apiID)
+		require.NoError(t, err)
+		require.Empty(t, saved.Sunset)
+		require.Equal(t, "2027-02-02", saved.Deprecated)
 	})
 }

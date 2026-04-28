@@ -7,6 +7,7 @@ import (
 
 	httpclient "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
 	openapihelper "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/openapi"
+	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	toolslint "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
@@ -148,6 +149,81 @@ func TestUpdateOasUri_NotFound(t *testing.T) {
 	assert.Nil(t, result)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), services.ErrNeedsPost.Error())
+}
+
+func TestUpdateOasUri_LifecycleOnlyUpdateWithoutOAS(t *testing.T) {
+	orgURI := "https://example.org/org"
+	existing := &models.Api{
+		Id:           "api-123",
+		OasUri:       "https://old.example.com/openapi.json",
+		Title:        "Bestaande API",
+		Sunset:       "2024-01-01",
+		Deprecated:   "2023-01-01",
+		Organisation: &models.Organisation{Uri: orgURI, Label: "Org Label"},
+	}
+	existing.OrganisationID = &orgURI
+
+	var saved models.Api
+	repo := &stubRepo{
+		getByID: func(ctx context.Context, id string) (*models.Api, error) {
+			assert.Equal(t, "api-123", id)
+			return existing, nil
+		},
+		updateApi: func(ctx context.Context, api models.Api) error {
+			saved = api
+			return nil
+		},
+	}
+
+	service := services.NewAPIsAPIService(repo)
+	summary, err := service.UpdateOasUri(context.Background(), &models.UpdateApiInput{
+		Id:              "api-123",
+		OrganisationUri: orgURI,
+		Sunset:          models.NewOptionalString("2027-11-11"),
+		Deprecated:      models.NewOptionalString("2026-10-10"),
+	})
+
+	assert.NoError(t, err)
+	if assert.NotNil(t, summary) {
+		assert.Equal(t, "2027-11-11", summary.Lifecycle.Sunset)
+		assert.Equal(t, "2026-10-10", summary.Lifecycle.Deprecated)
+	}
+	assert.Equal(t, "https://old.example.com/openapi.json", saved.OasUri)
+	assert.Equal(t, "2027-11-11", saved.Sunset)
+	assert.Equal(t, "2026-10-10", saved.Deprecated)
+}
+
+func TestUpdateOasUri_InvalidLifecycleDate(t *testing.T) {
+	orgURI := "https://example.org/org"
+	existing := &models.Api{
+		Id:           "api-123",
+		Organisation: &models.Organisation{Uri: orgURI, Label: "Org Label"},
+	}
+	existing.OrganisationID = &orgURI
+
+	repo := &stubRepo{
+		getByID: func(ctx context.Context, id string) (*models.Api, error) {
+			return existing, nil
+		},
+	}
+
+	service := services.NewAPIsAPIService(repo)
+	summary, err := service.UpdateOasUri(context.Background(), &models.UpdateApiInput{
+		Id:              "api-123",
+		OrganisationUri: orgURI,
+		Sunset:          models.NewOptionalString("11-11-2027"),
+	})
+
+	assert.Nil(t, summary)
+	assert.Error(t, err)
+	apiErr, ok := err.(problem.APIError)
+	if assert.True(t, ok) {
+		assert.Equal(t, "Request validation failed", apiErr.Title)
+		if assert.Len(t, apiErr.Errors, 1) {
+			assert.Equal(t, "sunset", apiErr.Errors[0].Code)
+			assert.Equal(t, "Moet een geldige datum zijn (YYYY-MM-DD)", apiErr.Errors[0].Detail)
+		}
+	}
 }
 
 func TestCreateApiFromOas_UsesSpecContactOverBody(t *testing.T) {
@@ -320,6 +396,7 @@ func TestUpdateOasUri_PersistsUpdatedFields(t *testing.T) {
 		Id:              "api-123",
 		OasUrl:          srv.URL,
 		OrganisationUri: orgURI,
+		Sunset:          models.NewOptionalString("2027-12-31"),
 		Contact: models.Contact{
 			Name:  "Fallback Naam",
 			Email: "fallback@example.com",
@@ -336,7 +413,7 @@ func TestUpdateOasUri_PersistsUpdatedFields(t *testing.T) {
 	assert.Equal(t, "Nieuwe API", saved.Title)
 	assert.Equal(t, "Nieuwe beschrijving", saved.Description)
 	assert.Equal(t, "2.0.0", saved.Version)
-	assert.Equal(t, "2026-01-01", saved.Sunset)
+	assert.Equal(t, "2027-12-31", saved.Sunset)
 	assert.Equal(t, "2025-01-01", saved.Deprecated)
 	assert.Equal(t, "https://docs.nieuw.example.com", saved.DocsUrl)
 	assert.Equal(t, "Nieuw Contact", saved.ContactName)
@@ -358,6 +435,7 @@ func TestUpdateOasUri_PersistsUpdatedFields(t *testing.T) {
 	assert.Equal(t, srv.URL, summary.OasUrl)
 	assert.Equal(t, "Nieuwe API", summary.Title)
 	assert.Equal(t, "2.0.0", summary.Lifecycle.Version)
+	assert.Equal(t, "2027-12-31", summary.Lifecycle.Sunset)
 }
 
 func TestRefreshChangedApis_UpdatesWhenHashDiffers(t *testing.T) {

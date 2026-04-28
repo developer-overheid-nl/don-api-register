@@ -53,12 +53,21 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 	api, err := s.repo.GetApiByID(ctx, body.Id)
 	if err != nil || api == nil {
 		if api == nil || errors.Is(err, gorm.ErrRecordNotFound) {
+			if !hasOASUpdateInput(body) {
+				return nil, problem.NewNotFound(body.Id, "Api not found")
+			}
 			return nil, fmt.Errorf("%w: %s", ErrNeedsPost, body.OasUrl)
 		}
 		return nil, fmt.Errorf("databasefout: %w", err)
 	}
-	if api.OrganisationID == nil || (*api.Organisation).Uri != body.OrganisationUri {
+	if ownerURI := deriveOrganisationURI(api); ownerURI == "" || ownerURI != strings.TrimSpace(body.OrganisationUri) {
 		return nil, problem.NewForbidden(body.OasUrl, "organisationUri komt niet overeen met eigenaar van deze API")
+	}
+	if err := validateLifecycleOverrides(body); err != nil {
+		return nil, err
+	}
+	if !hasOASUpdateInput(body) {
+		return s.applyLifecycleUpdate(ctx, api, body)
 	}
 
 	oasInput := toolslint.OASInput{
@@ -80,10 +89,10 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 		ArazzoBody:      body.ArazzoBody,
 		OrganisationUri: body.OrganisationUri,
 		Contact:         body.Contact,
-	}, res, true)
+	}, body, res, true)
 }
 
-func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, request models.ApiPost, res *openapi.OASResult, asyncTools bool) (*models.ApiSummary, error) {
+func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, request models.ApiPost, overrides *models.UpdateApiInput, res *openapi.OASResult, asyncTools bool) (*models.ApiSummary, error) {
 	if api == nil {
 		return nil, fmt.Errorf("api ontbreekt")
 	}
@@ -102,6 +111,7 @@ func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, re
 
 	openapi.UpdateApiFromSpec(api, res.Spec, request, orgLabel)
 	applyOASSnapshot(api, res)
+	applyLifecycleOverrides(api, overrides)
 	if api.Organisation == nil && strings.TrimSpace(request.OrganisationUri) != "" {
 		api.Organisation = &models.Organisation{
 			Uri:   request.OrganisationUri,
@@ -129,6 +139,18 @@ func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, re
 		}
 	}
 
+	updated := util.ToApiSummary(api)
+	return &updated, nil
+}
+
+func (s *APIsAPIService) applyLifecycleUpdate(ctx context.Context, api *models.Api, body *models.UpdateApiInput) (*models.ApiSummary, error) {
+	if api == nil {
+		return nil, fmt.Errorf("api ontbreekt")
+	}
+	applyLifecycleOverrides(api, body)
+	if err := s.repo.UpdateApi(ctx, *api); err != nil {
+		return nil, err
+	}
 	updated := util.ToApiSummary(api)
 	return &updated, nil
 }
@@ -229,7 +251,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 		return nil, problem.NewBadRequest(requestBody.OasUrl, err.Error())
 	}
 
-	// 3) Build & validate
+	// 3) Build & validate.
 	var label string
 	var shouldSaveOrg bool
 	if org, err := s.repo.FindOrganisationByURI(context.Background(), requestBody.OrganisationUri); err != nil {
@@ -357,7 +379,7 @@ func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
 			},
 		}
 
-		if _, err := s.applyOASUpdate(ctx, full, req, res, false); err != nil {
+		if _, err := s.applyOASUpdate(ctx, full, req, nil, res, false); err != nil {
 			log.Printf("[oas-refresh] update van api=%s mislukt: %v", full.Id, err)
 			continue
 		}
@@ -943,6 +965,59 @@ func deriveOrganisationURI(api *models.Api) string {
 		return strings.TrimSpace(api.Organisation.Uri)
 	}
 	return ""
+}
+
+func hasOASUpdateInput(body *models.UpdateApiInput) bool {
+	if body == nil {
+		return false
+	}
+	return strings.TrimSpace(body.OasUrl) != "" || strings.TrimSpace(body.OasBody) != ""
+}
+
+func validateLifecycleOverrides(body *models.UpdateApiInput) error {
+	if body == nil {
+		return nil
+	}
+	if err := validateLifecycleDate("sunset", body.Sunset); err != nil {
+		return err
+	}
+	if err := validateLifecycleDate("deprecated", body.Deprecated); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateLifecycleDate(name string, value models.OptionalString) error {
+	if !value.Set || value.Value == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*value.Value)
+	if _, err := time.Parse(time.DateOnly, trimmed); err != nil {
+		return problem.NewBadRequest(trimmed, fmt.Sprintf("%s moet in formaat YYYY-MM-DD zijn", name),
+			problem.InvalidParam{Name: name, Reason: "Moet een geldige datum zijn (YYYY-MM-DD)"},
+		)
+	}
+	return nil
+}
+
+func applyLifecycleOverrides(api *models.Api, body *models.UpdateApiInput) {
+	if api == nil || body == nil {
+		return
+	}
+	if body.Sunset.Set {
+		if body.Sunset.Value == nil {
+			api.Sunset = ""
+		} else {
+			api.Sunset = strings.TrimSpace(*body.Sunset.Value)
+		}
+	}
+	if body.Deprecated.Set {
+		if body.Deprecated.Value == nil {
+			api.Deprecated = ""
+		} else {
+			api.Deprecated = strings.TrimSpace(*body.Deprecated.Value)
+		}
+	}
 }
 
 func toOASInput(post models.ApiPost) toolslint.OASInput {

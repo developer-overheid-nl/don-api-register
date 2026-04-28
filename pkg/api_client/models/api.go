@@ -9,7 +9,11 @@
 
 package models
 
-import "time"
+import (
+	"bytes"
+	"encoding/json"
+	"time"
+)
 
 type Api struct {
 	Id             string        `gorm:"column:id;primaryKey"`
@@ -75,6 +79,37 @@ type Contact struct {
 	Name  string `json:"name"`
 	URL   string `json:"url,omitempty"`
 	Email string `json:"email,omitempty"`
+}
+
+type OptionalString struct {
+	Set   bool
+	Value *string
+}
+
+func NewOptionalString(value string) OptionalString {
+	return OptionalString{
+		Set:   true,
+		Value: &value,
+	}
+}
+
+func NewNullString() OptionalString {
+	return OptionalString{Set: true}
+}
+
+func (s *OptionalString) UnmarshalJSON(data []byte) error {
+	s.Set = true
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		s.Value = nil
+		return nil
+	}
+
+	var value string
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	s.Value = &value
+	return nil
 }
 
 type Lifecycle struct {
@@ -167,13 +202,15 @@ type ApiOasParams struct {
 }
 
 type UpdateApiInput struct {
-	Id              string  `path:"id"` // <-- uit path param
-	OasUrl          string  `json:"oasUrl" binding:"required_without=OasBody,omitempty,url"`
-	OasBody         string  `json:"oasBody,omitempty" binding:"required_without=OasUrl"`
-	ArazzoUrl       string  `json:"arazzoUrl,omitempty"`
-	ArazzoBody      string  `json:"arazzoBody,omitempty"`
-	OrganisationUri string  `json:"organisationUri" binding:"required,url"`
-	Contact         Contact `json:"contact"`
+	Id              string         `path:"id"` // <-- uit path param
+	OasUrl          string         `json:"oasUrl" binding:"required_without_all=OasBody Sunset Deprecated,omitempty,url"`
+	OasBody         string         `json:"oasBody,omitempty" binding:"required_without_all=OasUrl Sunset Deprecated"`
+	ArazzoUrl       string         `json:"arazzoUrl,omitempty"`
+	ArazzoBody      string         `json:"arazzoBody,omitempty"`
+	OrganisationUri string         `json:"organisationUri" binding:"required,url"`
+	Contact         Contact        `json:"contact"`
+	Sunset          OptionalString `json:"sunset,omitempty"`
+	Deprecated      OptionalString `json:"deprecated,omitempty"`
 }
 
 type OrganisationSummary struct {

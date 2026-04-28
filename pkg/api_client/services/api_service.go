@@ -317,10 +317,10 @@ func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
 			log.Printf("[oas-refresh] skip api=%s url=%s: %v", candidate.Id, candidate.OasUri, err)
 			continue
 		}
-		//tijdelijk uit
-		// if res.Hash == candidate.OasHash {
-		// 	continue
-		// }
+
+		if res.Hash == candidate.OasHash {
+			continue
+		}
 
 		full, err := s.repo.GetApiByID(ctx, candidate.Id)
 		if err != nil || full == nil {

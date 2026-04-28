@@ -30,6 +30,7 @@ type stubRepo struct {
 	getOrgs      func(ctx context.Context) ([]models.Organisation, int, error)
 	allApis      func(ctx context.Context) ([]models.Api, error)
 	updateApi    func(ctx context.Context, api models.Api) error
+	updateOAS    func(ctx context.Context, apiID string, oas models.OASMetadata) error
 	delArtifacts func(ctx context.Context, apiID, kind string, keep []string) error
 	filterCounts func(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error)
 }
@@ -71,6 +72,12 @@ func (s *stubRepo) Save(api *models.Api) error            { return s.saveApi(api
 func (s *stubRepo) UpdateApi(ctx context.Context, api models.Api) error {
 	if s.updateApi != nil {
 		return s.updateApi(ctx, api)
+	}
+	return nil
+}
+func (s *stubRepo) UpdateOASMetadata(ctx context.Context, apiID string, oas models.OASMetadata) error {
+	if s.updateOAS != nil {
+		return s.updateOAS(ctx, apiID, oas)
 	}
 	return nil
 }
@@ -337,6 +344,9 @@ func TestUpdateOasUri_PersistsUpdatedFields(t *testing.T) {
 	assert.Equal(t, "https://nieuw.example.com", saved.ContactUrl)
 	assert.Equal(t, res.Hash, saved.OasHash)
 	assert.Equal(t, "api_key", saved.Auth)
+	assert.Equal(t, "3.0.0", saved.OAS.Version)
+	assert.Equal(t, models.OASStatusValid, saved.OAS.Status)
+	assert.Equal(t, "api_key", saved.OAS.Auth)
 	if assert.NotNil(t, saved.OrganisationID) {
 		assert.Equal(t, orgURI, *saved.OrganisationID)
 	}
@@ -419,6 +429,9 @@ func TestRefreshChangedApis_UpdatesWhenHashDiffers(t *testing.T) {
 	assert.Equal(t, srv.URL, updated.OasUri)
 	assert.NotEmpty(t, updated.OasHash)
 	assert.Equal(t, "Dagelijkse refresh", updated.Title)
+	assert.Equal(t, "3.0.0", updated.OAS.Version)
+	assert.Equal(t, models.OASStatusValid, updated.OAS.Status)
+	assert.Equal(t, "", updated.OAS.Auth)
 }
 
 func TestRefreshChangedApis_SkipsWhenHashUnchanged(t *testing.T) {
@@ -436,11 +449,19 @@ func TestRefreshChangedApis_SkipsWhenHashUnchanged(t *testing.T) {
 	res, err := openapihelper.FetchParseValidateAndHash(context.Background(), toolslint.OASInput{OasUrl: srv.URL}, openapihelper.FetchOpts{})
 	assert.NoError(t, err)
 
+	var snapshotUpdates int
 	repo := &stubRepo{
 		allApis: func(ctx context.Context) ([]models.Api, error) {
 			return []models.Api{
 				{Id: "api-static", OasUri: srv.URL, OasHash: res.Hash},
 			}, nil
+		},
+		updateOAS: func(ctx context.Context, apiID string, oas models.OASMetadata) error {
+			snapshotUpdates++
+			assert.Equal(t, "api-static", apiID)
+			assert.Equal(t, "3.0.0", oas.Version)
+			assert.Equal(t, models.OASStatusValid, oas.Status)
+			return nil
 		},
 		getByID: func(ctx context.Context, id string) (*models.Api, error) {
 			t.Fatalf("GetApiByID zou niet aangeroepen moeten worden, maar is aangeroepen met %s", id)
@@ -452,6 +473,43 @@ func TestRefreshChangedApis_SkipsWhenHashUnchanged(t *testing.T) {
 	count, err := service.RefreshChangedApis(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, 0, count)
+	assert.Equal(t, 1, snapshotUpdates)
+}
+
+func TestRefreshChangedApis_MarksOASUnreachableOnFetchError(t *testing.T) {
+	srv := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+		_, _ = w.Write([]byte("upstream kapot"))
+	}))
+
+	var captured models.OASMetadata
+	repo := &stubRepo{
+		allApis: func(ctx context.Context) ([]models.Api, error) {
+			return []models.Api{
+				{
+					Id:     "api-broken",
+					OasUri: srv.URL,
+					OAS: models.OASMetadata{
+						Version: "3.0.0",
+						Auth:    "oauth2",
+					},
+				},
+			}, nil
+		},
+		updateOAS: func(ctx context.Context, apiID string, oas models.OASMetadata) error {
+			assert.Equal(t, "api-broken", apiID)
+			captured = oas
+			return nil
+		},
+	}
+
+	service := services.NewAPIsAPIService(repo)
+	count, err := service.RefreshChangedApis(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, count)
+	assert.Equal(t, "3.0.0", captured.Version)
+	assert.Equal(t, "oauth2", captured.Auth)
+	assert.Equal(t, models.OASStatusUnreachable, captured.Status)
 }
 
 func TestRetrieveApi_Success(t *testing.T) {
@@ -694,6 +752,9 @@ func TestCreateApiFromOas_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, saved.Id, resp.Id)
 	assert.Equal(t, "T", resp.Title)
+	assert.Equal(t, "3.0.0", saved.OAS.Version)
+	assert.Equal(t, models.OASStatusValid, saved.OAS.Status)
+	assert.Equal(t, "", saved.OAS.Auth)
 }
 
 func TestListOrganisations_Service(t *testing.T) {

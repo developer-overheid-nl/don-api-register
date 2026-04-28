@@ -67,6 +67,7 @@ func TestApiRepository_GetApisAppliesFilters(t *testing.T) {
 		{
 			Id:             "active-api",
 			OasUri:         "https://example.com/active.yaml",
+			OAS:            models.OASMetadata{Version: "3.1.0"},
 			Title:          "Active API",
 			Version:        "1.0.0",
 			Auth:           "api_key",
@@ -76,6 +77,7 @@ func TestApiRepository_GetApisAppliesFilters(t *testing.T) {
 		{
 			Id:             "deprecated-api",
 			OasUri:         "https://example.com/deprecated.yaml",
+			OAS:            models.OASMetadata{Version: "3.0.0"},
 			Title:          "Deprecated API",
 			Version:        "2.0.0",
 			Auth:           "oauth2",
@@ -85,10 +87,6 @@ func TestApiRepository_GetApisAppliesFilters(t *testing.T) {
 		},
 	}
 	require.NoError(t, db.Create(&apis).Error)
-	require.NoError(t, db.Create([]models.ApiArtifact{
-		{ID: "art-1", ApiID: "active-api", Kind: "oas", Source: "original", Data: []byte(`{"openapi":"3.1.0"}`)},
-		{ID: "art-2", ApiID: "deprecated-api", Kind: "oas", Source: "original", Data: []byte(`{"openapi":"3.0.0"}`)},
-	}).Error)
 
 	results, pagination, err := repo.GetApis(ctx, 1, 10, &models.ApiFiltersParams{
 		Status:     []string{"deprecated"},
@@ -113,6 +111,7 @@ func TestApiRepository_GetApiFilterCountsRespectOtherFilters(t *testing.T) {
 		{
 			Id:             "api-key-api",
 			OasUri:         "https://example.com/api-key.yaml",
+			OAS:            models.OASMetadata{Version: "3.1.0"},
 			Title:          "API key API",
 			Version:        "1.0.0",
 			Auth:           "api_key",
@@ -122,6 +121,7 @@ func TestApiRepository_GetApiFilterCountsRespectOtherFilters(t *testing.T) {
 		{
 			Id:             "oauth-api",
 			OasUri:         "https://example.com/oauth.yaml",
+			OAS:            models.OASMetadata{Version: "3.0.0"},
 			Title:          "OAuth API",
 			Version:        "2.0.0",
 			Auth:           "oauth2",
@@ -131,10 +131,6 @@ func TestApiRepository_GetApiFilterCountsRespectOtherFilters(t *testing.T) {
 		},
 	}
 	require.NoError(t, db.Create(&apis).Error)
-	require.NoError(t, db.Create([]models.ApiArtifact{
-		{ID: "art-3", ApiID: "api-key-api", Kind: "oas", Source: "original", Data: []byte(`{"openapi":"3.1.0"}`)},
-		{ID: "art-4", ApiID: "oauth-api", Kind: "oas", Source: "original", Data: []byte(`{"openapi":"3.0.0"}`)},
-	}).Error)
 
 	counts, err := repo.GetApiFilterCounts(ctx, &models.ApiFiltersParams{Auth: []string{"oauth2"}})
 	require.NoError(t, err)
@@ -166,18 +162,12 @@ func TestApiRepository_GetApiFilterCounts_SortsByCountThenAlphabetically(t *test
 	require.NoError(t, db.Create(&models.Organisation{Uri: orgURI, Label: "Org 1"}).Error)
 
 	apis := []models.Api{
-		{Id: "api-1", OasUri: "https://example.com/1.yaml", Title: "API 1", OrganisationID: &orgURI},
-		{Id: "api-2", OasUri: "https://example.com/2.yaml", Title: "API 2", OrganisationID: &orgURI},
-		{Id: "api-3", OasUri: "https://example.com/3.yaml", Title: "API 3", OrganisationID: &orgURI},
-		{Id: "api-4", OasUri: "https://example.com/4.yaml", Title: "API 4", OrganisationID: &orgURI},
+		{Id: "api-1", OasUri: "https://example.com/1.yaml", OAS: models.OASMetadata{Version: "3.0.0"}, Title: "API 1", OrganisationID: &orgURI},
+		{Id: "api-2", OasUri: "https://example.com/2.yaml", OAS: models.OASMetadata{Version: "3.0.0"}, Title: "API 2", OrganisationID: &orgURI},
+		{Id: "api-3", OasUri: "https://example.com/3.yaml", OAS: models.OASMetadata{Version: "3.1.0"}, Title: "API 3", OrganisationID: &orgURI},
+		{Id: "api-4", OasUri: "https://example.com/4.yaml", OAS: models.OASMetadata{Version: "3.0.1"}, Title: "API 4", OrganisationID: &orgURI},
 	}
 	require.NoError(t, db.Create(&apis).Error)
-	require.NoError(t, db.Create([]models.ApiArtifact{
-		{ID: "art-5", ApiID: "api-1", Kind: "oas", Source: "original", Data: []byte(`{"openapi":"3.0.0"}`)},
-		{ID: "art-6", ApiID: "api-2", Kind: "oas", Source: "original", Data: []byte(`{"openapi":"3.0.0"}`)},
-		{ID: "art-7", ApiID: "api-3", Kind: "oas", Source: "original", Data: []byte(`{"openapi":"3.1.0"}`)},
-		{ID: "art-8", ApiID: "api-4", Kind: "oas", Source: "original", Data: []byte(`{"openapi":"3.0.1"}`)},
-	}).Error)
 
 	counts, err := repo.GetApiFilterCounts(ctx, &models.ApiFiltersParams{})
 	require.NoError(t, err)
@@ -219,4 +209,34 @@ func TestApiRepository_GetApiFilterCounts_SortsOrganisationsAlphabetically(t *te
 	assert.Equal(t, "Zeta org", counts.Organisation[2].Label)
 	assert.Equal(t, orgZ.Uri, counts.Organisation[2].Value)
 	assert.Equal(t, 2, counts.Organisation[2].Count)
+}
+
+func TestApiRepository_SaveLintResult_PersistsMessageRulesetVersion(t *testing.T) {
+	db := setupDB(t)
+	repo := repositories.NewApiRepository(db)
+	ctx := context.Background()
+
+	result := &models.LintResult{
+		ID:        "lint-result-1",
+		ApiID:     "api-1",
+		Successes: true,
+		Messages: []models.LintMessage{
+			{
+				ID:             "lint-message-1",
+				Severity:       "warning",
+				Code:           "adr-001",
+				RulesetVersion: "2026.04",
+				CreatedAt:      time.Now(),
+			},
+		},
+		CreatedAt: time.Now(),
+	}
+
+	require.NoError(t, repo.SaveLintResult(ctx, result))
+
+	stored, err := repo.GetLintResults(ctx, "api-1")
+	require.NoError(t, err)
+	require.Len(t, stored, 1)
+	require.Len(t, stored[0].Messages, 1)
+	assert.Equal(t, "2026.04", stored[0].Messages[0].RulesetVersion)
 }

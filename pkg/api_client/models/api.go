@@ -15,6 +15,7 @@ type Api struct {
 	Id             string        `gorm:"column:id;primaryKey"`
 	OasUri         string        `json:"oasUrl,omitempty"`
 	OasHash        string        `json:"-" gorm:"column:oas_hash"`
+	OAS            OASMetadata   `gorm:"embedded;embeddedPrefix:oas_" json:"-"`
 	DocsUrl        string        `json:"docsUrl,omitempty"`
 	Title          string        `json:"title,omitempty"`
 	Description    string        `json:"description,omitempty"`
@@ -31,6 +32,19 @@ type Api struct {
 	Sunset         string        `json:"sunset,omitempty"`
 	Deprecated     string        `json:"deprecated,omitempty"`
 }
+
+type OASMetadata struct {
+	Version string `json:"version,omitempty"`
+	Status  string `json:"status,omitempty"`
+	Auth    string `json:"auth,omitempty"`
+}
+
+const (
+	OASStatusUnknown     = "unknown"
+	OASStatusValid       = "valid"
+	OASStatusInvalid     = "invalid"
+	OASStatusUnreachable = "unreachable"
+)
 
 type Organisation struct {
 	Uri   string `gorm:"column:uri;primaryKey" json:"uri"`

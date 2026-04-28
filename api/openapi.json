@@ -384,6 +384,9 @@
                             "code": {
                               "type": "string"
                             },
+                            "rulesetVersion": {
+                              "type": "string"
+                            },
                             "createdAt": {
                               "type": "string",
                               "format": "date-time"
@@ -425,9 +428,6 @@
                             "createdAt"
                           ]
                         }
-                      },
-                      "rulesetVersion": {
-                        "type": "string"
                       }
                     },
                     "required": [

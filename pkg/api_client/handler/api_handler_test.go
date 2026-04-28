@@ -70,8 +70,11 @@ func (s *stubRepo) GetOrganisations(ctx context.Context) ([]models.Organisation,
 }
 
 // unused
-func (s *stubRepo) Save(api *models.Api) error                                       { return nil }
-func (s *stubRepo) UpdateApi(ctx context.Context, api models.Api) error              { return nil }
+func (s *stubRepo) Save(api *models.Api) error                          { return nil }
+func (s *stubRepo) UpdateApi(ctx context.Context, api models.Api) error { return nil }
+func (s *stubRepo) UpdateOASMetadata(ctx context.Context, apiID string, oas models.OASMetadata) error {
+	return nil
+}
 func (s *stubRepo) SaveServer(server models.Server) error                            { return nil }
 func (s *stubRepo) AllApis(ctx context.Context) ([]models.Api, error)                { return nil, nil }
 func (s *stubRepo) SaveLintResult(ctx context.Context, res *models.LintResult) error { return nil }

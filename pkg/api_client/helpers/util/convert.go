@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
@@ -53,6 +54,9 @@ func ToApiDetail(api *models.Api) *models.ApiDetail {
 		ApiSummary: ToApiSummary(api),
 		DocsUrl:    api.DocsUrl,
 		Servers:    servers,
+	}
+	if auth := strings.TrimSpace(api.Auth); auth != "" {
+		detail.Auth = []string{auth}
 	}
 	// Remove Links from detail
 	detail.Links = nil

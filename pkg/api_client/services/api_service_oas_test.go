@@ -36,6 +36,10 @@ func (a *artifactRepoStub) UpdateApi(ctx context.Context, api models.Api) error 
 	a.updates = append(a.updates, api)
 	return nil
 }
+func (a *artifactRepoStub) UpdateOASMetadata(ctx context.Context, apiID string, oas models.OASMetadata) error {
+	a.updates = append(a.updates, models.Api{Id: apiID, OAS: oas})
+	return nil
+}
 func (a *artifactRepoStub) FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api, error) {
 	return nil, nil
 }

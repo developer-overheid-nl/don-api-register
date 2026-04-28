@@ -16,7 +16,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Run Super-Linter
-        uses: super-linter/super-linter@502f4fe48a81a392756e173e39a861f8c8efe056
+        uses: super-linter/super-linter@9e863354e3ff62e0727d37183162c4a88873df41
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_ALL_CODEBASE: true

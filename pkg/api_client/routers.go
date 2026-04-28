@@ -72,6 +72,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		},
 		tonic.Handler(controller.SearchApis, 200),
 	)
+	listApisJson := tonic.Handler(controller.ListApis, 200)
+	listApisJsonLd := tonic.Handler(controller.ListApisJsonLd, 200)
 	publicApis.GET("/apis",
 		[]fizz.OperationOption{
 			fizz.ID("listApis"),
@@ -87,7 +89,13 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 			apiVersionHeaderOption,
 			badRequestResponse,
 		},
-		tonic.Handler(controller.ListApis, 200),
+		func(c *gin.Context) {
+			if handler.AcceptsJsonLd(c.GetHeader("Accept")) {
+				listApisJsonLd(c)
+				return
+			}
+			listApisJson(c)
+		},
 	)
 
 	publicApis.GET("/apis/:id",

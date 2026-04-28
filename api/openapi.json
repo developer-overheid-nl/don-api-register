@@ -116,6 +116,11 @@
                     "$ref": "#/components/schemas/ApiSummary"
                   }
                 }
+              },
+              "application/ld+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApisCollectionJsonLd"
+                }
               }
             }
           },
@@ -1035,6 +1040,64 @@
           "organisation",
           "adrScore",
           "lifecycle"
+        ]
+      },
+      "ApiSummaryJsonLd": {
+        "title": "API (JSON-LD)",
+        "description": "An API from the catalog as a JSON-LD node.",
+        "type": "object",
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "@type": {
+                "type": "string",
+                "enum": [
+                  "dcat:DataService"
+                ]
+              },
+              "dct:conformsTo": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "examples": [
+                  [
+                    "https://spec.openapis.org/oas"
+                  ]
+                ]
+              }
+            },
+            "required": [
+              "@type",
+              "dct:conformsTo"
+            ]
+          },
+          {
+            "$ref": "#/components/schemas/ApiSummary"
+          }
+        ]
+      },
+      "ApisCollectionJsonLd": {
+        "title": "APIs collection (JSON-LD)",
+        "description": "JSON-LD envelope wrapping the list of APIs in a @graph.",
+        "type": "object",
+        "properties": {
+          "@context": {
+            "type": "object",
+            "description": "Inline JSON-LD context mapping the response terms onto DCAT, DCT and vCard vocabularies."
+          },
+          "@graph": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiSummaryJsonLd"
+            }
+          }
+        },
+        "required": [
+          "@context",
+          "@graph"
         ]
       },
       "ApiDetail": {

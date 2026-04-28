@@ -133,6 +133,17 @@ type ApiSummary struct {
 	Lifecycle    Lifecycle           `json:"lifecycle"`
 }
 
+type ApiSummaryJsonLd struct {
+	Type       string   `json:"@type"`
+	ConformsTo []string `json:"dct:conformsTo"`
+	ApiSummary
+}
+
+type ApisCollectionJsonLd struct {
+	Context json.RawMessage    `json:"@context"`
+	Graph   []ApiSummaryJsonLd `json:"@graph"`
+}
+
 type ServerInfo struct {
 	Url         string `json:"url,omitempty"`
 	Description string `json:"description,omitempty"`

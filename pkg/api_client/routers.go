@@ -108,6 +108,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.ListApiFilters, 200),
 	)
 
+	retrieveApiJson := tonic.Handler(controller.RetrieveApi, 200)
+	retrieveApiJsonLd := tonic.Handler(controller.RetrieveApiJsonLd, 200)
 	publicApis.GET("/apis/:id",
 		[]fizz.OperationOption{
 			fizz.ID("retreiveApi"),
@@ -123,7 +125,13 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 			apiVersionHeaderOption,
 			notFoundResponse,
 		},
-		tonic.Handler(controller.RetrieveApi, 200),
+		func(c *gin.Context) {
+			if handler.AcceptsJsonLd(c.GetHeader("Accept")) {
+				retrieveApiJsonLd(c)
+				return
+			}
+			retrieveApiJson(c)
+		},
 	)
 
 	publicApis.GET("/apis/:id/postman",

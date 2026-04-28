@@ -54,6 +54,7 @@ func ToApiDetail(api *models.Api) *models.ApiDetail {
 		ApiSummary: ToApiSummary(api),
 		DocsUrl:    api.DocsUrl,
 		Servers:    servers,
+		OasVersion: strings.TrimSpace(api.OAS.Version),
 	}
 	if auth := strings.TrimSpace(api.Auth); auth != "" {
 		detail.Auth = []string{auth}

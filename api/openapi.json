@@ -493,6 +493,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ApiDetail"
                 }
+              },
+              "application/ld+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiDetailJsonLd"
+                }
               }
             }
           },
@@ -1333,6 +1338,85 @@
           "label",
           "description",
           "type"
+        ]
+      },
+      "ApiDetailJsonLd": {
+        "title": "API (JSON-LD)",
+        "description": "JSON-LD representation of an API as a dcat:DataService. Returned when Accept: application/ld+json is requested on /apis/{id}.",
+        "type": "object",
+        "properties": {
+          "@context": {
+            "type": "object",
+            "description": "Inline JSON-LD context defining the dcat, dct and vcard prefixes plus type-coercions for IRI-valued properties."
+          },
+          "@type": {
+            "type": "string",
+            "enum": [
+              "dcat:DataService"
+            ]
+          },
+          "dct:conformsTo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "examples": [
+              [
+                "https://spec.openapis.org/oas"
+              ]
+            ]
+          },
+          "dct:identifier": {
+            "type": "string",
+            "examples": [
+              "dicF0B3HR"
+            ]
+          },
+          "dct:title": {
+            "type": "string"
+          },
+          "dct:description": {
+            "type": "string"
+          },
+          "dcat:endpointDescription": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the OpenAPI document describing this DataService."
+          },
+          "dcat:contactPoint": {
+            "type": "object",
+            "properties": {
+              "vcard:fn": {
+                "type": "string"
+              },
+              "vcard:hasEmail": {
+                "type": "string",
+                "format": "uri",
+                "description": "mailto: IRI."
+              },
+              "vcard:hasURL": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "vcard:fn"
+            ]
+          },
+          "dct:publisher": {
+            "type": "string",
+            "format": "uri",
+            "description": "IRI of the publishing organisation."
+          }
+        },
+        "required": [
+          "@context",
+          "@type",
+          "dct:conformsTo",
+          "dct:identifier",
+          "dct:title",
+          "dcat:contactPoint"
         ]
       },
       "ApiInput": {

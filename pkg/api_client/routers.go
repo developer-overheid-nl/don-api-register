@@ -1,6 +1,9 @@
 package api_client
 
 import (
+	"path/filepath"
+	"runtime"
+
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/handler"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/gin-contrib/cors"
@@ -255,7 +258,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	)
 
 	// 6) OpenAPI documentatie
-	g.StaticFile("/v1/openapi.json", "./api/openapi.json")
+	g.StaticFile("/v1/openapi.json", openAPISpecPath())
 
 	return f
 }
@@ -275,4 +278,12 @@ func APIVersionMiddleware(version string) gin.HandlerFunc {
 		c.Writer = &apiVersionWriter{c.Writer, version}
 		c.Next()
 	}
+}
+
+func openAPISpecPath() string {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return "./api/openapi.json"
+	}
+	return filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", "api", "openapi.json"))
 }

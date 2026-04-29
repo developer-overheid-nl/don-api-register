@@ -21,6 +21,7 @@ import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/testutil"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -158,6 +159,20 @@ func (e *integrationEnv) doRequest(t *testing.T, method, path string) *http.Resp
 	return resp
 }
 
+func (e *integrationEnv) doRequestWithHeaders(t *testing.T, method, path string, headers map[string]string) *http.Response {
+	t.Helper()
+
+	req, err := http.NewRequest(method, e.server.URL+path, nil)
+	require.NoError(t, err)
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	resp, err := e.client.Do(req)
+	require.NoError(t, err)
+	return resp
+}
+
 func (e *integrationEnv) doJSONRequest(t *testing.T, method, path string, payload any) *http.Response {
 	t.Helper()
 
@@ -187,6 +202,17 @@ func decodeBody[T any](t *testing.T, resp *http.Response) T {
 	err = json.Unmarshal(data, &out)
 	require.NoErrorf(t, err, "body=%s", string(data))
 	return out
+}
+
+func readRawBody(t *testing.T, resp *http.Response) []byte {
+	t.Helper()
+	defer func() {
+		require.NoError(t, resp.Body.Close())
+	}()
+
+	data, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	return data
 }
 
 func TestRealtimeApplicationRun(t *testing.T) {
@@ -449,5 +475,446 @@ func TestUpdateApi_LifecycleOnlyWithoutOAS(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, saved.Sunset)
 		require.Equal(t, "2027-02-02", saved.Deprecated)
+	})
+}
+
+func TestOpenAPIJSONEndpoint(t *testing.T) {
+	env := newIntegrationEnv(t)
+
+	resp := env.doRequest(t, http.MethodGet, "/v1/openapi.json")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, "test-version", resp.Header.Get("API-Version"))
+
+	body := readRawBody(t, resp)
+	require.Contains(t, string(body), `"openapi"`)
+	require.Contains(t, string(body), `"paths"`)
+}
+
+func TestRetrieveApiJsonLdEndpoint_SuccessAndNotFound(t *testing.T) {
+	env := newIntegrationEnv(t)
+	ctx := context.Background()
+
+	org, err := env.service.CreateOrganisation(ctx, &models.Organisation{
+		Uri:   "https://voorbeelden.example.com/organisaties/jsonld",
+		Label: "JSON-LD Org",
+	})
+	require.NoError(t, err)
+
+	apiID := uuid.NewString()
+	require.NoError(t, env.repo.Save(&models.Api{
+		Id:             apiID,
+		OasUri:         "https://voorbeelden.example.com/apis/jsonld/openapi.json",
+		Title:          "JSON-LD API",
+		Description:    "JSON-LD beschrijving",
+		ContactName:    "JSON-LD Team",
+		ContactEmail:   "jsonld@example.com",
+		ContactUrl:     "https://voorbeelden.example.com/contact",
+		OrganisationID: &org.Uri,
+		Organisation:   org,
+		OAS:            models.OASMetadata{Version: "3.1.0"},
+	}))
+
+	t.Run("success", func(t *testing.T) {
+		resp := env.doRequestWithHeaders(t, http.MethodGet, "/v1/apis/"+apiID, map[string]string{
+			"Accept": "application/ld+json",
+		})
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, "test-version", resp.Header.Get("API-Version"))
+		require.Contains(t, resp.Header.Get("Content-Type"), "application/ld+json")
+
+		body := decodeBody[models.ApiDetailJsonLd](t, resp)
+		require.Equal(t, "dcat:DataService", body.Type)
+		require.Equal(t, apiID, body.Identifier)
+		require.Equal(t, "JSON-LD API", body.Title)
+		require.Equal(t, "JSON-LD beschrijving", body.Description)
+		require.Equal(t, "https://voorbeelden.example.com/apis/jsonld/openapi.json", body.EndpointDescription)
+		require.Equal(t, "JSON-LD Team", body.ContactPoint.FN)
+		require.Equal(t, "mailto:jsonld@example.com", body.ContactPoint.HasEmail)
+		require.Equal(t, "https://voorbeelden.example.com/contact", body.ContactPoint.HasURL)
+		require.Equal(t, org.Uri, body.Publisher)
+		require.Equal(t, []string{"https://spec.openapis.org/oas/v3.1.0.html"}, body.ConformsTo)
+	})
+
+	t.Run("missing api", func(t *testing.T) {
+		resp := env.doRequestWithHeaders(t, http.MethodGet, "/v1/apis/"+uuid.NewString(), map[string]string{
+			"Accept": "application/ld+json",
+		})
+		require.Equal(t, http.StatusNotFound, resp.StatusCode)
+
+		prob := decodeBody[problem.APIError](t, resp)
+		require.Equal(t, 404, prob.Status)
+		require.Contains(t, prob.Errors[0].Detail, "Api not found")
+	})
+}
+
+func TestListLintResultsEndpoint(t *testing.T) {
+	env := newIntegrationEnv(t)
+	ctx := context.Background()
+
+	org, err := env.service.CreateOrganisation(ctx, &models.Organisation{
+		Uri:   "https://voorbeelden.example.com/organisaties/lint",
+		Label: "Lint Org",
+	})
+	require.NoError(t, err)
+
+	apiID := uuid.NewString()
+	require.NoError(t, env.repo.Save(&models.Api{
+		Id:             apiID,
+		OasUri:         "https://voorbeelden.example.com/apis/lint/openapi.json",
+		Title:          "Lint API",
+		ContactName:    "Lint Team",
+		ContactEmail:   "lint@example.com",
+		ContactUrl:     "https://voorbeelden.example.com/contact",
+		OrganisationID: &org.Uri,
+		Organisation:   org,
+	}))
+
+	createdAt := time.Now().UTC().Truncate(time.Second)
+	require.NoError(t, env.repo.SaveLintResult(ctx, &models.LintResult{
+		ID:        uuid.NewString(),
+		ApiID:     apiID,
+		Successes: false,
+		Failures:  1,
+		Warnings:  2,
+		CreatedAt: createdAt,
+		Messages: []models.LintMessage{
+			{
+				ID:             uuid.NewString(),
+				Line:           12,
+				Column:         4,
+				Severity:       "warning",
+				Code:           "adr-001",
+				RulesetVersion: "2026.04",
+				CreatedAt:      createdAt,
+				Infos: []models.LintMessageInfo{
+					{
+						ID:      uuid.NewString(),
+						Message: "Gebruik een beschrijving",
+						Path:    "$.info.description",
+					},
+				},
+			},
+		},
+	}))
+
+	resp := env.doRequest(t, http.MethodGet, "/v1/lint-results")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, "test-version", resp.Header.Get("API-Version"))
+
+	results := decodeBody[[]models.LintResult](t, resp)
+	require.Len(t, results, 1)
+	require.Equal(t, apiID, results[0].ApiID)
+	require.Len(t, results[0].Messages, 1)
+	require.Equal(t, "adr-001", results[0].Messages[0].Code)
+	require.Equal(t, "2026.04", results[0].Messages[0].RulesetVersion)
+	require.Len(t, results[0].Messages[0].Infos, 1)
+	require.Equal(t, "$.info.description", results[0].Messages[0].Infos[0].Path)
+}
+
+func TestPostmanEndpoint_Success(t *testing.T) {
+	env := newIntegrationEnv(t)
+	ctx := context.Background()
+
+	org, err := env.service.CreateOrganisation(ctx, &models.Organisation{
+		Uri:   "https://voorbeelden.example.com/organisaties/postman",
+		Label: "Postman Org",
+	})
+	require.NoError(t, err)
+
+	apiID := uuid.NewString()
+	require.NoError(t, env.repo.Save(&models.Api{
+		Id:             apiID,
+		OasUri:         "https://voorbeelden.example.com/apis/postman/openapi.json",
+		Title:          "Postman API",
+		ContactName:    "Postman Team",
+		ContactEmail:   "postman@example.com",
+		ContactUrl:     "https://voorbeelden.example.com/contact",
+		OrganisationID: &org.Uri,
+		Organisation:   org,
+	}))
+	require.NoError(t, env.repo.SaveArtifact(ctx, &models.ApiArtifact{
+		ID:          uuid.NewString(),
+		ApiID:       apiID,
+		Kind:        "postman",
+		Filename:    "postman.json",
+		ContentType: "application/json",
+		Data:        []byte(`{"info":{"name":"Postman API"}}`),
+		CreatedAt:   time.Now(),
+	}))
+
+	resp := env.doRequest(t, http.MethodGet, "/v1/apis/"+apiID+"/postman")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, "test-version", resp.Header.Get("API-Version"))
+	require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
+	require.Contains(t, resp.Header.Get("Content-Disposition"), `filename="postman.json"`)
+	require.JSONEq(t, `{"info":{"name":"Postman API"}}`, string(readRawBody(t, resp)))
+}
+
+func TestOASEndpoint_SuccessAndErrors(t *testing.T) {
+	env := newIntegrationEnv(t)
+	ctx := context.Background()
+
+	org, err := env.service.CreateOrganisation(ctx, &models.Organisation{
+		Uri:   "https://voorbeelden.example.com/organisaties/oas",
+		Label: "OAS Org",
+	})
+	require.NoError(t, err)
+
+	apiID := uuid.NewString()
+	require.NoError(t, env.repo.Save(&models.Api{
+		Id:             apiID,
+		OasUri:         "https://voorbeelden.example.com/apis/oas/openapi.json",
+		Title:          "OAS API",
+		ContactName:    "OAS Team",
+		ContactEmail:   "oas@example.com",
+		ContactUrl:     "https://voorbeelden.example.com/contact",
+		OrganisationID: &org.Uri,
+		Organisation:   org,
+	}))
+	require.NoError(t, env.repo.SaveArtifact(ctx, &models.ApiArtifact{
+		ID:          uuid.NewString(),
+		ApiID:       apiID,
+		Kind:        "oas",
+		Version:     "3.1",
+		Format:      "json",
+		Source:      "converted",
+		Filename:    "oas-3.1-converted.json",
+		ContentType: "application/json",
+		Data:        []byte(`{"openapi":"3.1.0"}`),
+		CreatedAt:   time.Now(),
+	}))
+
+	t.Run("success", func(t *testing.T) {
+		resp := env.doRequest(t, http.MethodGet, "/v1/apis/"+apiID+"/oas/3.1.json")
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, "test-version", resp.Header.Get("API-Version"))
+		require.Equal(t, "3.1", resp.Header.Get("OAS-Version"))
+		require.Equal(t, "converted", resp.Header.Get("OAS-Source"))
+		require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
+		require.Contains(t, resp.Header.Get("Content-Disposition"), `filename="oas-3.1-converted.json"`)
+		require.JSONEq(t, `{"openapi":"3.1.0"}`, string(readRawBody(t, resp)))
+	})
+
+	t.Run("invalid version", func(t *testing.T) {
+		resp := env.doRequest(t, http.MethodGet, "/v1/apis/"+apiID+"/oas/3.2.json")
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		prob := decodeBody[problem.APIError](t, resp)
+		require.Equal(t, 400, prob.Status)
+	})
+
+	t.Run("missing artifact", func(t *testing.T) {
+		resp := env.doRequest(t, http.MethodGet, "/v1/apis/"+apiID+"/oas/3.0.yaml")
+		require.Equal(t, http.StatusNotFound, resp.StatusCode)
+		prob := decodeBody[problem.APIError](t, resp)
+		require.Equal(t, 404, prob.Status)
+		require.Contains(t, prob.Errors[0].Detail, "OAS artifact not found")
+	})
+}
+
+func TestCreateOrganisationEndpoint_Success(t *testing.T) {
+	env := newIntegrationEnv(t)
+
+	resp := env.doJSONRequest(t, http.MethodPost, "/v1/organisations", map[string]string{
+		"uri":   "https://voorbeelden.example.com/organisaties/nieuw",
+		"label": "Nieuwe Org",
+	})
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+	require.Equal(t, "test-version", resp.Header.Get("API-Version"))
+
+	org := decodeBody[models.Organisation](t, resp)
+	require.Equal(t, "https://voorbeelden.example.com/organisaties/nieuw", org.Uri)
+	require.Equal(t, "Nieuwe Org", org.Label)
+}
+
+func TestCreateApiEndpoint_SuccessAndErrors(t *testing.T) {
+	env := newIntegrationEnv(t)
+	ctx := context.Background()
+
+	org, err := env.service.CreateOrganisation(ctx, &models.Organisation{
+		Uri:   "https://voorbeelden.example.com/organisaties/create-api",
+		Label: "Create API Org",
+	})
+	require.NoError(t, err)
+
+	spec := `{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Created API",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Team",
+      "email": "api@example.com",
+      "url": "https://example.com/contact"
+    }
+  },
+  "paths": {
+    "/ping": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "pong"
+          }
+        }
+      }
+    }
+  }
+}`
+	oasSrv := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(spec))
+	}))
+
+	t.Run("success", func(t *testing.T) {
+		resp := env.doJSONRequest(t, http.MethodPost, "/v1/apis", map[string]any{
+			"oasUrl":          oasSrv.URL,
+			"organisationUri": org.Uri,
+		})
+		require.Equal(t, http.StatusCreated, resp.StatusCode)
+		require.Equal(t, "test-version", resp.Header.Get("API-Version"))
+
+		summary := decodeBody[models.ApiSummary](t, resp)
+		require.NotEmpty(t, summary.Id)
+		require.Equal(t, "Created API", summary.Title)
+		require.Equal(t, org.Uri, summary.Organisation.Uri)
+
+		saved, err := env.repo.GetApiByID(ctx, summary.Id)
+		require.NoError(t, err)
+		require.Equal(t, "Created API", saved.Title)
+		require.Equal(t, oasSrv.URL, saved.OasUri)
+		require.Equal(t, "1.0.0", saved.Version)
+	})
+
+	t.Run("validation error", func(t *testing.T) {
+		resp := env.doJSONRequest(t, http.MethodPost, "/v1/apis", map[string]any{
+			"organisationUri": org.Uri,
+		})
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		prob := decodeBody[problem.APIError](t, resp)
+		require.Equal(t, 400, prob.Status)
+	})
+
+	t.Run("duplicate api", func(t *testing.T) {
+		resp := env.doJSONRequest(t, http.MethodPost, "/v1/apis", map[string]any{
+			"oasUrl":          oasSrv.URL,
+			"organisationUri": org.Uri,
+		})
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		prob := decodeBody[problem.APIError](t, resp)
+		require.Equal(t, 400, prob.Status)
+	})
+}
+
+func TestUpdateApiEndpoint_OASSuccessAndErrors(t *testing.T) {
+	env := newIntegrationEnv(t)
+	ctx := context.Background()
+
+	org, err := env.service.CreateOrganisation(ctx, &models.Organisation{
+		Uri:   "https://voorbeelden.example.com/organisaties/update-api",
+		Label: "Update API Org",
+	})
+	require.NoError(t, err)
+
+	apiID := uuid.NewString()
+	require.NoError(t, env.repo.Save(&models.Api{
+		Id:             apiID,
+		OasUri:         "https://voorbeelden.example.com/apis/update-api/old.json",
+		OasHash:        "outdated",
+		Title:          "Old API",
+		ContactName:    "Old Team",
+		ContactEmail:   "old@example.com",
+		ContactUrl:     "https://example.com/old-contact",
+		OrganisationID: &org.Uri,
+		Organisation:   org,
+		Version:        "0.9.0",
+	}))
+
+	spec := `{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Updated API",
+    "version": "2.0.0",
+    "contact": {
+      "name": "Updated Team",
+      "email": "updated@example.com",
+      "url": "https://example.com/updated-contact"
+    }
+  },
+  "externalDocs": {
+    "url": "https://example.com/docs"
+  },
+  "paths": {
+    "/ping": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "pong"
+          }
+        }
+      }
+    }
+  }
+}`
+	oasSrv := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(spec))
+	}))
+
+	t.Run("success", func(t *testing.T) {
+		resp := env.doJSONRequest(t, http.MethodPut, "/v1/apis/"+apiID, map[string]any{
+			"oasUrl":          oasSrv.URL,
+			"organisationUri": org.Uri,
+		})
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, "test-version", resp.Header.Get("API-Version"))
+
+		summary := decodeBody[models.ApiSummary](t, resp)
+		require.Equal(t, apiID, summary.Id)
+		require.Equal(t, "Updated API", summary.Title)
+		require.Equal(t, "2.0.0", summary.Lifecycle.Version)
+
+		saved, err := env.repo.GetApiByID(ctx, apiID)
+		require.NoError(t, err)
+		require.Equal(t, "Updated API", saved.Title)
+		require.Equal(t, "2.0.0", saved.Version)
+		require.Equal(t, "Updated Team", saved.ContactName)
+		require.Equal(t, oasSrv.URL, saved.OasUri)
+	})
+
+	t.Run("invalid lifecycle date", func(t *testing.T) {
+		resp := env.doJSONRequest(t, http.MethodPut, "/v1/apis/"+apiID, map[string]any{
+			"organisationUri": org.Uri,
+			"sunset":          "morgen",
+		})
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		prob := decodeBody[problem.APIError](t, resp)
+		require.Equal(t, 400, prob.Status)
+	})
+
+	t.Run("missing api", func(t *testing.T) {
+		resp := env.doJSONRequest(t, http.MethodPut, "/v1/apis/"+uuid.NewString(), map[string]any{
+			"oasUrl":          oasSrv.URL,
+			"organisationUri": org.Uri,
+		})
+		require.Equal(t, http.StatusNotFound, resp.StatusCode)
+		prob := decodeBody[problem.APIError](t, resp)
+		require.Equal(t, 404, prob.Status)
+	})
+}
+
+func TestListAndSearchEndpoints_InvalidPagination(t *testing.T) {
+	env := newIntegrationEnv(t)
+
+	t.Run("list apis invalid page", func(t *testing.T) {
+		resp := env.doRequest(t, http.MethodGet, "/v1/apis?page=abc")
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		prob := decodeBody[problem.APIError](t, resp)
+		require.Equal(t, 400, prob.Status)
+	})
+
+	t.Run("search apis invalid page", func(t *testing.T) {
+		resp := env.doRequest(t, http.MethodGet, "/v1/apis/_search?q=test&page=abc")
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		prob := decodeBody[problem.APIError](t, resp)
+		require.Equal(t, 400, prob.Status)
 	})
 }

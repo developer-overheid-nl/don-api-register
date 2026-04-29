@@ -180,6 +180,25 @@ type ApiDetail struct {
 	DocsUrl     string       `json:"docsUrl,omitempty"`
 	Servers     []ServerInfo `json:"servers,omitempty"`
 	LintResults []LintResult `json:"lintResults,omitempty"`
+	OasVersion  string       `json:"-"`
+}
+
+type ContactJsonLd struct {
+	FN       string `json:"vcard:fn"`
+	HasEmail string `json:"vcard:hasEmail,omitempty"`
+	HasURL   string `json:"vcard:hasURL,omitempty"`
+}
+
+type ApiDetailJsonLd struct {
+	Context             json.RawMessage `json:"@context"`
+	Type                string          `json:"@type"`
+	ConformsTo          []string        `json:"dct:conformsTo"`
+	Identifier          string          `json:"dct:identifier"`
+	Title               string          `json:"dct:title"`
+	Description         string          `json:"dct:description,omitempty"`
+	EndpointDescription string          `json:"dcat:endpointDescription,omitempty"`
+	ContactPoint        ContactJsonLd   `json:"dcat:contactPoint"`
+	Publisher           string          `json:"dct:publisher,omitempty"`
 }
 
 type ApiPost struct {

@@ -1,6 +1,9 @@
 package api_client
 
 import (
+	"net/http"
+
+	apispec "github.com/developer-overheid-nl/don-api-register/api"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/handler"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/gin-contrib/cors"
@@ -108,6 +111,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		tonic.Handler(controller.ListApiFilters, 200),
 	)
 
+	retrieveApiJson := tonic.Handler(controller.RetrieveApi, 200)
+	retrieveApiJsonLd := tonic.Handler(controller.RetrieveApiJsonLd, 200)
 	publicApis.GET("/apis/:id",
 		[]fizz.OperationOption{
 			fizz.ID("retreiveApi"),
@@ -123,7 +128,14 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 			apiVersionHeaderOption,
 			notFoundResponse,
 		},
-		tonic.Handler(controller.RetrieveApi, 200),
+		func(c *gin.Context) {
+			c.Writer.Header().Add("Vary", "Accept")
+			if handler.AcceptsJsonLd(c.GetHeader("Accept")) {
+				retrieveApiJsonLd(c)
+				return
+			}
+			retrieveApiJson(c)
+		},
 	)
 
 	publicApis.GET("/apis/:id/postman",
@@ -247,7 +259,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	)
 
 	// 6) OpenAPI documentatie
-	g.StaticFile("/v1/openapi.json", "./api/openapi.json")
+	g.GET("/v1/openapi.json", serveOpenAPISpec)
+	g.HEAD("/v1/openapi.json", serveOpenAPISpec)
 
 	return f
 }
@@ -267,4 +280,9 @@ func APIVersionMiddleware(version string) gin.HandlerFunc {
 		c.Writer = &apiVersionWriter{c.Writer, version}
 		c.Next()
 	}
+}
+
+func serveOpenAPISpec(c *gin.Context) {
+	data := apispec.OpenAPIJSON()
+	c.Data(http.StatusOK, "application/json; charset=utf-8", data)
 }

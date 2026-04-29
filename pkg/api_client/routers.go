@@ -129,6 +129,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 			notFoundResponse,
 		},
 		func(c *gin.Context) {
+			c.Writer.Header().Add("Vary", "Accept")
 			if handler.AcceptsJsonLd(c.GetHeader("Accept")) {
 				retrieveApiJsonLd(c)
 				return

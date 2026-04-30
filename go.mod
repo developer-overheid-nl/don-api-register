@@ -67,7 +67,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/joho/godotenv v1.5.1
-	github.com/pb33f/libopenapi v0.36.2
+	github.com/pb33f/libopenapi v0.36.3
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	golang.org/x/crypto v0.50.0 // indirect
 	golang.org/x/sync v0.20.0

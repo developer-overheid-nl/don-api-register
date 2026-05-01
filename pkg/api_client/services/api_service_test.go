@@ -193,6 +193,90 @@ func TestUpdateOasUri_LifecycleOnlyUpdateWithoutOAS(t *testing.T) {
 	assert.Equal(t, "2026-10-10", saved.Deprecated)
 }
 
+func TestUpdateOasUri_LifecycleOnlyUpdateWithUnchangedUnavailableOASURL(t *testing.T) {
+	orgURI := "https://example.org/org"
+	oasURL := "https://unavailable.example.com/openapi.json"
+	existing := &models.Api{
+		Id:           "api-123",
+		OasUri:       oasURL,
+		Title:        "Bestaande API",
+		Sunset:       "2024-01-01",
+		Organisation: &models.Organisation{Uri: orgURI, Label: "Org Label"},
+	}
+	existing.OrganisationID = &orgURI
+
+	var saved models.Api
+	repo := &stubRepo{
+		getByID: func(ctx context.Context, id string) (*models.Api, error) {
+			assert.Equal(t, "api-123", id)
+			return existing, nil
+		},
+		updateApi: func(ctx context.Context, api models.Api) error {
+			saved = api
+			return nil
+		},
+	}
+
+	service := services.NewAPIsAPIService(repo)
+	summary, err := service.UpdateOasUri(context.Background(), &models.UpdateApiInput{
+		Id:              "api-123",
+		OasUrl:          oasURL,
+		OrganisationUri: orgURI,
+		Sunset:          models.NewOptionalString("2023-12-31"),
+	})
+
+	assert.NoError(t, err)
+	if assert.NotNil(t, summary) {
+		assert.Equal(t, "2023-12-31", summary.Lifecycle.Sunset)
+	}
+	assert.Equal(t, oasURL, saved.OasUri)
+	assert.Equal(t, "2023-12-31", saved.Sunset)
+}
+
+func TestUpdateOasUri_UnchangedOASURLWithoutSunsetStillValidatesOAS(t *testing.T) {
+	orgURI := "https://example.org/org"
+	var requests int
+	srv := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		http.Error(w, "oas unavailable", http.StatusGone)
+	}))
+
+	existing := &models.Api{
+		Id:           "api-123",
+		OasUri:       srv.URL,
+		Title:        "Bestaande API",
+		Organisation: &models.Organisation{Uri: orgURI, Label: "Org Label"},
+	}
+	existing.OrganisationID = &orgURI
+
+	var updateCalled bool
+	repo := &stubRepo{
+		getByID: func(ctx context.Context, id string) (*models.Api, error) {
+			assert.Equal(t, "api-123", id)
+			return existing, nil
+		},
+		updateApi: func(ctx context.Context, api models.Api) error {
+			updateCalled = true
+			return nil
+		},
+	}
+
+	service := services.NewAPIsAPIService(repo)
+	summary, err := service.UpdateOasUri(context.Background(), &models.UpdateApiInput{
+		Id:              "api-123",
+		OasUrl:          srv.URL,
+		OrganisationUri: orgURI,
+		Contact: models.Contact{
+			Name: "Nieuw Contact",
+		},
+	})
+
+	assert.Nil(t, summary)
+	assert.Error(t, err)
+	assert.Equal(t, 1, requests)
+	assert.False(t, updateCalled)
+}
+
 func TestUpdateOasUri_InvalidLifecycleDate(t *testing.T) {
 	orgURI := "https://example.org/org"
 	existing := &models.Api{

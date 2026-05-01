@@ -69,6 +69,9 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 	if !hasOASUpdateInput(body) {
 		return s.applyLifecycleUpdate(ctx, api, body)
 	}
+	if body.Sunset.Set && !hasOASDocumentChange(api, body) {
+		return s.applyLifecycleUpdate(ctx, api, body)
+	}
 
 	oasInput := toolslint.OASInput{
 		OasUrl:  body.OasUrl,
@@ -972,6 +975,23 @@ func hasOASUpdateInput(body *models.UpdateApiInput) bool {
 		return false
 	}
 	return strings.TrimSpace(body.OasUrl) != "" || strings.TrimSpace(body.OasBody) != ""
+}
+
+func hasOASDocumentChange(api *models.Api, body *models.UpdateApiInput) bool {
+	if body == nil {
+		return false
+	}
+	if strings.TrimSpace(body.OasBody) != "" {
+		return true
+	}
+	requestedURL := strings.TrimSpace(body.OasUrl)
+	if requestedURL == "" {
+		return false
+	}
+	if api == nil {
+		return true
+	}
+	return requestedURL != strings.TrimSpace(api.OasUri)
 }
 
 func validateLifecycleOverrides(body *models.UpdateApiInput) error {

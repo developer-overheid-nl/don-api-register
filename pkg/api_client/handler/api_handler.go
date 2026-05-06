@@ -75,6 +75,21 @@ func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, params *models.ApiPara
 	return api, nil
 }
 
+// GetApiFeed handles GET /apis/:id/feed
+func (c *APIsAPIController) GetApiFeed(ctx *gin.Context, params *models.ApiParams) error {
+	apiURL := absoluteRequestURL(ctx, fmt.Sprintf("/v1/apis/%s", params.Id))
+	feedURL := absoluteCurrentRequestURL(ctx)
+	data, err := c.Service.GetApiFeed(ctx.Request.Context(), params.Id, apiURL, feedURL)
+	if err != nil {
+		return err
+	}
+	if data == nil {
+		return problem.NewNotFound(params.Id, "Api not found")
+	}
+	ctx.Data(200, "application/rss+xml; charset=utf-8", data)
+	return nil
+}
+
 // ListLintResults handles GET /lint-results
 func (c *APIsAPIController) ListLintResults(ctx *gin.Context) ([]models.LintResult, error) {
 	return c.Service.ListLintResults(ctx.Request.Context())
@@ -249,4 +264,33 @@ func normalizeOASVersion(version string) (string, error) {
 		return "", fmt.Errorf("ondersteunde versies zijn 3.0 en 3.1")
 	}
 	return fmt.Sprintf("3.%d", minorInt), nil
+}
+
+func absoluteRequestURL(ctx *gin.Context, path string) string {
+	scheme := "http"
+	if ctx.Request.TLS != nil {
+		scheme = "https"
+	}
+	if forwarded := strings.TrimSpace(ctx.GetHeader("X-Forwarded-Proto")); forwarded != "" {
+		scheme = strings.Split(forwarded, ",")[0]
+	}
+	host := ctx.Request.Host
+	if forwarded := strings.TrimSpace(ctx.GetHeader("X-Forwarded-Host")); forwarded != "" {
+		host = strings.Split(forwarded, ",")[0]
+	}
+	if prefix := strings.TrimRight(strings.TrimSpace(ctx.GetHeader("X-Forwarded-Prefix")), "/"); prefix != "" && !strings.HasPrefix(path, prefix+"/") {
+		path = prefix + path
+	}
+	return fmt.Sprintf("%s://%s%s", strings.TrimSpace(scheme), strings.TrimSpace(host), path)
+}
+
+func absoluteCurrentRequestURL(ctx *gin.Context) string {
+	if ctx.Request == nil || ctx.Request.URL == nil {
+		return ""
+	}
+	path := ctx.Request.URL.RequestURI()
+	if strings.TrimSpace(path) == "" {
+		path = ctx.Request.URL.Path
+	}
+	return absoluteRequestURL(ctx, path)
 }

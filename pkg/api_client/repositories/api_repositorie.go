@@ -36,6 +36,8 @@ type ApiRepository interface {
 	GetArtifact(ctx context.Context, apiID, kind string) (*models.ApiArtifact, error)
 	DeleteArtifactsByKind(ctx context.Context, apiID, kind string, keepIDs []string) error
 	GetApiFilterCounts(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error)
+	SaveApiFeedEvent(ctx context.Context, event *models.ApiFeedEvent) error
+	ListApiFeedEvents(ctx context.Context, apiID string, limit int) ([]models.ApiFeedEvent, error)
 }
 
 type apiRepository struct {
@@ -180,6 +182,23 @@ func (r *apiRepository) GetApiFilterCounts(ctx context.Context, p *models.ApiFil
 	})
 
 	return result, nil
+}
+
+func (r *apiRepository) SaveApiFeedEvent(ctx context.Context, event *models.ApiFeedEvent) error {
+	return r.db.WithContext(ctx).Create(event).Error
+}
+
+func (r *apiRepository) ListApiFeedEvents(ctx context.Context, apiID string, limit int) ([]models.ApiFeedEvent, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	var events []models.ApiFeedEvent
+	err := r.db.WithContext(ctx).
+		Where("api_id = ?", apiID).
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&events).Error
+	return events, err
 }
 
 func apiOpenAPIVersion(api models.Api) string {

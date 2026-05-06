@@ -34,6 +34,8 @@ type stubRepo struct {
 	updateOAS    func(ctx context.Context, apiID string, oas models.OASMetadata) error
 	delArtifacts func(ctx context.Context, apiID, kind string, keep []string) error
 	filterCounts func(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error)
+	saveFeed     func(ctx context.Context, event *models.ApiFeedEvent) error
+	listFeed     func(ctx context.Context, apiID string, limit int) ([]models.ApiFeedEvent, error)
 }
 
 func (s *stubRepo) FindByOasUrl(ctx context.Context, url string) (*models.Api, error) {
@@ -120,6 +122,18 @@ func (s *stubRepo) GetApiFilterCounts(ctx context.Context, p *models.ApiFiltersP
 	}
 	return &models.ApiFilterCounts{}, nil
 }
+func (s *stubRepo) SaveApiFeedEvent(ctx context.Context, event *models.ApiFeedEvent) error {
+	if s.saveFeed != nil {
+		return s.saveFeed(ctx, event)
+	}
+	return nil
+}
+func (s *stubRepo) ListApiFeedEvents(ctx context.Context, apiID string, limit int) ([]models.ApiFeedEvent, error) {
+	if s.listFeed != nil {
+		return s.listFeed(ctx, apiID, limit)
+	}
+	return []models.ApiFeedEvent{}, nil
+}
 
 func TestGetOasDocument_InvalidVersion(t *testing.T) {
 	repo := &stubRepo{}
@@ -164,6 +178,7 @@ func TestUpdateOasUri_LifecycleOnlyUpdateWithoutOAS(t *testing.T) {
 	existing.OrganisationID = &orgURI
 
 	var saved models.Api
+	var feedEvents []models.ApiFeedEvent
 	repo := &stubRepo{
 		getByID: func(ctx context.Context, id string) (*models.Api, error) {
 			assert.Equal(t, "api-123", id)
@@ -171,6 +186,10 @@ func TestUpdateOasUri_LifecycleOnlyUpdateWithoutOAS(t *testing.T) {
 		},
 		updateApi: func(ctx context.Context, api models.Api) error {
 			saved = api
+			return nil
+		},
+		saveFeed: func(ctx context.Context, event *models.ApiFeedEvent) error {
+			feedEvents = append(feedEvents, *event)
 			return nil
 		},
 	}
@@ -191,6 +210,11 @@ func TestUpdateOasUri_LifecycleOnlyUpdateWithoutOAS(t *testing.T) {
 	assert.Equal(t, "https://old.example.com/openapi.json", saved.OasUri)
 	assert.Equal(t, "2027-11-11", saved.Sunset)
 	assert.Equal(t, "2026-10-10", saved.Deprecated)
+	if assert.Len(t, feedEvents, 1) {
+		assert.Equal(t, models.ApiFeedEventLifecycleChanged, feedEvents[0].Type)
+		assert.Equal(t, "api-123", feedEvents[0].ApiID)
+		assert.Contains(t, feedEvents[0].Description, "Lifecycle wijzigde")
+	}
 }
 
 func TestUpdateOasUri_LifecycleOnlyUpdateWithUnchangedUnavailableOASURL(t *testing.T) {
@@ -645,6 +669,7 @@ func TestRefreshChangedApis_MarksOASUnreachableOnFetchError(t *testing.T) {
 	}))
 
 	var captured models.OASMetadata
+	var feedEvents []models.ApiFeedEvent
 	repo := &stubRepo{
 		allApis: func(ctx context.Context) ([]models.Api, error) {
 			return []models.Api{
@@ -663,6 +688,10 @@ func TestRefreshChangedApis_MarksOASUnreachableOnFetchError(t *testing.T) {
 			captured = oas
 			return nil
 		},
+		saveFeed: func(ctx context.Context, event *models.ApiFeedEvent) error {
+			feedEvents = append(feedEvents, *event)
+			return nil
+		},
 	}
 
 	service := services.NewAPIsAPIService(repo)
@@ -672,6 +701,13 @@ func TestRefreshChangedApis_MarksOASUnreachableOnFetchError(t *testing.T) {
 	assert.Equal(t, "3.0.0", captured.Version)
 	assert.Equal(t, "oauth2", captured.Auth)
 	assert.Equal(t, models.OASStatusUnreachable, captured.Status)
+	if assert.Len(t, feedEvents, 1) {
+		assert.Equal(t, models.ApiFeedEventOASUnavailable, feedEvents[0].Type)
+		assert.Equal(t, "api-broken", feedEvents[0].ApiID)
+		assert.Equal(t, models.OASStatusUnknown, feedEvents[0].OldValue)
+		assert.Equal(t, models.OASStatusUnreachable, feedEvents[0].NewValue)
+		assert.Contains(t, feedEvents[0].Description, "niet worden opgehaald")
+	}
 }
 
 func TestRetrieveApi_Success(t *testing.T) {

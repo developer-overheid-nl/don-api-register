@@ -77,9 +77,9 @@ func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, params *models.ApiPara
 
 // GetApiFeed handles GET /apis/:id/feed
 func (c *APIsAPIController) GetApiFeed(ctx *gin.Context, params *models.ApiParams) error {
-	apiURL := absoluteRequestURL(ctx, fmt.Sprintf("/v1/apis/%s", params.Id))
-	feedURL := absoluteCurrentRequestURL(ctx)
-	data, err := c.Service.GetApiFeed(ctx.Request.Context(), params.Id, apiURL, feedURL)
+	frontendURL := util.FrontendAPIURL(params.Id)
+	feedURL := util.AbsoluteCurrentRequestURL(ctx.Request)
+	data, err := c.Service.GetApiFeed(ctx.Request.Context(), params.Id, frontendURL, feedURL)
 	if err != nil {
 		return err
 	}
@@ -264,30 +264,4 @@ func normalizeOASVersion(version string) (string, error) {
 		return "", fmt.Errorf("ondersteunde versies zijn 3.0 en 3.1")
 	}
 	return fmt.Sprintf("3.%d", minorInt), nil
-}
-
-func absoluteRequestURL(ctx *gin.Context, path string) string {
-	scheme := "https"
-	if forwarded := strings.TrimSpace(ctx.GetHeader("X-Forwarded-Proto")); forwarded != "" {
-		scheme = strings.Split(forwarded, ",")[0]
-	}
-	host := ctx.Request.Host
-	if forwarded := strings.TrimSpace(ctx.GetHeader("X-Forwarded-Host")); forwarded != "" {
-		host = strings.Split(forwarded, ",")[0]
-	}
-	if prefix := strings.TrimRight(strings.TrimSpace(ctx.GetHeader("X-Forwarded-Prefix")), "/"); prefix != "" && !strings.HasPrefix(path, prefix+"/") {
-		path = prefix + path
-	}
-	return fmt.Sprintf("%s://%s%s", strings.TrimSpace(scheme), strings.TrimSpace(host), path)
-}
-
-func absoluteCurrentRequestURL(ctx *gin.Context) string {
-	if ctx.Request == nil || ctx.Request.URL == nil {
-		return ""
-	}
-	path := ctx.Request.URL.RequestURI()
-	if strings.TrimSpace(path) == "" {
-		path = ctx.Request.URL.Path
-	}
-	return absoluteRequestURL(ctx, path)
 }

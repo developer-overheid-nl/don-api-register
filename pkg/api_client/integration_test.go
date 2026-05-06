@@ -751,7 +751,8 @@ func TestApiFeedEndpoint(t *testing.T) {
 	body := string(readRawBody(t, resp))
 	require.Contains(t, body, `<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">`)
 	require.Contains(t, body, `xmlns:atom="http://www.w3.org/2005/Atom"`)
-	require.Contains(t, body, `<atom:link href="`+env.server.URL+`/v1/apis/`+apiID+`/feed" rel="self" type="application/rss+xml"></atom:link>`)
+	require.Contains(t, body, `<atom:link href="https://`+strings.TrimPrefix(env.server.URL, "http://")+`/v1/apis/`+apiID+`/feed" rel="self" type="application/rss+xml"></atom:link>`)
+	require.Contains(t, body, "<link>https://apis.developer.overheid.nl/apis/"+apiID+"</link>")
 	require.Contains(t, body, "<title>Wijzigingen voor Feed API</title>")
 	require.Contains(t, body, "<guid isPermaLink=\"false\">feed-event-1</guid>")
 }

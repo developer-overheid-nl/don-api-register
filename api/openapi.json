@@ -590,7 +590,7 @@
                   "type": "string",
                   "description": "RSS 2.0 XML feed with an Atom self link."
                 },
-                "example": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">\n  <channel>\n    <title>Wijzigingen voor Voorbeeld API</title>\n    <atom:link href=\"https://api.example.test/v1/apis/api-1/feed\" rel=\"self\" type=\"application/rss+xml\"></atom:link>\n    <link>https://api.example.test/v1/apis/api-1</link>\n    <description>RSS feed met inhoudelijke wijzigingen voor Voorbeeld API.</description>\n    <language>nl</language>\n  </channel>\n</rss>"
+                "example": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">\n  <channel>\n    <title>Wijzigingen voor Voorbeeld API</title>\n    <atom:link href=\"https://api.example.test/v1/apis/api-1/feed\" rel=\"self\" type=\"application/rss+xml\"></atom:link>\n    <link>https://apis.developer.overheid.nl/apis/api-1</link>\n    <description>RSS feed met inhoudelijke wijzigingen voor Voorbeeld API.</description>\n    <language>nl</language>\n  </channel>\n</rss>"
               }
             }
           },

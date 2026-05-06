@@ -188,7 +188,8 @@ func TestGetApiFeed_Handler(t *testing.T) {
 	assert.True(t, strings.HasPrefix(body, "<?xml"))
 	assert.Contains(t, body, `<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">`)
 	assert.Contains(t, body, `xmlns:atom="http://www.w3.org/2005/Atom"`)
-	assert.Contains(t, body, `<atom:link href="http://example.com/v1/apis/api-1/feed" rel="self" type="application/rss+xml"></atom:link>`)
+	assert.Contains(t, body, `<atom:link href="https://example.com/v1/apis/api-1/feed" rel="self" type="application/rss+xml"></atom:link>`)
+	assert.Contains(t, body, "<link>https://apis.developer.overheid.nl/apis/api-1</link>")
 	assert.Contains(t, body, "<title>Wijzigingen voor Demo API</title>")
 	assert.Contains(t, body, "<guid isPermaLink=\"false\">event-1</guid>")
 }

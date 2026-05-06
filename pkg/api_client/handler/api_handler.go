@@ -267,10 +267,7 @@ func normalizeOASVersion(version string) (string, error) {
 }
 
 func absoluteRequestURL(ctx *gin.Context, path string) string {
-	scheme := "http"
-	if ctx.Request.TLS != nil {
-		scheme = "https"
-	}
+	scheme := "https"
 	if forwarded := strings.TrimSpace(ctx.GetHeader("X-Forwarded-Proto")); forwarded != "" {
 		scheme = strings.Split(forwarded, ",")[0]
 	}

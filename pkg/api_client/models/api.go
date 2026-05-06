@@ -44,10 +44,10 @@ type OASMetadata struct {
 }
 
 const (
-	OASStatusUnknown     = "unknown"
-	OASStatusValid       = "valid"
-	OASStatusInvalid     = "invalid"
-	OASStatusUnreachable = "unreachable"
+	OASStatusUnknown     = "onbekend"
+	OASStatusValid       = "geldig"
+	OASStatusInvalid     = "ongeldig"
+	OASStatusUnreachable = "onbereikbaar"
 )
 
 type Organisation struct {

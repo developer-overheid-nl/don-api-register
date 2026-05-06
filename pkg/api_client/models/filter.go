@@ -68,12 +68,12 @@ var LifecycleStatusLabels = map[string][2]string{
 }
 
 var AuthLabels = map[string][2]string{
-	"none":    {"Geen beveiliging", "Er is geen security-definitie in de OAS gevonden."},
-	"api_key": {"API key", "De API gebruikt een API key."},
-	"oauth2":  {"OAuth 2.0", "De API gebruikt OAuth 2.0."},
-	"openid":  {"OpenID Connect", "De API gebruikt OpenID Connect."},
-	"bearer":  {"Bearer token", "De API gebruikt HTTP bearer authenticatie."},
-	"basic":   {"Basic auth", "De API gebruikt HTTP basic authenticatie."},
-	"http":    {"HTTP auth", "De API gebruikt HTTP authenticatie."},
-	"unknown": {"Onbekend", "De OAS bevat een security-definitie die niet herkend is."},
+	"none":     {"Geen beveiliging", "Er is geen security-definitie in de OAS gevonden."},
+	"api_key":  {"API key", "De API gebruikt een API key."},
+	"oauth2":   {"OAuth 2.0", "De API gebruikt OAuth 2.0."},
+	"openid":   {"OpenID Connect", "De API gebruikt OpenID Connect."},
+	"bearer":   {"Bearer token", "De API gebruikt HTTP bearer authenticatie."},
+	"basic":    {"Basic auth", "De API gebruikt HTTP basic authenticatie."},
+	"http":     {"HTTP auth", "De API gebruikt HTTP authenticatie."},
+	"onbekend": {"Onbekend", "De OAS bevat een security-definitie die niet herkend is."},
 }

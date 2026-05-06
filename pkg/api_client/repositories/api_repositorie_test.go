@@ -92,7 +92,7 @@ func TestApiRepository_GetApisAppliesFilters(t *testing.T) {
 		Status:     []string{"deprecated"},
 		OasVersion: []string{"3.0.0"},
 		Auth:       []string{"oauth2"},
-		AdrScore:   []string{"unknown"},
+		AdrScore:   []string{"onbekend"},
 	})
 	require.NoError(t, err)
 	require.Len(t, results, 1)

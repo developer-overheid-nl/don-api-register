@@ -26,7 +26,7 @@ func CorsGet(c *http.Client, u string, corsurl string) (*http.Response, error) {
 // DeriveAuthType determines authentication type from security schemes (pb33f v3).
 func DeriveAuthType(spec *v3.Document) string {
 	if spec == nil || spec.Components == nil || spec.Components.SecuritySchemes == nil {
-		return "unknown"
+		return "onbekend"
 	}
 	for pair := spec.Components.SecuritySchemes.First(); pair != nil; pair = pair.Next() {
 		scheme := pair.Value()
@@ -48,7 +48,7 @@ func DeriveAuthType(spec *v3.Document) string {
 			return "openid"
 		}
 	}
-	return "unknown"
+	return "onbekend"
 }
 
 func AuthTypeFromSpec(spec *v3.Document) string {

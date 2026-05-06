@@ -53,8 +53,8 @@ func buildOasVersionGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCo
 	for _, fc := range counts.OasVersion {
 		label := fc.Value
 		var desc *string
-		if fc.Value == "unknown" {
-			label = "Onbekend"
+		if fc.Value == "onbekend" {
+			label = "onbekend"
 			d := "Er is geen OpenAPI-versie bekend."
 			desc = &d
 		}
@@ -81,7 +81,7 @@ func buildAdrScoreGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCoun
 	for _, fc := range counts.AdrScore {
 		label := fc.Value
 		var desc *string
-		if fc.Value == "unknown" {
+		if fc.Value == "onbekend" {
 			label = "Niet bekend"
 			d := "Er is nog geen ADR score opgeslagen."
 			desc = &d

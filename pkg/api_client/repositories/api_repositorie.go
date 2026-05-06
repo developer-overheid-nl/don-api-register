@@ -167,11 +167,11 @@ func (r *apiRepository) GetApiFilterCounts(ctx context.Context, p *models.ApiFil
 		if version := apiOpenAPIVersion(api); version != "" {
 			return version
 		}
-		return "unknown"
+		return "onbekend"
 	})
 	result.AdrScore = countApisByFieldWithFilters(apis, matcher, "adrScore", func(api models.Api) string {
 		if api.AdrScore == nil {
-			return "unknown"
+			return "onbekend"
 		}
 		return strconv.Itoa(*api.AdrScore)
 	})
@@ -303,7 +303,7 @@ func apiMatchesCompiledFilters(api models.Api, matcher *apiFilterMatcher, exclud
 	if exclude != "oasVersion" && len(matcher.oasVersion) > 0 {
 		version := apiOpenAPIVersion(api)
 		if version == "" {
-			version = "unknown"
+			version = "onbekend"
 		}
 		if !matcher.oasVersion[version] {
 			return false
@@ -355,7 +355,7 @@ func selectedLowerFilterSet(groups ...[]string) map[string]bool {
 
 func selectedScoreSet(values []string) (map[int]bool, bool, bool) {
 	scores := make(map[int]bool)
-	unknown := false
+	onbekend := false
 	invalid := false
 	for _, raw := range values {
 		for _, val := range strings.Split(raw, ",") {
@@ -363,8 +363,8 @@ func selectedScoreSet(values []string) (map[int]bool, bool, bool) {
 			if trimmed == "" {
 				continue
 			}
-			if strings.EqualFold(trimmed, "unknown") {
-				unknown = true
+			if strings.EqualFold(trimmed, "onbekend") {
+				onbekend = true
 				continue
 			}
 			score, err := strconv.Atoi(trimmed)
@@ -375,7 +375,7 @@ func selectedScoreSet(values []string) (map[int]bool, bool, bool) {
 			scores[score] = true
 		}
 	}
-	return scores, unknown, invalid
+	return scores, onbekend, invalid
 }
 
 func normalizeAuthValues(values []string) []string {

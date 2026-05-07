@@ -53,7 +53,20 @@ func AbsoluteRequestURL(r *http.Request, path string) string {
 	if prefix := strings.TrimRight(strings.TrimSpace(r.Header.Get("X-Forwarded-Prefix")), "/"); prefix != "" && !strings.HasPrefix(path, prefix+"/") {
 		path = prefix + path
 	}
+	scheme, path = normalizePublicAPIURL(scheme, host, path)
 	return fmt.Sprintf("%s://%s%s", strings.TrimSpace(scheme), strings.TrimSpace(host), path)
+}
+
+func normalizePublicAPIURL(scheme, host, path string) (string, string) {
+	hostWithoutPort := strings.Split(strings.TrimSpace(host), ":")[0]
+	switch hostWithoutPort {
+	case "api.developer.overheid.nl", "api.don.projects.digilab.network":
+		scheme = "https"
+		if path == "/v1" || strings.HasPrefix(path, "/v1/") {
+			path = "/api-register" + path
+		}
+	}
+	return scheme, path
 }
 
 func parseForwardedHeader(value string) (string, string) {

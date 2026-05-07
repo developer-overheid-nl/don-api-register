@@ -21,3 +21,24 @@ func TestAbsoluteCurrentRequestURL_UsesForwardedLocation(t *testing.T) {
 		AbsoluteCurrentRequestURL(req),
 	)
 }
+
+func TestAbsoluteCurrentRequestURL_NormalizesPublicAPIHost(t *testing.T) {
+	req := httptest.NewRequest("GET", "/v1/apis/MBDp9RTvg/feed", nil)
+	req.Host = "api.don.projects.digilab.network"
+	req.Header.Set("X-Forwarded-Proto", "http")
+
+	assert.Equal(t,
+		"https://api.don.projects.digilab.network/api-register/v1/apis/MBDp9RTvg/feed",
+		AbsoluteCurrentRequestURL(req),
+	)
+}
+
+func TestAbsoluteCurrentRequestURL_NormalizesProductionAPIHost(t *testing.T) {
+	req := httptest.NewRequest("GET", "/v1/apis/MBDp9RTvg/feed", nil)
+	req.Host = "api.developer.overheid.nl"
+
+	assert.Equal(t,
+		"https://api.developer.overheid.nl/api-register/v1/apis/MBDp9RTvg/feed",
+		AbsoluteCurrentRequestURL(req),
+	)
+}

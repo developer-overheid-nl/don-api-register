@@ -38,6 +38,12 @@ Nieuwe APIs worden na een succesvolle POST ook naar Typesense gestuurd, zodat ze
 
 Bij het opstarten van de server wordt automatisch een aparte service gestart die direct een refresh-run uitvoert. Daarna draait de job iedere ochtend om **07:00** en haalt alle geregistreerde APIs opnieuw op. Zodra de OAS is gewijzigd, volgen exact dezelfde stappen als bij een POST: validatie, regeneratie van artifacts (Bruno, Postman en OAS-bestanden) en het opruimen van verouderde bestanden. Er zijn geen extra omgevingsvariabelen nodig.
 
+## RSS-feed configuratie
+
+Elke API heeft een RSS-feed beschikbaar op `/apis/{id}/feed`. De Atom self-link in die feed wordt opgebouwd vanuit de omgevingsvariabele:
+
+- `PUBLIC_API_BASE_URL`: publieke basis-URL van de API inclusief pad-prefix (bijv. `https://api.don.projects.digilab.network/api-register/v1`). De self-link wordt dan `{PUBLIC_API_BASE_URL}/apis/{id}/feed`. Als deze variabele niet is ingesteld, wordt de URL afgeleid uit de request-headers (legacy/dev fallback).
+
 ## Changelog (Changie)
 
 Voor user-facing wijzigingen (fix/feature/breaking) verwachten we per PR een Changie-fragment in `.changes/unreleased`.

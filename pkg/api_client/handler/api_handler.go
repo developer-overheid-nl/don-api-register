@@ -78,7 +78,7 @@ func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, params *models.ApiPara
 // GetApiFeed handles GET /apis/:id/feed
 func (c *APIsAPIController) GetApiFeed(ctx *gin.Context, params *models.ApiParams) error {
 	frontendURL := util.FrontendAPIURL(params.Id)
-	feedURL := util.AbsoluteCurrentRequestURL(ctx.Request)
+	feedURL := util.ApiFeedURL(params.Id, ctx.Request)
 	data, err := c.Service.GetApiFeed(ctx.Request.Context(), params.Id, frontendURL, feedURL)
 	if err != nil {
 		return err

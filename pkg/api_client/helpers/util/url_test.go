@@ -7,6 +7,43 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestApiFeedURL_UsesPublicAPIBaseURL(t *testing.T) {
+	t.Setenv("PUBLIC_API_BASE_URL", "https://api.don.projects.digilab.network/api-register/v1")
+
+	// Spoofed headers must be ignored when PUBLIC_API_BASE_URL is set.
+	req := httptest.NewRequest("GET", "/internal/apis/api-1/feed", nil)
+	req.Header.Set("X-Forwarded-Host", "attacker.example.com")
+	req.Header.Set("Forwarded", `proto=https;host="attacker.example.com"`)
+
+	assert.Equal(t,
+		"https://api.don.projects.digilab.network/api-register/v1/apis/api-1/feed",
+		ApiFeedURL("api-1", req),
+	)
+}
+
+func TestApiFeedURL_FallsBackToRequestURL(t *testing.T) {
+	t.Setenv("PUBLIC_API_BASE_URL", "")
+
+	req := httptest.NewRequest("GET", "/v1/apis/api-1/feed", nil)
+	req.Host = "api.don.projects.digilab.network"
+
+	assert.Equal(t,
+		"https://api.don.projects.digilab.network/api-register/v1/apis/api-1/feed",
+		ApiFeedURL("api-1", req),
+	)
+}
+
+func TestApiFeedURL_TrimsTrailingSlash(t *testing.T) {
+	t.Setenv("PUBLIC_API_BASE_URL", "https://api.don.projects.digilab.network/api-register/v1/")
+
+	req := httptest.NewRequest("GET", "/v1/apis/api-1/feed", nil)
+
+	assert.Equal(t,
+		"https://api.don.projects.digilab.network/api-register/v1/apis/api-1/feed",
+		ApiFeedURL("api-1", req),
+	)
+}
+
 func TestFrontendAPIURL(t *testing.T) {
 	assert.Equal(t, "https://apis.developer.overheid.nl/apis/api-1", FrontendAPIURL("api-1"))
 }

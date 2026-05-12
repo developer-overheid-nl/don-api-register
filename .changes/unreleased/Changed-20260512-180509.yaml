@@ -1,0 +1,3 @@
+kind: Changed
+body: Removed the API _search endpoint and added q search support to API list and filter endpoints
+time: 2026-05-12T18:05:09+02:00

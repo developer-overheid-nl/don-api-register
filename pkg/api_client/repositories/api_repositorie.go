@@ -16,7 +16,6 @@ import (
 
 type ApiRepository interface {
 	GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error)
-	SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
 	GetApiByID(ctx context.Context, oasUrl string) (*models.Api, error)
 	Save(api *models.Api) error
 	UpdateApi(ctx context.Context, api models.Api) error
@@ -45,6 +44,7 @@ type apiRepository struct {
 type apiFilterMatcher struct {
 	params          *models.ApiFiltersParams
 	organisation    string
+	query           string
 	ids             map[string]bool
 	status          map[string]bool
 	oasVersion      map[string]bool
@@ -275,6 +275,7 @@ func compileApiFilters(p *models.ApiFiltersParams) *apiFilterMatcher {
 	if p.Organisation != nil {
 		matcher.organisation = strings.TrimSpace(*p.Organisation)
 	}
+	matcher.query = strings.ToLower(strings.TrimSpace(p.Query))
 	if p.Ids != nil {
 		matcher.ids = selectedFilterSet([]string{*p.Ids})
 	}
@@ -293,6 +294,9 @@ func apiMatchesCompiledFilters(api models.Api, matcher *apiFilterMatcher, exclud
 		}
 	}
 	if len(matcher.ids) > 0 && !matcher.ids[api.Id] {
+		return false
+	}
+	if matcher.query != "" && !apiMatchesQuery(api, matcher.query) {
 		return false
 	}
 	if exclude != "status" && len(matcher.status) > 0 {
@@ -327,6 +331,13 @@ func apiMatchesCompiledFilters(api models.Api, matcher *apiFilterMatcher, exclud
 		}
 	}
 	return true
+}
+
+func apiMatchesQuery(api models.Api, query string) bool {
+	if query == "" {
+		return true
+	}
+	return strings.Contains(strings.ToLower(api.Title), query)
 }
 
 func selectedFilterSet(groups ...[]string) map[string]bool {
@@ -404,77 +415,6 @@ func normalizedAuthValue(value string) string {
 	default:
 		return trimmed
 	}
-}
-
-func (r *apiRepository) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
-	trimmed := strings.TrimSpace(query)
-	if page < 1 {
-		page = 1
-	}
-	if perPage <= 0 {
-		perPage = 10
-	}
-	if trimmed == "" {
-		return []models.Api{}, models.Pagination{
-			CurrentPage:    page,
-			RecordsPerPage: perPage,
-		}, nil
-	}
-
-	base := r.db.WithContext(ctx)
-	if organisation != nil && strings.TrimSpace(*organisation) != "" {
-		base = base.Where("organisation_id = ?", strings.TrimSpace(*organisation))
-	}
-	var pattern string
-	if trimmed != "" {
-		pattern = fmt.Sprintf("%%%s%%", strings.ToLower(trimmed))
-		base = base.Where("LOWER(title) LIKE ?", pattern)
-	}
-
-	var totalRecords int64
-	if err := base.Model(&models.Api{}).Count(&totalRecords).Error; err != nil {
-		return nil, models.Pagination{}, err
-	}
-
-	queryDB := r.db.WithContext(ctx)
-	if organisation != nil && strings.TrimSpace(*organisation) != "" {
-		queryDB = queryDB.Where("organisation_id = ?", strings.TrimSpace(*organisation))
-	}
-	if pattern != "" {
-		queryDB = queryDB.Where("LOWER(title) LIKE ?", pattern)
-	}
-
-	var apis []models.Api
-	if err := queryDB.
-		Preload("Servers").
-		Preload("Organisation").
-		Order("title").
-		Offset((page - 1) * perPage).
-		Limit(perPage).
-		Find(&apis).Error; err != nil {
-		return nil, models.Pagination{}, err
-	}
-
-	totalPages := 0
-	if totalRecords > 0 {
-		totalPages = int(math.Ceil(float64(totalRecords) / float64(perPage)))
-	}
-	pagination := models.Pagination{
-		CurrentPage:    page,
-		RecordsPerPage: perPage,
-		TotalPages:     totalPages,
-		TotalRecords:   int(totalRecords),
-	}
-	if page < totalPages {
-		next := page + 1
-		pagination.Next = &next
-	}
-	if page > 1 && totalPages > 0 {
-		prev := page - 1
-		pagination.Previous = &prev
-	}
-
-	return apis, pagination, nil
 }
 
 func (r *apiRepository) GetApiByID(ctx context.Context, id string) (*models.Api, error) {

@@ -24,7 +24,6 @@ type stubRepo struct {
 	getLintRes   func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	listLintRes  func(ctx context.Context) ([]models.LintResult, error)
 	getApis      func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error)
-	searchApis   func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
 	saveServer   func(server models.Server) error
 	saveApi      func(api *models.Api) error
 	saveOrg      func(org *models.Organisation) error
@@ -59,12 +58,6 @@ func (s *stubRepo) ListLintResults(ctx context.Context) ([]models.LintResult, er
 }
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
 	return s.getApis(ctx, page, perPage, p)
-}
-func (s *stubRepo) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
-	if s.searchApis != nil {
-		return s.searchApis(ctx, page, perPage, organisation, query)
-	}
-	return []models.Api{}, models.Pagination{}, nil
 }
 
 // unused methods
@@ -751,11 +744,13 @@ func TestListApis_UsesApisFilter(t *testing.T) {
 
 func TestListApis_ForwardsAllFilters(t *testing.T) {
 	orgURI := "https://org.example.com"
+	query := "digid"
 	repo := &stubRepo{
 		getApis: func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
 			if assert.NotNil(t, p.Organisation) {
 				assert.Equal(t, orgURI, *p.Organisation)
 			}
+			assert.Equal(t, query, p.Query)
 			assert.Equal(t, []string{"active"}, p.Status)
 			assert.Equal(t, []string{"3.0.0"}, p.OasVersion)
 			assert.Equal(t, []string{"2.0.0"}, p.Version)
@@ -770,6 +765,7 @@ func TestListApis_ForwardsAllFilters(t *testing.T) {
 		Page:         1,
 		PerPage:      10,
 		Organisation: &orgURI,
+		Query:        query,
 		Status:       []string{"active"},
 		OasVersion:   []string{"3.0.0"},
 		Version:      []string{"2.0.0"},
@@ -816,51 +812,6 @@ func TestGetApiFilters_ReturnsRequestedGroups(t *testing.T) {
 			assert.True(t, g.Options[0].Selected)
 		}
 	}
-}
-
-func TestSearchApis_TrimsQueryAndAppliesDefaultLimit(t *testing.T) {
-	called := false
-	repo := &stubRepo{
-		searchApis: func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
-			called = true
-			assert.Equal(t, 1, page)
-			assert.Equal(t, 0, perPage)
-			assert.Equal(t, "digid", query)
-			return []models.Api{{
-					Id:     "api-1",
-					OasUri: "https://example.com/openapi.json",
-					Title:  "DigiD API",
-					Organisation: &models.Organisation{
-						Uri:   "https://org.test",
-						Label: "Org",
-					},
-				}}, models.Pagination{
-					CurrentPage:    page,
-					RecordsPerPage: perPage,
-					TotalPages:     2,
-					TotalRecords:   12,
-				}, nil
-		},
-	}
-	service := services.NewAPIsAPIService(repo)
-	params := &models.ListApisSearchParams{Query: "  digid  ", Page: 1}
-	results, pagination, err := service.SearchApis(context.Background(), params)
-	assert.NoError(t, err)
-	assert.True(t, called)
-	assert.Equal(t, 12, pagination.TotalRecords)
-	assert.Equal(t, 2, pagination.TotalPages)
-	assert.Len(t, results, 1)
-	assert.Equal(t, "api-1", results[0].Id)
-}
-
-func TestSearchApis_EmptyQueryReturnsNoResults(t *testing.T) {
-	repo := &stubRepo{}
-	service := services.NewAPIsAPIService(repo)
-	results, pagination, err := service.SearchApis(context.Background(), &models.ListApisSearchParams{Query: "   ", Page: 2, PerPage: 5})
-	assert.NoError(t, err)
-	assert.Len(t, results, 0)
-	assert.Equal(t, 0, pagination.TotalRecords)
-	assert.Equal(t, 0, pagination.TotalPages)
 }
 
 func TestCreateApiFromOas_Success(t *testing.T) {

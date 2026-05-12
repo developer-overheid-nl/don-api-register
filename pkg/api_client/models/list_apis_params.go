@@ -6,6 +6,7 @@ type ListApisParams struct {
 	Page         int      `query:"page"`
 	PerPage      int      `query:"perPage"`
 	Organisation *string  `query:"organisation"`
+	Query        string   `query:"q"`
 	Ids          *string  `query:"ids"`
 	Status       []string `query:"status"`
 	OasVersion   []string `query:"oasVersion"`
@@ -29,6 +30,7 @@ func (p *ListApisParams) ApiFilters() *ApiFiltersParams {
 	}
 	return &ApiFiltersParams{
 		Organisation: p.Organisation,
+		Query:        p.Query,
 		Ids:          p.FilterIDs(),
 		Status:       append([]string(nil), p.Status...),
 		OasVersion:   append([]string(nil), p.OasVersion...),

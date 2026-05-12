@@ -98,6 +98,17 @@ func TestApiRepository_GetApisAppliesFilters(t *testing.T) {
 	require.Len(t, results, 1)
 	assert.Equal(t, "deprecated-api", results[0].Id)
 	assert.Equal(t, 1, pagination.TotalRecords)
+
+	results, pagination, err = repo.GetApis(ctx, 1, 10, &models.ApiFiltersParams{
+		Query:      "deprecated",
+		Status:     []string{"deprecated"},
+		OasVersion: []string{"3.0.0"},
+		Auth:       []string{"oauth2"},
+	})
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	assert.Equal(t, "deprecated-api", results[0].Id)
+	assert.Equal(t, 1, pagination.TotalRecords)
 }
 
 func TestApiRepository_GetApiFilterCountsRespectOtherFilters(t *testing.T) {
@@ -152,6 +163,12 @@ func TestApiRepository_GetApiFilterCountsRespectOtherFilters(t *testing.T) {
 	assert.Equal(t, 1, versionCounts["3.0.0"])
 	assert.Equal(t, 1, authCounts["api_key"])
 	assert.Equal(t, 1, authCounts["oauth2"])
+
+	counts, err = repo.GetApiFilterCounts(ctx, &models.ApiFiltersParams{Query: "OAuth"})
+	require.NoError(t, err)
+	require.Len(t, counts.Auth, 1)
+	assert.Equal(t, "oauth2", counts.Auth[0].Value)
+	assert.Equal(t, 1, counts.Auth[0].Count)
 }
 
 func TestApiRepository_GetApiFilterCounts_SortsByCountThenAlphabetically(t *testing.T) {

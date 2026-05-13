@@ -78,9 +78,10 @@ func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, p *model
 		perPage = 10
 	}
 	matcher := compileApiFilters(p)
+	dbMatcher := matcher.withoutSQLFilters()
 
 	var apis []models.Api
-	if err := applyApiOrdering(r.db.WithContext(ctx)).
+	if err := applyApiOrdering(applyApiSQLFilters(r.db.WithContext(ctx), matcher)).
 		Preload("Servers").
 		Preload("Organisation").
 		Find(&apis).Error; err != nil {
@@ -89,7 +90,7 @@ func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, p *model
 
 	filtered := make([]models.Api, 0, len(apis))
 	for _, api := range apis {
-		if apiMatchesCompiledFilters(api, matcher, "") {
+		if apiMatchesCompiledFilters(api, dbMatcher, "") {
 			filtered = append(filtered, api)
 		}
 	}
@@ -132,18 +133,29 @@ func applyApiOrdering(db *gorm.DB) *gorm.DB {
 	return db.Order("title")
 }
 
+func applyApiSQLFilters(db *gorm.DB, matcher *apiFilterMatcher) *gorm.DB {
+	if matcher == nil {
+		return db
+	}
+	if matcher.query != "" {
+		db = db.Where("LOWER(title) LIKE ? ESCAPE '\\'", "%"+escapeSQLLike(matcher.query)+"%")
+	}
+	return db
+}
+
 func (r *apiRepository) GetApiFilterCounts(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error) {
 	matcher := compileApiFilters(p)
+	dbMatcher := matcher.withoutSQLFilters()
 
 	var apis []models.Api
-	if err := r.db.WithContext(ctx).
+	if err := applyApiSQLFilters(r.db.WithContext(ctx), matcher).
 		Preload("Organisation").
 		Find(&apis).Error; err != nil {
 		return nil, err
 	}
 
 	result := &models.ApiFilterCounts{}
-	result.Organisation = countApisByFieldWithFiltersAndLabel(apis, matcher, "organisation", func(api models.Api) string {
+	result.Organisation = countApisByFieldWithFiltersAndLabel(apis, dbMatcher, "organisation", func(api models.Api) string {
 		if api.OrganisationID == nil {
 			return ""
 		}
@@ -160,22 +172,22 @@ func (r *apiRepository) GetApiFilterCounts(ctx context.Context, p *models.ApiFil
 		}
 		return api.Organisation.Label
 	}, false)
-	result.Status = countApisByFieldWithFilters(apis, matcher, "status", func(api models.Api) string {
-		return api.LifecycleStatus(matcher.now)
+	result.Status = countApisByFieldWithFilters(apis, dbMatcher, "status", func(api models.Api) string {
+		return api.LifecycleStatus(dbMatcher.now)
 	})
-	result.OasVersion = countApisByFieldWithFilters(apis, matcher, "oasVersion", func(api models.Api) string {
+	result.OasVersion = countApisByFieldWithFilters(apis, dbMatcher, "oasVersion", func(api models.Api) string {
 		if version := apiOpenAPIVersion(api); version != "" {
 			return version
 		}
 		return "unknown"
 	})
-	result.AdrScore = countApisByFieldWithFilters(apis, matcher, "adrScore", func(api models.Api) string {
+	result.AdrScore = countApisByFieldWithFilters(apis, dbMatcher, "adrScore", func(api models.Api) string {
 		if api.AdrScore == nil {
 			return "unknown"
 		}
 		return strconv.Itoa(*api.AdrScore)
 	})
-	result.Auth = countApisByFieldWithFilters(apis, matcher, "auth", func(api models.Api) string {
+	result.Auth = countApisByFieldWithFilters(apis, dbMatcher, "auth", func(api models.Api) string {
 		return normalizedAuthValue(apiStoredAuth(api))
 	})
 
@@ -284,6 +296,15 @@ func compileApiFilters(p *models.ApiFiltersParams) *apiFilterMatcher {
 	return matcher
 }
 
+func (matcher *apiFilterMatcher) withoutSQLFilters() *apiFilterMatcher {
+	if matcher == nil {
+		return nil
+	}
+	clone := *matcher
+	clone.query = ""
+	return &clone
+}
+
 func apiMatchesCompiledFilters(api models.Api, matcher *apiFilterMatcher, exclude string) bool {
 	if matcher == nil || matcher.params == nil {
 		return true
@@ -338,6 +359,19 @@ func apiMatchesQuery(api models.Api, query string) bool {
 		return true
 	}
 	return strings.Contains(strings.ToLower(api.Title), query)
+}
+
+func escapeSQLLike(value string) string {
+	var builder strings.Builder
+	builder.Grow(len(value))
+	for _, char := range value {
+		switch char {
+		case '\\', '%', '_':
+			builder.WriteByte('\\')
+		}
+		builder.WriteRune(char)
+	}
+	return builder.String()
 }
 
 func selectedFilterSet(groups ...[]string) map[string]bool {

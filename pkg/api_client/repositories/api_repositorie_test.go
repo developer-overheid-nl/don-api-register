@@ -111,6 +111,32 @@ func TestApiRepository_GetApisAppliesFilters(t *testing.T) {
 	assert.Equal(t, 1, pagination.TotalRecords)
 }
 
+func TestApiRepository_GetApisSearchTreatsLikeWildcardsAsLiterals(t *testing.T) {
+	db := setupDB(t)
+	repo := repositories.NewApiRepository(db)
+	ctx := context.Background()
+
+	apis := []models.Api{
+		{
+			Id:     "literal-percent-api",
+			OasUri: "https://example.com/literal-percent.yaml",
+			Title:  "Usage 100% API",
+		},
+		{
+			Id:     "plain-api",
+			OasUri: "https://example.com/plain.yaml",
+			Title:  "Usage 1000 API",
+		},
+	}
+	require.NoError(t, db.Create(&apis).Error)
+
+	results, pagination, err := repo.GetApis(ctx, 1, 10, &models.ApiFiltersParams{Query: "100%"})
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	assert.Equal(t, "literal-percent-api", results[0].Id)
+	assert.Equal(t, 1, pagination.TotalRecords)
+}
+
 func TestApiRepository_GetApiFilterCountsRespectOtherFilters(t *testing.T) {
 	db := setupDB(t)
 	repo := repositories.NewApiRepository(db)

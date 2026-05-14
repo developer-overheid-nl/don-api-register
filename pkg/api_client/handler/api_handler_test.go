@@ -152,7 +152,7 @@ func TestGetOas_Handler(t *testing.T) {
 }
 
 func TestGetApiFeed_Handler(t *testing.T) {
-	t.Setenv("PUBLIC_API_BASE_URL", "")
+	t.Setenv("PUBLIC_API_BASE_URL", "https://example.com/v1")
 	createdAt := time.Date(2026, 5, 6, 12, 0, 0, 0, time.UTC)
 	repo := &stubRepo{
 		retrFunc: func(ctx context.Context, id string) (*models.Api, error) {
@@ -195,6 +195,23 @@ func TestGetApiFeed_Handler(t *testing.T) {
 	assert.Contains(t, body, "<guid isPermaLink=\"false\">event-1</guid>")
 }
 
+func TestGetApiFeed_Handler_RequiresPublicBaseURL(t *testing.T) {
+	t.Setenv("PUBLIC_API_BASE_URL", "")
+	repo := &stubRepo{}
+	svc := services.NewAPIsAPIService(repo)
+	ctrl := NewAPIsAPIController(svc)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request = httptest.NewRequest("GET", "/v1/apis/api-1/feed", nil)
+
+	err := ctrl.GetApiFeed(ctx, &models.ApiParams{Id: "api-1"})
+	apiErr, ok := err.(problem.APIError)
+	assert.True(t, ok)
+	assert.Equal(t, 500, apiErr.Status)
+	assert.Contains(t, apiErr.Errors[0].Detail, "PUBLIC_API_BASE_URL")
+}
+
 func TestGetApiFeed_Handler_PublicBaseURL_IgnoresSpoofedHeaders(t *testing.T) {
 	t.Setenv("PUBLIC_API_BASE_URL", "https://api.don.projects.digilab.network/api-register/v1")
 	createdAt := time.Date(2026, 5, 6, 12, 0, 0, 0, time.UTC)
@@ -226,7 +243,6 @@ func TestGetApiFeed_Handler_PublicBaseURL_IgnoresSpoofedHeaders(t *testing.T) {
 		`<atom:link href="https://api.don.projects.digilab.network/api-register/v1/apis/api-1/feed" rel="self" type="application/rss+xml"></atom:link>`)
 	assert.NotContains(t, body, "attacker.example.com")
 }
-
 
 func TestGetOas_AllowsPatchVersion(t *testing.T) {
 	var capturedVersion, capturedFormat string

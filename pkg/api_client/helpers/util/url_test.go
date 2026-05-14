@@ -10,37 +10,30 @@ import (
 func TestApiFeedURL_UsesPublicAPIBaseURL(t *testing.T) {
 	t.Setenv("PUBLIC_API_BASE_URL", "https://api.don.projects.digilab.network/api-register/v1")
 
-	// Spoofed headers must be ignored when PUBLIC_API_BASE_URL is set.
-	req := httptest.NewRequest("GET", "/internal/apis/api-1/feed", nil)
-	req.Header.Set("X-Forwarded-Host", "attacker.example.com")
-	req.Header.Set("Forwarded", `proto=https;host="attacker.example.com"`)
-
+	got, err := ApiFeedURL("api-1")
+	assert.NoError(t, err)
 	assert.Equal(t,
 		"https://api.don.projects.digilab.network/api-register/v1/apis/api-1/feed",
-		ApiFeedURL("api-1", req),
+		got,
 	)
 }
 
-func TestApiFeedURL_FallsBackToRequestURL(t *testing.T) {
+func TestApiFeedURL_RequiresPublicAPIBaseURL(t *testing.T) {
 	t.Setenv("PUBLIC_API_BASE_URL", "")
 
-	req := httptest.NewRequest("GET", "/v1/apis/api-1/feed", nil)
-	req.Host = "api.don.projects.digilab.network"
-
-	assert.Equal(t,
-		"https://api.don.projects.digilab.network/api-register/v1/apis/api-1/feed",
-		ApiFeedURL("api-1", req),
-	)
+	got, err := ApiFeedURL("api-1")
+	assert.EqualError(t, err, "PUBLIC_API_BASE_URL is niet ingesteld")
+	assert.Empty(t, got)
 }
 
 func TestApiFeedURL_TrimsTrailingSlash(t *testing.T) {
 	t.Setenv("PUBLIC_API_BASE_URL", "https://api.don.projects.digilab.network/api-register/v1/")
 
-	req := httptest.NewRequest("GET", "/v1/apis/api-1/feed", nil)
-
+	got, err := ApiFeedURL("api-1")
+	assert.NoError(t, err)
 	assert.Equal(t,
 		"https://api.don.projects.digilab.network/api-register/v1/apis/api-1/feed",
-		ApiFeedURL("api-1", req),
+		got,
 	)
 }
 

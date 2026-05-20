@@ -117,17 +117,17 @@ func TestPublishApi_SendsDocument(t *testing.T) {
 	if got := doc["hierarchy.lvl0"]; got != "Test API" {
 		t.Fatalf("unexpected lvl0: %v", got)
 	}
-	if got := doc["hierarchy.lvl1"]; got != "https://example.org/contact" {
+	if got := doc["hierarchy.lvl1"]; got != "API" {
 		t.Fatalf("unexpected lvl1: %v", got)
 	}
 	if got := doc["hierarchy.lvl2"]; got != "Ministerie van Test" {
 		log.Println("debug:", got)
 		t.Fatalf("unexpected lvl2: %v", got)
 	}
-	if got := doc["hierarchy.lvl3"]; got != "jane@example.com" {
+	if got := doc["hierarchy.lvl3"]; got != "Jane Doe" {
 		t.Fatalf("unexpected lvl3: %v", got)
 	}
-	if got := doc["hierarchy.lvl4"]; got != "Jane Doe" {
+	if got := doc["hierarchy.lvl4"]; got != "1.0.0" {
 		t.Fatalf("unexpected lvl4: %v", got)
 	}
 	if got := doc["language"]; got != "nl" {

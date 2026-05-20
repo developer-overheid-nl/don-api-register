@@ -189,9 +189,7 @@ func buildDocument(cfg config, api *models.Api) map[string]any {
 	if title := strings.TrimSpace(api.Title); title != "" {
 		doc["hierarchy.lvl0"] = title
 	}
-	if name := strings.TrimSpace(api.ContactName); name != "" {
-		doc["hierarchy.lvl4"] = name
-	}
+	doc["hierarchy.lvl1"] = "API"
 	if org := api.Organisation; org != nil {
 		if label := strings.TrimSpace(org.Label); label != "" {
 			doc["hierarchy.lvl2"] = label
@@ -201,11 +199,11 @@ func buildDocument(cfg config, api *models.Api) map[string]any {
 			doc["hierarchy.lvl2"] = id
 		}
 	}
-	if email := strings.TrimSpace(api.ContactEmail); email != "" {
-		doc["hierarchy.lvl3"] = email
+	if name := strings.TrimSpace(api.ContactName); name != "" {
+		doc["hierarchy.lvl3"] = name
 	}
-	if contactURL := strings.TrimSpace(api.ContactUrl); contactURL != "" {
-		doc["hierarchy.lvl1"] = contactURL
+	if version := strings.TrimSpace(api.Version); version != "" {
+		doc["hierarchy.lvl4"] = version
 	}
 
 	if content := buildContent(api); content != "" {

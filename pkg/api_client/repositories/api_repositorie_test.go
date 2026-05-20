@@ -238,7 +238,7 @@ func TestApiRepository_GetApiFilterCountsRespectOtherFilters(t *testing.T) {
 	assert.Equal(t, 1, counts.Auth[0].Count)
 }
 
-func TestApiRepository_GetApiFilterCounts_SortsByCountThenAlphabetically(t *testing.T) {
+func TestApiRepository_GetApiFilterCounts_SortsAlphabetically(t *testing.T) {
 	db := setupDB(t)
 	repo := repositories.NewApiRepository(db)
 	ctx := context.Background()
@@ -258,9 +258,9 @@ func TestApiRepository_GetApiFilterCounts_SortsByCountThenAlphabetically(t *test
 	require.Len(t, counts.OasVersion, 3)
 
 	assert.Equal(t, "3.0.0", counts.OasVersion[0].Value)
-	assert.Equal(t, 2, counts.OasVersion[0].Count)
 	assert.Equal(t, "3.0.1", counts.OasVersion[1].Value)
 	assert.Equal(t, "3.1.0", counts.OasVersion[2].Value)
+	assert.Equal(t, 2, counts.OasVersion[0].Count)
 }
 
 func TestApiRepository_GetApiFilterCounts_SortsOrganisationsAlphabetically(t *testing.T) {

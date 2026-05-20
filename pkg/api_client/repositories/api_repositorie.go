@@ -172,7 +172,7 @@ func (r *apiRepository) GetApiFilterCounts(ctx context.Context, p *models.ApiFil
 			return api.Organisation.Uri
 		}
 		return api.Organisation.Label
-	}, false)
+	})
 	result.Status = countApisByFieldWithFilters(apis, dbMatcher, "status", func(api models.Api) string {
 		return api.LifecycleStatus(dbMatcher.now)
 	})
@@ -266,7 +266,7 @@ func apiStoredAuth(api models.Api) string {
 }
 
 func countApisByFieldWithFilters(apis []models.Api, matcher *apiFilterMatcher, exclude string, getValue func(models.Api) string) []models.FilterCount {
-	return countApisByFieldWithFiltersAndLabel(apis, matcher, exclude, getValue, nil, true)
+	return countApisByFieldWithFiltersAndLabel(apis, matcher, exclude, getValue, nil)
 }
 
 func countApisByFieldWithFiltersAndLabel(
@@ -275,7 +275,6 @@ func countApisByFieldWithFiltersAndLabel(
 	exclude string,
 	getValue func(models.Api) string,
 	getLabel func(models.Api) string,
-	sortByCount bool,
 ) []models.FilterCount {
 	counts := make(map[string]int)
 	labels := make(map[string]string)
@@ -305,16 +304,12 @@ func countApisByFieldWithFiltersAndLabel(
 			Count: count,
 		})
 	}
-	sortFilterCounts(result, sortByCount)
+	sortFilterCounts(result)
 	return result
 }
 
-func sortFilterCounts(counts []models.FilterCount, sortByCount bool) {
+func sortFilterCounts(counts []models.FilterCount) {
 	sort.Slice(counts, func(i, j int) bool {
-		if sortByCount && counts[i].Count != counts[j].Count {
-			return counts[i].Count > counts[j].Count
-		}
-
 		iKey := filterCountSortKey(counts[i])
 		jKey := filterCountSortKey(counts[j])
 		if iKey != jKey {

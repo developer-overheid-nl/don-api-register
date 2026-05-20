@@ -1059,7 +1059,7 @@ func (s *APIsAPIService) recordLifecycleChange(ctx context.Context, before, afte
 	oldValue := lifecycleFeedValue(before, oldStatus)
 	newValue := lifecycleFeedValue(after, newStatus)
 	title := "Lifecycle gewijzigd"
-	description := fmt.Sprintf("Lifecycle wijzigde van %s naar %s.", oldValue, newValue)
+	description := fmt.Sprintf("Lifecycle status is gewijzigd van `%s` naar `%s`.", oldValue, newValue)
 	s.saveFeedEvent(ctx, after.Id, models.ApiFeedEventLifecycleChanged, title, description, oldValue, newValue)
 }
 

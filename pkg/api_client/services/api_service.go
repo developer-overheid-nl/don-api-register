@@ -219,9 +219,15 @@ func (s *APIsAPIService) GetApiFilters(ctx context.Context, p *models.ApiFilters
 }
 
 func (s *APIsAPIService) SearchApis(ctx context.Context, p *models.ListApisSearchParams) ([]models.ApiSummary, models.Pagination, error) {
+	if p == nil {
+		p = &models.ListApisSearchParams{}
+	}
 	trimmed := strings.TrimSpace(p.Query)
 	if trimmed == "" {
-		return []models.ApiSummary{}, models.Pagination{}, nil
+		return []models.ApiSummary{}, models.Pagination{
+			CurrentPage:    p.Page,
+			RecordsPerPage: p.PerPage,
+		}, nil
 	}
 	apis, pagination, err := s.repo.SearchApis(ctx, p.Page, p.PerPage, p.Organisation, trimmed)
 	if err != nil {

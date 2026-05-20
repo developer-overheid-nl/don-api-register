@@ -237,16 +237,13 @@ func TestSearchApis_Handler(t *testing.T) {
 			assert.Nil(t, organisation)
 			assert.Equal(t, "title", query)
 			return []models.Api{{
-					Id:     "a1",
-					Title:  "Title",
-					OasUri: "https://example.com/openapi.json",
-					Organisation: &models.Organisation{
-						Uri:   "https://org.example",
-						Label: "Org",
-					},
+					Id:           "a1",
+					Title:        "Title",
+					Organisation: &models.Organisation{Uri: "org1", Label: "Org 1"},
+					Servers:      []models.Server{},
 				}}, models.Pagination{
-					CurrentPage:    page,
-					RecordsPerPage: perPage,
+					CurrentPage:    1,
+					RecordsPerPage: 10,
 					TotalPages:     1,
 					TotalRecords:   1,
 				}, nil
@@ -260,6 +257,7 @@ func TestSearchApis_Handler(t *testing.T) {
 	req := httptest.NewRequest("GET", "/v1/apis/_search?q=title", nil)
 	req.Host = "host"
 	ctx.Request = req
+	ctx.Set("FullPath", "/v1/apis/_search")
 
 	resp, err := ctrl.SearchApis(ctx, &models.ListApisSearchParams{Query: "title"})
 	assert.NoError(t, err)

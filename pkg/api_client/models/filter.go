@@ -52,6 +52,7 @@ type ApiFilterCounts struct {
 
 type ApiFiltersParams struct {
 	Organisation *string  `query:"organisation"`
+	Query        string   `query:"q"`
 	Ids          *string  `query:"ids"`
 	Status       []string `query:"status"`
 	OasVersion   []string `query:"oasVersion"`

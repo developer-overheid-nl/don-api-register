@@ -61,25 +61,11 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	apiGroup := f.Group("/v1", "APIs", "Endpoints for listing and managing APIs.")
 	publicApis := apiGroup.Group("", "Public endpoints", "Public endpoints, accessible with an API key or client credentials token.")
 	privateApis := apiGroup.Group("", "Private endpoints", "Private endpoints of the API register, accessible with a client credentials token.")
-	publicApis.GET("/apis/_search",
-		[]fizz.OperationOption{
-			fizz.ID("searchApis"),
-			fizz.Summary("Search APIs"),
-			fizz.Description("Returns a list of APIs matching the search query"),
-			fizz.WithOptionalSecurity(),
-			fizz.Security(&openapi.SecurityRequirement{
-				"clientCredentials": []string{},
-			}),
-			apiVersionHeaderOption,
-			badRequestResponse,
-		},
-		tonic.Handler(controller.SearchApis, 200),
-	)
 	publicApis.GET("/apis",
 		[]fizz.OperationOption{
 			fizz.ID("listApis"),
 			fizz.Summary("List APIs"),
-			fizz.Description("Returns a list of APIs included in the register. Supports the same filter query parameters as the filters endpoint."),
+			fizz.Description("Returns a list of APIs included in the register. Supports the same filter query parameters as the filters endpoint and combines them with the optional q search term."),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"apiKey": []string{},
@@ -92,12 +78,27 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		},
 		tonic.Handler(controller.ListApis, 200),
 	)
+	publicApis.GET("/apis/_search",
+		[]fizz.OperationOption{
+			fizz.ID("searchApis"),
+			fizz.Summary("Search APIs"),
+			fizz.Description("Deprecated. Use GET /apis with the q query parameter and filters instead."),
+			fizz.Deprecated(true),
+			fizz.WithOptionalSecurity(),
+			fizz.Security(&openapi.SecurityRequirement{
+				"clientCredentials": {"apis:read"},
+			}),
+			apiVersionHeaderOption,
+			badRequestResponse,
+		},
+		tonic.Handler(controller.SearchApis, 200),
+	)
 
 	publicApis.GET("/apis/filters",
 		[]fizz.OperationOption{
 			fizz.ID("listApiFilters"),
 			fizz.Summary("List API filters"),
-			fizz.Description("Returns all available API filter options with counts. Counts are calculated using the active filters from the request."),
+			fizz.Description("Returns all available API filter options with counts. Counts are calculated using the active filters and optional q search term from the request."),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"apiKey": []string{},

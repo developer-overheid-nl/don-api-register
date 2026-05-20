@@ -25,6 +25,9 @@ type artifactRepoStub struct {
 func (a *artifactRepoStub) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
 	return nil, models.Pagination{}, nil
 }
+func (a *artifactRepoStub) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
+	return nil, models.Pagination{}, nil
+}
 func (a *artifactRepoStub) GetApiByID(ctx context.Context, id string) (*models.Api, error) {
 	return nil, nil
 }

@@ -78,6 +78,21 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		},
 		tonic.Handler(controller.ListApis, 200),
 	)
+	publicApis.GET("/apis/_search",
+		[]fizz.OperationOption{
+			fizz.ID("searchApis"),
+			fizz.Summary("Search APIs"),
+			fizz.Description("Deprecated. Use GET /apis with the q query parameter and filters instead."),
+			fizz.Deprecated(true),
+			fizz.WithOptionalSecurity(),
+			fizz.Security(&openapi.SecurityRequirement{
+				"clientCredentials": {"apis:read"},
+			}),
+			apiVersionHeaderOption,
+			badRequestResponse,
+		},
+		tonic.Handler(controller.SearchApis, 200),
+	)
 
 	publicApis.GET("/apis/filters",
 		[]fizz.OperationOption{

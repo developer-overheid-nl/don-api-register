@@ -24,6 +24,7 @@ type stubRepo struct {
 	getLintRes   func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	listLintRes  func(ctx context.Context) ([]models.LintResult, error)
 	getApis      func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error)
+	searchApis   func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
 	saveServer   func(server models.Server) error
 	saveApi      func(api *models.Api) error
 	saveOrg      func(org *models.Organisation) error
@@ -58,6 +59,12 @@ func (s *stubRepo) ListLintResults(ctx context.Context) ([]models.LintResult, er
 }
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
 	return s.getApis(ctx, page, perPage, p)
+}
+func (s *stubRepo) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
+	if s.searchApis != nil {
+		return s.searchApis(ctx, page, perPage, organisation, query)
+	}
+	return []models.Api{}, models.Pagination{}, nil
 }
 
 // unused methods
@@ -774,6 +781,50 @@ func TestListApis_ForwardsAllFilters(t *testing.T) {
 	}
 	_, _, err := service.ListApis(context.Background(), params)
 	assert.NoError(t, err)
+}
+
+func TestSearchApis_TrimsQueryAndAppliesDefaultLimit(t *testing.T) {
+	called := false
+	repo := &stubRepo{
+		searchApis: func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
+			called = true
+			assert.Equal(t, 1, page)
+			assert.Equal(t, 0, perPage)
+			assert.Nil(t, organisation)
+			assert.Equal(t, "digid", query)
+			return []models.Api{{
+					Id:           "api-1",
+					Title:        "DigiD API",
+					Organisation: &models.Organisation{Uri: "org1", Label: "Org 1"},
+					Servers:      []models.Server{},
+				}},
+				models.Pagination{
+					CurrentPage:    1,
+					RecordsPerPage: 10,
+					TotalPages:     2,
+					TotalRecords:   12,
+				}, nil
+		},
+	}
+	service := services.NewAPIsAPIService(repo)
+	params := &models.ListApisSearchParams{Query: "  digid  ", Page: 1}
+	results, pagination, err := service.SearchApis(context.Background(), params)
+	assert.NoError(t, err)
+	assert.True(t, called)
+	assert.Equal(t, 12, pagination.TotalRecords)
+	assert.Equal(t, 2, pagination.TotalPages)
+	assert.Len(t, results, 1)
+	assert.Equal(t, "api-1", results[0].Id)
+}
+
+func TestSearchApis_EmptyQueryReturnsNoResults(t *testing.T) {
+	repo := &stubRepo{}
+	service := services.NewAPIsAPIService(repo)
+	results, pagination, err := service.SearchApis(context.Background(), &models.ListApisSearchParams{Query: "   ", Page: 2, PerPage: 5})
+	assert.NoError(t, err)
+	assert.Len(t, results, 0)
+	assert.Equal(t, 0, pagination.TotalRecords)
+	assert.Equal(t, 0, pagination.TotalPages)
 }
 
 func TestGetApiFilters_ReturnsRequestedGroups(t *testing.T) {

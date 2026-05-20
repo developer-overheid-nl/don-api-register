@@ -46,6 +46,23 @@ func (c *APIsAPIController) ListApiFilters(ctx *gin.Context, p *models.ApiFilter
 	return c.Service.GetApiFilters(ctx.Request.Context(), p)
 }
 
+// SearchApis handles GET /apis/_search
+func (c *APIsAPIController) SearchApis(ctx *gin.Context, p *models.ListApisSearchParams) ([]models.ApiSummary, error) {
+	if p.Page < 1 {
+		p.Page = 1
+	}
+	if p.PerPage < 1 {
+		p.PerPage = 10
+	}
+	p.BaseURL = ctx.FullPath()
+	results, pagination, err := c.Service.SearchApis(ctx.Request.Context(), p)
+	if err != nil {
+		return nil, err
+	}
+	util.SetPaginationHeaders(ctx.Request, ctx.Header, pagination)
+	return results, nil
+}
+
 // RetrieveApi handles GET /apis/:id
 func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, params *models.ApiParams) (*models.ApiDetail, error) {
 	api, err := c.Service.RetrieveApi(ctx.Request.Context(), params.Id)

@@ -16,6 +16,7 @@ import (
 
 type ApiRepository interface {
 	GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error)
+	SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
 	GetApiByID(ctx context.Context, oasUrl string) (*models.Api, error)
 	Save(api *models.Api) error
 	UpdateApi(ctx context.Context, api models.Api) error
@@ -192,6 +193,65 @@ func (r *apiRepository) GetApiFilterCounts(ctx context.Context, p *models.ApiFil
 	})
 
 	return result, nil
+}
+
+func (r *apiRepository) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
+	trimmed := strings.ToLower(strings.TrimSpace(query))
+	if page < 1 {
+		page = 1
+	}
+	if perPage <= 0 {
+		perPage = 10
+	}
+	if trimmed == "" {
+		return []models.Api{}, models.Pagination{
+			CurrentPage:    page,
+			RecordsPerPage: perPage,
+		}, nil
+	}
+
+	applySearchFilters := func(db *gorm.DB) *gorm.DB {
+		if organisation != nil && strings.TrimSpace(*organisation) != "" {
+			db = db.Where("organisation_id = ?", strings.TrimSpace(*organisation))
+		}
+		return db.Where("LOWER(title) LIKE ? ESCAPE '\\'", "%"+escapeSQLLike(trimmed)+"%")
+	}
+
+	var totalRecords int64
+	if err := applySearchFilters(r.db.WithContext(ctx).Model(&models.Api{})).Count(&totalRecords).Error; err != nil {
+		return nil, models.Pagination{}, err
+	}
+
+	var apis []models.Api
+	if err := applyApiOrdering(applySearchFilters(r.db.WithContext(ctx))).
+		Preload("Servers").
+		Preload("Organisation").
+		Offset((page - 1) * perPage).
+		Limit(perPage).
+		Find(&apis).Error; err != nil {
+		return nil, models.Pagination{}, err
+	}
+
+	totalPages := 0
+	if totalRecords > 0 {
+		totalPages = int(math.Ceil(float64(totalRecords) / float64(perPage)))
+	}
+	pagination := models.Pagination{
+		CurrentPage:    page,
+		RecordsPerPage: perPage,
+		TotalPages:     totalPages,
+		TotalRecords:   int(totalRecords),
+	}
+	if page < totalPages {
+		next := page + 1
+		pagination.Next = &next
+	}
+	if page > 1 && totalPages > 0 {
+		prev := page - 1
+		pagination.Previous = &prev
+	}
+
+	return apis, pagination, nil
 }
 
 func apiOpenAPIVersion(api models.Api) string {

@@ -137,6 +137,47 @@ func TestApiRepository_GetApisSearchTreatsLikeWildcardsAsLiterals(t *testing.T) 
 	assert.Equal(t, 1, pagination.TotalRecords)
 }
 
+func TestApiRepository_SearchApisFiltersByTitleAndOrganisation(t *testing.T) {
+	db := setupDB(t)
+	repo := repositories.NewApiRepository(db)
+	ctx := context.Background()
+	orgA := "org-a"
+	orgB := "org-b"
+	require.NoError(t, db.Create(&[]models.Organisation{
+		{Uri: orgA, Label: "Org A"},
+		{Uri: orgB, Label: "Org B"},
+	}).Error)
+	require.NoError(t, db.Create(&[]models.Api{
+		{Id: "match-a", OasUri: "https://example.com/a.yaml", Title: "Realtime API", OrganisationID: &orgA},
+		{Id: "match-b", OasUri: "https://example.com/b.yaml", Title: "Realtime API", OrganisationID: &orgB},
+		{Id: "other-a", OasUri: "https://example.com/other.yaml", Title: "Batch API", OrganisationID: &orgA},
+	}).Error)
+
+	results, pagination, err := repo.SearchApis(ctx, 1, 10, &orgA, "realtime")
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	assert.Equal(t, "match-a", results[0].Id)
+	assert.Equal(t, 1, pagination.TotalRecords)
+	assert.Equal(t, 1, pagination.TotalPages)
+}
+
+func TestApiRepository_SearchApisTreatsLikeWildcardsAsLiterals(t *testing.T) {
+	db := setupDB(t)
+	repo := repositories.NewApiRepository(db)
+	ctx := context.Background()
+
+	require.NoError(t, db.Create(&[]models.Api{
+		{Id: "literal-percent-api", OasUri: "https://example.com/literal-percent.yaml", Title: "Usage 100% API"},
+		{Id: "plain-api", OasUri: "https://example.com/plain.yaml", Title: "Usage 1000 API"},
+	}).Error)
+
+	results, pagination, err := repo.SearchApis(ctx, 1, 10, nil, "100%")
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	assert.Equal(t, "literal-percent-api", results[0].Id)
+	assert.Equal(t, 1, pagination.TotalRecords)
+}
+
 func TestApiRepository_GetApiFilterCountsRespectOtherFilters(t *testing.T) {
 	db := setupDB(t)
 	repo := repositories.NewApiRepository(db)

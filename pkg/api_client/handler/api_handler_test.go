@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
@@ -16,6 +17,7 @@ import (
 // stubRepo mocks ApiRepository for controller tests
 type stubRepo struct {
 	listFunc     func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error)
+	searchFunc   func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
 	retrFunc     func(ctx context.Context, id string) (*models.Api, error)
 	lintResFunc  func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	listLint     func(ctx context.Context) ([]models.LintResult, error)
@@ -29,6 +31,12 @@ type stubRepo struct {
 
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
 	return s.listFunc(ctx, page, perPage, p)
+}
+func (s *stubRepo) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
+	if s.searchFunc != nil {
+		return s.searchFunc(ctx, page, perPage, organisation, query)
+	}
+	return []models.Api{}, models.Pagination{}, nil
 }
 func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, error) {
 	if s.retrFunc != nil {
@@ -219,6 +227,52 @@ func TestListApis_Handler(t *testing.T) {
 	assert.NotNil(t, resp)
 	assert.Len(t, resp, 2)
 	assert.Equal(t, "2", w.Header().Get("Total-Count"))
+}
+
+func TestSearchApis_Handler(t *testing.T) {
+	repo := &stubRepo{
+		searchFunc: func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
+			assert.Equal(t, 1, page)
+			assert.Equal(t, 10, perPage)
+			assert.Nil(t, organisation)
+			assert.Equal(t, "title", query)
+			return []models.Api{{
+					Id:           "a1",
+					Title:        "Title",
+					Organisation: &models.Organisation{Uri: "org1", Label: "Org 1"},
+					Servers:      []models.Server{},
+				}}, models.Pagination{
+					CurrentPage:    1,
+					RecordsPerPage: 10,
+					TotalPages:     1,
+					TotalRecords:   1,
+				}, nil
+		},
+	}
+	svc := services.NewAPIsAPIService(repo)
+	ctrl := NewAPIsAPIController(svc)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	req := httptest.NewRequest("GET", "/v1/apis/_search?q=title", nil)
+	req.Host = "host"
+	ctx.Request = req
+	ctx.Set("FullPath", "/v1/apis/_search")
+
+	resp, err := ctrl.SearchApis(ctx, &models.ListApisSearchParams{Query: "title"})
+	assert.NoError(t, err)
+	if assert.Len(t, resp, 1) {
+		assert.Equal(t, "a1", resp[0].Id)
+	}
+	assert.Equal(t, "1", w.Header().Get("Current-Page"))
+	assert.Equal(t, "1", w.Header().Get("Total-Pages"))
+	assert.Equal(t, "1", w.Header().Get("Total-Count"))
+	assert.Equal(t, strconv.Itoa(10), w.Header().Get("Per-Page"))
+	limitStr := strconv.Itoa(10)
+	expectedLink := "<http://host/v1/apis/_search?page=1&perPage=" + limitStr + "&q=title>; rel=\"first\", " +
+		"<http://host/v1/apis/_search?page=1&perPage=" + limitStr + "&q=title>; rel=\"self\", " +
+		"<http://host/v1/apis/_search?page=1&perPage=" + limitStr + "&q=title>; rel=\"last\""
+	assert.Equal(t, expectedLink, w.Header().Get("Link"))
 }
 
 func TestRetrieveApi_Handler(t *testing.T) {

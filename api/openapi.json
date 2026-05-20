@@ -179,6 +179,84 @@
         }
       }
     },
+    "/apis/_search": {
+      "get": {
+        "security": [
+          {},
+          {
+            "clientCredentials": [
+              "apis:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Public endpoints",
+          "APIs"
+        ],
+        "summary": "Search APIs",
+        "description": "Deprecated. Use GET /apis with the q query parameter and filters instead.",
+        "deprecated": true,
+        "operationId": "searchApis",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PerPage"
+          },
+          {
+            "$ref": "#/components/parameters/Organisation"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search term.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "API-Version": {
+                "$ref": "#/components/headers/ApiVersion"
+              },
+              "Link": {
+                "$ref": "#/components/headers/Link"
+              },
+              "Total-Count": {
+                "$ref": "#/components/headers/TotalCount"
+              },
+              "Current-Page": {
+                "$ref": "#/components/headers/CurrentPage"
+              },
+              "Per-Page": {
+                "$ref": "#/components/headers/PerPage"
+              },
+              "Total-Pages": {
+                "$ref": "#/components/headers/TotalPages"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      }
+    },
     "/apis/filters": {
       "get": {
         "security": [

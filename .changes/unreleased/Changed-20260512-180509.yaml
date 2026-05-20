@@ -1,3 +1,0 @@
-kind: Changed
-body: Added DB-backed q search support to API list and filter endpoints while keeping the deprecated API _search endpoint available
-time: 2026-05-12T18:05:09+02:00

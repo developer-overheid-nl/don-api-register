@@ -744,14 +744,14 @@ func TestApiFeedEndpoint(t *testing.T) {
 		CreatedAt:   time.Date(2026, 5, 6, 12, 0, 0, 0, time.UTC),
 	}))
 
-	resp := env.doRequest(t, http.MethodGet, "/v1/apis/"+apiID+"/feed")
+	resp := env.doRequest(t, http.MethodGet, "/v1/apis/"+apiID+"/feed.rss")
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	require.Equal(t, "application/rss+xml; charset=utf-8", resp.Header.Get("Content-Type"))
 	require.Equal(t, "test-version", resp.Header.Get("API-Version"))
 	body := string(readRawBody(t, resp))
-	require.Contains(t, body, `<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">`)
-	require.Contains(t, body, `xmlns:atom="http://www.w3.org/2005/Atom"`)
-	require.Contains(t, body, `<atom:link href="https://`+strings.TrimPrefix(env.server.URL, "http://")+`/v1/apis/`+apiID+`/feed" rel="self" type="application/rss+xml"></atom:link>`)
+	require.Contains(t, body, `<rss version="2.0">`)
+	require.NotContains(t, body, `xmlns:atom`)
+	require.NotContains(t, body, `<atom:link`)
 	require.Contains(t, body, "<link>https://apis.developer.overheid.nl/apis/"+apiID+"</link>")
 	require.Contains(t, body, "<title>Wijzigingen voor Feed API</title>")
 	require.Contains(t, body, "<guid isPermaLink=\"false\">feed-event-1</guid>")

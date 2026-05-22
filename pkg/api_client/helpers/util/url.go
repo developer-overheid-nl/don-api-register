@@ -3,7 +3,6 @@ package util
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -11,16 +10,6 @@ const frontendAPIBaseURL = "https://apis.developer.overheid.nl/apis"
 
 func FrontendAPIURL(id string) string {
 	return fmt.Sprintf("%s/%s", frontendAPIBaseURL, id)
-}
-
-// ApiFeedURL returns the absolute URL for an API's RSS feed.
-// PUBLIC_API_BASE_URL is required so forwarded/proxy headers cannot be spoofed
-// by a client.
-func ApiFeedURL(id string) (string, error) {
-	if base := strings.TrimSpace(os.Getenv("PUBLIC_API_BASE_URL")); base != "" {
-		return fmt.Sprintf("%s/apis/%s/feed", strings.TrimRight(base, "/"), id), nil
-	}
-	return "", fmt.Errorf("PUBLIC_API_BASE_URL is niet ingesteld")
 }
 
 func AbsoluteCurrentRequestURL(r *http.Request) string {

@@ -40,9 +40,7 @@ Bij het opstarten van de server wordt automatisch een aparte service gestart die
 
 ## RSS-feed configuratie
 
-Elke API heeft een RSS-feed beschikbaar op `/apis/{id}/feed`. De Atom self-link in die feed wordt opgebouwd vanuit de omgevingsvariabele:
-
-- `PUBLIC_API_BASE_URL`: publieke basis-URL van de API inclusief pad-prefix (bijv. `https://api.don.projects.digilab.network/api-register/v1`). De RSS self-link wordt dan `{PUBLIC_API_BASE_URL}/apis/{id}/feed`; deze variabele is verplicht voor de feed.
+Elke API heeft een RSS-feed beschikbaar op `/apis/{id}/feed.rss`.
 
 ## Changelog (Changie)
 

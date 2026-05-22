@@ -180,7 +180,7 @@ func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Ap
 	return detail, nil
 }
 
-func (s *APIsAPIService) GetApiFeed(ctx context.Context, id, apiURL, feedURL string) ([]byte, error) {
+func (s *APIsAPIService) GetApiFeed(ctx context.Context, id, apiURL string) ([]byte, error) {
 	api, err := s.repo.GetApiByID(ctx, id)
 	if err != nil || api == nil {
 		return nil, err
@@ -195,10 +195,8 @@ func (s *APIsAPIService) GetApiFeed(ctx context.Context, id, apiURL, feedURL str
 	}
 	feed := rss{
 		Version: "2.0",
-		AtomNS:  "http://www.w3.org/2005/Atom",
 		Channel: rssChannel{
 			Title:       fmt.Sprintf("Wijzigingen voor %s", title),
-			AtomLink:    atomLink{Href: feedURL, Rel: "self", Type: "application/rss+xml"},
 			Link:        apiURL,
 			Description: fmt.Sprintf("RSS feed met inhoudelijke wijzigingen voor %s.", title),
 			Language:    "nl",
@@ -1016,24 +1014,16 @@ func (s *APIsAPIService) updateOASMetadataSnapshot(ctx context.Context, apiID st
 type rss struct {
 	XMLName xml.Name   `xml:"rss"`
 	Version string     `xml:"version,attr"`
-	AtomNS  string     `xml:"xmlns:atom,attr"`
 	Channel rssChannel `xml:"channel"`
 }
 
 type rssChannel struct {
 	Title         string    `xml:"title"`
-	AtomLink      atomLink  `xml:"atom:link"`
 	Link          string    `xml:"link"`
 	Description   string    `xml:"description"`
 	Language      string    `xml:"language,omitempty"`
 	LastBuildDate string    `xml:"lastBuildDate,omitempty"`
 	Items         []rssItem `xml:"item"`
-}
-
-type atomLink struct {
-	Href string `xml:"href,attr"`
-	Rel  string `xml:"rel,attr"`
-	Type string `xml:"type,attr"`
 }
 
 type rssItem struct {

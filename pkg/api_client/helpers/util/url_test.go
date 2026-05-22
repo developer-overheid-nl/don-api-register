@@ -7,36 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestApiFeedURL_UsesPublicAPIBaseURL(t *testing.T) {
-	t.Setenv("PUBLIC_API_BASE_URL", "https://api.don.projects.digilab.network/api-register/v1")
-
-	got, err := ApiFeedURL("api-1")
-	assert.NoError(t, err)
-	assert.Equal(t,
-		"https://api.don.projects.digilab.network/api-register/v1/apis/api-1/feed",
-		got,
-	)
-}
-
-func TestApiFeedURL_RequiresPublicAPIBaseURL(t *testing.T) {
-	t.Setenv("PUBLIC_API_BASE_URL", "")
-
-	got, err := ApiFeedURL("api-1")
-	assert.EqualError(t, err, "PUBLIC_API_BASE_URL is niet ingesteld")
-	assert.Empty(t, got)
-}
-
-func TestApiFeedURL_TrimsTrailingSlash(t *testing.T) {
-	t.Setenv("PUBLIC_API_BASE_URL", "https://api.don.projects.digilab.network/api-register/v1/")
-
-	got, err := ApiFeedURL("api-1")
-	assert.NoError(t, err)
-	assert.Equal(t,
-		"https://api.don.projects.digilab.network/api-register/v1/apis/api-1/feed",
-		got,
-	)
-}
-
 func TestFrontendAPIURL(t *testing.T) {
 	assert.Equal(t, "https://apis.developer.overheid.nl/apis/api-1", FrontendAPIURL("api-1"))
 }

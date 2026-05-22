@@ -152,7 +152,6 @@ func TestGetOas_Handler(t *testing.T) {
 }
 
 func TestGetApiFeed_Handler(t *testing.T) {
-	t.Setenv("PUBLIC_API_BASE_URL", "https://example.com/v1")
 	createdAt := time.Date(2026, 5, 6, 12, 0, 0, 0, time.UTC)
 	repo := &stubRepo{
 		retrFunc: func(ctx context.Context, id string) (*models.Api, error) {
@@ -179,7 +178,7 @@ func TestGetApiFeed_Handler(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
-	ctx.Request = httptest.NewRequest("GET", "/v1/apis/api-1/feed", nil)
+	ctx.Request = httptest.NewRequest("GET", "/v1/apis/api-1/feed.rss", nil)
 
 	err := ctrl.GetApiFeed(ctx, &models.ApiParams{Id: "api-1"})
 	assert.NoError(t, err)
@@ -187,61 +186,12 @@ func TestGetApiFeed_Handler(t *testing.T) {
 	assert.Equal(t, "application/rss+xml; charset=utf-8", w.Header().Get("Content-Type"))
 	body := w.Body.String()
 	assert.True(t, strings.HasPrefix(body, "<?xml"))
-	assert.Contains(t, body, `<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">`)
-	assert.Contains(t, body, `xmlns:atom="http://www.w3.org/2005/Atom"`)
-	assert.Contains(t, body, `<atom:link href="https://example.com/v1/apis/api-1/feed" rel="self" type="application/rss+xml"></atom:link>`)
+	assert.Contains(t, body, `<rss version="2.0">`)
+	assert.NotContains(t, body, `xmlns:atom`)
+	assert.NotContains(t, body, `<atom:link`)
 	assert.Contains(t, body, "<link>https://apis.developer.overheid.nl/apis/api-1</link>")
 	assert.Contains(t, body, "<title>Wijzigingen voor Demo API</title>")
 	assert.Contains(t, body, "<guid isPermaLink=\"false\">event-1</guid>")
-}
-
-func TestGetApiFeed_Handler_RequiresPublicBaseURL(t *testing.T) {
-	t.Setenv("PUBLIC_API_BASE_URL", "")
-	repo := &stubRepo{}
-	svc := services.NewAPIsAPIService(repo)
-	ctrl := NewAPIsAPIController(svc)
-
-	w := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(w)
-	ctx.Request = httptest.NewRequest("GET", "/v1/apis/api-1/feed", nil)
-
-	err := ctrl.GetApiFeed(ctx, &models.ApiParams{Id: "api-1"})
-	apiErr, ok := err.(problem.APIError)
-	assert.True(t, ok)
-	assert.Equal(t, 500, apiErr.Status)
-	assert.Contains(t, apiErr.Errors[0].Detail, "PUBLIC_API_BASE_URL")
-}
-
-func TestGetApiFeed_Handler_PublicBaseURL_IgnoresSpoofedHeaders(t *testing.T) {
-	t.Setenv("PUBLIC_API_BASE_URL", "https://api.don.projects.digilab.network/api-register/v1")
-	createdAt := time.Date(2026, 5, 6, 12, 0, 0, 0, time.UTC)
-	repo := &stubRepo{
-		retrFunc: func(ctx context.Context, id string) (*models.Api, error) {
-			return &models.Api{Id: id, Title: "Demo API"}, nil
-		},
-		listFeed: func(ctx context.Context, apiID string, limit int) ([]models.ApiFeedEvent, error) {
-			return []models.ApiFeedEvent{
-				{ID: "event-1", ApiID: apiID, Type: models.ApiFeedEventLifecycleChanged, CreatedAt: createdAt},
-			}, nil
-		},
-	}
-	svc := services.NewAPIsAPIService(repo)
-	ctrl := NewAPIsAPIController(svc)
-
-	w := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(w)
-	req := httptest.NewRequest("GET", "/v1/apis/api-1/feed", nil)
-	// Spoofed headers must not appear in the Atom self-link.
-	req.Header.Set("X-Forwarded-Host", "attacker.example.com")
-	req.Header.Set("Forwarded", `proto=https;host="attacker.example.com"`)
-	ctx.Request = req
-
-	err := ctrl.GetApiFeed(ctx, &models.ApiParams{Id: "api-1"})
-	assert.NoError(t, err)
-	body := w.Body.String()
-	assert.Contains(t, body,
-		`<atom:link href="https://api.don.projects.digilab.network/api-register/v1/apis/api-1/feed" rel="self" type="application/rss+xml"></atom:link>`)
-	assert.NotContains(t, body, "attacker.example.com")
 }
 
 func TestGetOas_AllowsPatchVersion(t *testing.T) {

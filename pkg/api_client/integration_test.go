@@ -283,6 +283,17 @@ func TestRealtimeApplicationRun(t *testing.T) {
 	})
 
 	t.Run("search apis", func(t *testing.T) {
+		resp := env.doRequest(t, http.MethodGet, "/v1/apis?q=Realtime")
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, "test-version", resp.Header.Get("API-Version"))
+		require.Equal(t, "1", resp.Header.Get("Total-Count"))
+
+		results := decodeBody[[]models.ApiSummary](t, resp)
+		require.Len(t, results, 1)
+		require.Equal(t, apiID, results[0].Id)
+	})
+
+	t.Run("legacy search path remains available", func(t *testing.T) {
 		resp := env.doRequest(t, http.MethodGet, "/v1/apis/_search?q=Realtime")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		require.Equal(t, "test-version", resp.Header.Get("API-Version"))
@@ -341,7 +352,7 @@ func TestRealtimeApplicationRun(t *testing.T) {
 	})
 
 	t.Run("filter apis", func(t *testing.T) {
-		resp := env.doRequest(t, http.MethodGet, "/v1/apis?status=deprecated&oasVersion=3.0.0&auth=oauth2&adrScore=88")
+		resp := env.doRequest(t, http.MethodGet, "/v1/apis?q=Legacy&status=deprecated&oasVersion=3.0.0&auth=oauth2&adrScore=88")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		require.Equal(t, "1", resp.Header.Get("Total-Count"))
 
@@ -489,6 +500,18 @@ func TestOpenAPIJSONEndpoint(t *testing.T) {
 	body := readRawBody(t, resp)
 	require.Contains(t, string(body), `"openapi"`)
 	require.Contains(t, string(body), `"paths"`)
+
+	var spec map[string]any
+	require.NoError(t, json.Unmarshal(body, &spec))
+	paths := spec["paths"].(map[string]any)
+	searchPath := paths["/apis/_search"].(map[string]any)
+	searchGet := searchPath["get"].(map[string]any)
+	require.Equal(t, true, searchGet["deprecated"])
+	require.Equal(t, "searchApis", searchGet["operationId"])
+	params := searchGet["parameters"].([]any)
+	qParam := params[len(params)-1].(map[string]any)
+	require.Equal(t, "q", qParam["name"])
+	require.Equal(t, true, qParam["required"])
 }
 
 func TestRetrieveApiJsonLdEndpoint_SuccessAndNotFound(t *testing.T) {
@@ -957,8 +980,8 @@ func TestListAndSearchEndpoints_InvalidPagination(t *testing.T) {
 		require.Equal(t, 400, prob.Status)
 	})
 
-	t.Run("search apis invalid page", func(t *testing.T) {
-		resp := env.doRequest(t, http.MethodGet, "/v1/apis/_search?q=test&page=abc")
+	t.Run("list apis with search invalid page", func(t *testing.T) {
+		resp := env.doRequest(t, http.MethodGet, "/v1/apis?q=test&page=abc")
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		prob := decodeBody[problem.APIError](t, resp)
 		require.Equal(t, 400, prob.Status)

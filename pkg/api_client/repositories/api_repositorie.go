@@ -47,6 +47,7 @@ type apiRepository struct {
 type apiFilterMatcher struct {
 	params          *models.ApiFiltersParams
 	organisation    string
+	query           string
 	ids             map[string]bool
 	status          map[string]bool
 	oasVersion      map[string]bool
@@ -80,9 +81,10 @@ func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, p *model
 		perPage = 10
 	}
 	matcher := compileApiFilters(p)
+	dbMatcher := matcher.withoutSQLFilters()
 
 	var apis []models.Api
-	if err := applyApiOrdering(r.db.WithContext(ctx)).
+	if err := applyApiOrdering(applyApiSQLFilters(r.db.WithContext(ctx), matcher)).
 		Preload("Servers").
 		Preload("Organisation").
 		Find(&apis).Error; err != nil {
@@ -91,7 +93,7 @@ func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, p *model
 
 	filtered := make([]models.Api, 0, len(apis))
 	for _, api := range apis {
-		if apiMatchesCompiledFilters(api, matcher, "") {
+		if apiMatchesCompiledFilters(api, dbMatcher, "") {
 			filtered = append(filtered, api)
 		}
 	}
@@ -134,18 +136,29 @@ func applyApiOrdering(db *gorm.DB) *gorm.DB {
 	return db.Order("title")
 }
 
+func applyApiSQLFilters(db *gorm.DB, matcher *apiFilterMatcher) *gorm.DB {
+	if matcher == nil {
+		return db
+	}
+	if matcher.query != "" {
+		db = db.Where("LOWER(title) LIKE ? ESCAPE '\\'", "%"+escapeSQLLike(matcher.query)+"%")
+	}
+	return db
+}
+
 func (r *apiRepository) GetApiFilterCounts(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error) {
 	matcher := compileApiFilters(p)
+	dbMatcher := matcher.withoutSQLFilters()
 
 	var apis []models.Api
-	if err := r.db.WithContext(ctx).
+	if err := applyApiSQLFilters(r.db.WithContext(ctx), matcher).
 		Preload("Organisation").
 		Find(&apis).Error; err != nil {
 		return nil, err
 	}
 
 	result := &models.ApiFilterCounts{}
-	result.Organisation = countApisByFieldWithFiltersAndLabel(apis, matcher, "organisation", func(api models.Api) string {
+	result.Organisation = countApisByFieldWithFiltersAndLabel(apis, dbMatcher, "organisation", func(api models.Api) string {
 		if api.OrganisationID == nil {
 			return ""
 		}
@@ -161,23 +174,23 @@ func (r *apiRepository) GetApiFilterCounts(ctx context.Context, p *models.ApiFil
 			return api.Organisation.Uri
 		}
 		return api.Organisation.Label
-	}, false)
-	result.Status = countApisByFieldWithFilters(apis, matcher, "status", func(api models.Api) string {
-		return api.LifecycleStatus(matcher.now)
 	})
-	result.OasVersion = countApisByFieldWithFilters(apis, matcher, "oasVersion", func(api models.Api) string {
+	result.Status = countApisByFieldWithFilters(apis, dbMatcher, "status", func(api models.Api) string {
+		return api.LifecycleStatus(dbMatcher.now)
+	})
+	result.OasVersion = countApisByFieldWithFilters(apis, dbMatcher, "oasVersion", func(api models.Api) string {
 		if version := apiOpenAPIVersion(api); version != "" {
 			return version
 		}
 		return "unknown"
 	})
-	result.AdrScore = countApisByFieldWithFilters(apis, matcher, "adrScore", func(api models.Api) string {
+	result.AdrScore = countApisByFieldWithFilters(apis, dbMatcher, "adrScore", func(api models.Api) string {
 		if api.AdrScore == nil {
 			return "unknown"
 		}
 		return strconv.Itoa(*api.AdrScore)
 	})
-	result.Auth = countApisByFieldWithFilters(apis, matcher, "auth", func(api models.Api) string {
+	result.Auth = countApisByFieldWithFilters(apis, dbMatcher, "auth", func(api models.Api) string {
 		return normalizedAuthValue(apiStoredAuth(api))
 	})
 
@@ -201,6 +214,65 @@ func (r *apiRepository) ListApiFeedEvents(ctx context.Context, apiID string, lim
 	return events, err
 }
 
+func (r *apiRepository) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
+	trimmed := strings.ToLower(strings.TrimSpace(query))
+	if page < 1 {
+		page = 1
+	}
+	if perPage <= 0 {
+		perPage = 10
+	}
+	if trimmed == "" {
+		return []models.Api{}, models.Pagination{
+			CurrentPage:    page,
+			RecordsPerPage: perPage,
+		}, nil
+	}
+
+	applySearchFilters := func(db *gorm.DB) *gorm.DB {
+		if organisation != nil && strings.TrimSpace(*organisation) != "" {
+			db = db.Where("organisation_id = ?", strings.TrimSpace(*organisation))
+		}
+		return db.Where("LOWER(title) LIKE ? ESCAPE '\\'", "%"+escapeSQLLike(trimmed)+"%")
+	}
+
+	var totalRecords int64
+	if err := applySearchFilters(r.db.WithContext(ctx).Model(&models.Api{})).Count(&totalRecords).Error; err != nil {
+		return nil, models.Pagination{}, err
+	}
+
+	var apis []models.Api
+	if err := applyApiOrdering(applySearchFilters(r.db.WithContext(ctx))).
+		Preload("Servers").
+		Preload("Organisation").
+		Offset((page - 1) * perPage).
+		Limit(perPage).
+		Find(&apis).Error; err != nil {
+		return nil, models.Pagination{}, err
+	}
+
+	totalPages := 0
+	if totalRecords > 0 {
+		totalPages = int(math.Ceil(float64(totalRecords) / float64(perPage)))
+	}
+	pagination := models.Pagination{
+		CurrentPage:    page,
+		RecordsPerPage: perPage,
+		TotalPages:     totalPages,
+		TotalRecords:   int(totalRecords),
+	}
+	if page < totalPages {
+		next := page + 1
+		pagination.Next = &next
+	}
+	if page > 1 && totalPages > 0 {
+		prev := page - 1
+		pagination.Previous = &prev
+	}
+
+	return apis, pagination, nil
+}
+
 func apiOpenAPIVersion(api models.Api) string {
 	return strings.TrimSpace(api.OAS.Version)
 }
@@ -213,7 +285,7 @@ func apiStoredAuth(api models.Api) string {
 }
 
 func countApisByFieldWithFilters(apis []models.Api, matcher *apiFilterMatcher, exclude string, getValue func(models.Api) string) []models.FilterCount {
-	return countApisByFieldWithFiltersAndLabel(apis, matcher, exclude, getValue, nil, true)
+	return countApisByFieldWithFiltersAndLabel(apis, matcher, exclude, getValue, nil)
 }
 
 func countApisByFieldWithFiltersAndLabel(
@@ -222,7 +294,6 @@ func countApisByFieldWithFiltersAndLabel(
 	exclude string,
 	getValue func(models.Api) string,
 	getLabel func(models.Api) string,
-	sortByCount bool,
 ) []models.FilterCount {
 	counts := make(map[string]int)
 	labels := make(map[string]string)
@@ -252,16 +323,12 @@ func countApisByFieldWithFiltersAndLabel(
 			Count: count,
 		})
 	}
-	sortFilterCounts(result, sortByCount)
+	sortFilterCounts(result)
 	return result
 }
 
-func sortFilterCounts(counts []models.FilterCount, sortByCount bool) {
+func sortFilterCounts(counts []models.FilterCount) {
 	sort.Slice(counts, func(i, j int) bool {
-		if sortByCount && counts[i].Count != counts[j].Count {
-			return counts[i].Count > counts[j].Count
-		}
-
 		iKey := filterCountSortKey(counts[i])
 		jKey := filterCountSortKey(counts[j])
 		if iKey != jKey {
@@ -294,12 +361,22 @@ func compileApiFilters(p *models.ApiFiltersParams) *apiFilterMatcher {
 	if p.Organisation != nil {
 		matcher.organisation = strings.TrimSpace(*p.Organisation)
 	}
+	matcher.query = strings.ToLower(strings.TrimSpace(p.Query))
 	if p.Ids != nil {
 		matcher.ids = selectedFilterSet([]string{*p.Ids})
 	}
 	matcher.adrScore, matcher.adrScoreUnknown, matcher.adrScoreInvalid = selectedScoreSet(p.AdrScore)
 
 	return matcher
+}
+
+func (matcher *apiFilterMatcher) withoutSQLFilters() *apiFilterMatcher {
+	if matcher == nil {
+		return nil
+	}
+	clone := *matcher
+	clone.query = ""
+	return &clone
 }
 
 func apiMatchesCompiledFilters(api models.Api, matcher *apiFilterMatcher, exclude string) bool {
@@ -312,6 +389,9 @@ func apiMatchesCompiledFilters(api models.Api, matcher *apiFilterMatcher, exclud
 		}
 	}
 	if len(matcher.ids) > 0 && !matcher.ids[api.Id] {
+		return false
+	}
+	if matcher.query != "" && !apiMatchesQuery(api, matcher.query) {
 		return false
 	}
 	if exclude != "status" && len(matcher.status) > 0 {
@@ -346,6 +426,26 @@ func apiMatchesCompiledFilters(api models.Api, matcher *apiFilterMatcher, exclud
 		}
 	}
 	return true
+}
+
+func apiMatchesQuery(api models.Api, query string) bool {
+	if query == "" {
+		return true
+	}
+	return strings.Contains(strings.ToLower(api.Title), query)
+}
+
+func escapeSQLLike(value string) string {
+	var builder strings.Builder
+	builder.Grow(len(value))
+	for _, char := range value {
+		switch char {
+		case '\\', '%', '_':
+			builder.WriteByte('\\')
+		}
+		builder.WriteRune(char)
+	}
+	return builder.String()
 }
 
 func selectedFilterSet(groups ...[]string) map[string]bool {
@@ -423,77 +523,6 @@ func normalizedAuthValue(value string) string {
 	default:
 		return trimmed
 	}
-}
-
-func (r *apiRepository) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
-	trimmed := strings.TrimSpace(query)
-	if page < 1 {
-		page = 1
-	}
-	if perPage <= 0 {
-		perPage = 10
-	}
-	if trimmed == "" {
-		return []models.Api{}, models.Pagination{
-			CurrentPage:    page,
-			RecordsPerPage: perPage,
-		}, nil
-	}
-
-	base := r.db.WithContext(ctx)
-	if organisation != nil && strings.TrimSpace(*organisation) != "" {
-		base = base.Where("organisation_id = ?", strings.TrimSpace(*organisation))
-	}
-	var pattern string
-	if trimmed != "" {
-		pattern = fmt.Sprintf("%%%s%%", strings.ToLower(trimmed))
-		base = base.Where("LOWER(title) LIKE ?", pattern)
-	}
-
-	var totalRecords int64
-	if err := base.Model(&models.Api{}).Count(&totalRecords).Error; err != nil {
-		return nil, models.Pagination{}, err
-	}
-
-	queryDB := r.db.WithContext(ctx)
-	if organisation != nil && strings.TrimSpace(*organisation) != "" {
-		queryDB = queryDB.Where("organisation_id = ?", strings.TrimSpace(*organisation))
-	}
-	if pattern != "" {
-		queryDB = queryDB.Where("LOWER(title) LIKE ?", pattern)
-	}
-
-	var apis []models.Api
-	if err := queryDB.
-		Preload("Servers").
-		Preload("Organisation").
-		Order("title").
-		Offset((page - 1) * perPage).
-		Limit(perPage).
-		Find(&apis).Error; err != nil {
-		return nil, models.Pagination{}, err
-	}
-
-	totalPages := 0
-	if totalRecords > 0 {
-		totalPages = int(math.Ceil(float64(totalRecords) / float64(perPage)))
-	}
-	pagination := models.Pagination{
-		CurrentPage:    page,
-		RecordsPerPage: perPage,
-		TotalPages:     totalPages,
-		TotalRecords:   int(totalRecords),
-	}
-	if page < totalPages {
-		next := page + 1
-		pagination.Next = &next
-	}
-	if page > 1 && totalPages > 0 {
-		prev := page - 1
-		pagination.Previous = &prev
-	}
-
-	return apis, pagination, nil
 }
 
 func (r *apiRepository) GetApiByID(ctx context.Context, id string) (*models.Api, error) {

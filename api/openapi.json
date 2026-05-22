@@ -62,7 +62,7 @@
           "APIs"
         ],
         "summary": "List APIs",
-        "description": "Returns a list of APIs included in the register. Supports the same filter query parameters as the filters endpoint.",
+        "description": "Returns a list of APIs included in the register. Supports the same filter query parameters as the filters endpoint and combines them with the optional q search term.",
         "operationId": "listApis",
         "parameters": [
           {
@@ -70,6 +70,9 @@
           },
           {
             "$ref": "#/components/parameters/PerPage"
+          },
+          {
+            "$ref": "#/components/parameters/Search"
           },
           {
             "$ref": "#/components/parameters/Organisation"
@@ -176,13 +179,10 @@
         }
       }
     },
-    "/apis/filters": {
+    "/apis/_search": {
       "get": {
         "security": [
           {},
-          {
-            "apiKey": []
-          },
           {
             "clientCredentials": [
               "apis:read"
@@ -193,62 +193,9 @@
           "Public endpoints",
           "APIs"
         ],
-        "summary": "List API filters",
-        "description": "Returns all available API filter options with counts. Counts are calculated using the active filters from the request.",
-        "operationId": "listApiFilters",
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/Organisation"
-          },
-          {
-            "$ref": "#/components/parameters/Ids"
-          },
-          {
-            "$ref": "#/components/parameters/Status"
-          },
-          {
-            "$ref": "#/components/parameters/OasVersion"
-          },
-          {
-            "$ref": "#/components/parameters/AdrScore"
-          },
-          {
-            "$ref": "#/components/parameters/Auth"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "headers": {
-              "API-Version": {
-                "$ref": "#/components/headers/ApiVersion"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FilterGroup"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/400"
-          }
-        }
-      }
-    },
-    "/apis/_search": {
-      "get": {
-        "tags": [
-          "Public endpoints",
-          "APIs"
-        ],
         "summary": "Search APIs",
-        "description": "Returns a list of APIs matching the search query.",
+        "description": "Deprecated. Use GET /apis with the q query parameter and filters instead.",
+        "deprecated": true,
         "operationId": "searchApis",
         "parameters": [
           {
@@ -299,6 +246,74 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/ApiSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          }
+        }
+      }
+    },
+    "/apis/filters": {
+      "get": {
+        "security": [
+          {},
+          {
+            "apiKey": []
+          },
+          {
+            "clientCredentials": [
+              "apis:read"
+            ]
+          }
+        ],
+        "tags": [
+          "Public endpoints",
+          "APIs"
+        ],
+        "summary": "List API filters",
+        "description": "Returns all available API filter options with counts. Counts are calculated using the active filters and optional q search term from the request.",
+        "operationId": "listApiFilters",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Search"
+          },
+          {
+            "$ref": "#/components/parameters/Organisation"
+          },
+          {
+            "$ref": "#/components/parameters/Ids"
+          },
+          {
+            "$ref": "#/components/parameters/Status"
+          },
+          {
+            "$ref": "#/components/parameters/OasVersion"
+          },
+          {
+            "$ref": "#/components/parameters/AdrScore"
+          },
+          {
+            "$ref": "#/components/parameters/Auth"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "API-Version": {
+                "$ref": "#/components/headers/ApiVersion"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FilterGroup"
                   }
                 }
               }
@@ -948,6 +963,15 @@
           "minimum": 1,
           "maximum": 100,
           "default": 20
+        }
+      },
+      "Search": {
+        "name": "q",
+        "in": "query",
+        "required": false,
+        "description": "Search term to combine with API filters. Matches API title.",
+        "schema": {
+          "type": "string"
         }
       },
       "Organisation": {

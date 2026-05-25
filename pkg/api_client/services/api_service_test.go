@@ -45,6 +45,9 @@ func (s *stubRepo) FindOrganisationByURI(ctx context.Context, uri string) (*mode
 	return s.findOrg(ctx, uri)
 }
 func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, error) {
+	if s.getByID == nil {
+		return nil, nil
+	}
 	return s.getByID(ctx, id)
 }
 func (s *stubRepo) GetLintResults(ctx context.Context, apiID string) ([]models.LintResult, error) {
@@ -213,7 +216,7 @@ func TestUpdateOasUri_LifecycleOnlyUpdateWithoutOAS(t *testing.T) {
 	if assert.Len(t, feedEvents, 1) {
 		assert.Equal(t, models.ApiFeedEventLifecycleChanged, feedEvents[0].Type)
 		assert.Equal(t, "api-123", feedEvents[0].ApiID)
-		assert.Contains(t, feedEvents[0].Description, "Lifecycle wijzigde")
+		assert.Contains(t, feedEvents[0].Description, "Lifecycle status is gewijzigd")
 	}
 }
 

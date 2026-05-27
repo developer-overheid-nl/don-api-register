@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -32,6 +33,20 @@ type OASResult struct {
 	Major       int
 	Minor       int
 	Patch       int
+}
+
+type HTTPStatusError struct {
+	StatusCode int
+	Body       string
+}
+
+func (e *HTTPStatusError) Error() string {
+	return fmt.Sprintf("kan OAS niet ophalen: status %d: %s", e.StatusCode, strings.TrimSpace(e.Body))
+}
+
+func IsHTTPStatus(err error, statusCode int) bool {
+	var statusErr *HTTPStatusError
+	return errors.As(err, &statusErr) && statusErr.StatusCode == statusCode
 }
 
 var versionPrefixPattern = regexp.MustCompile(`^(\d+)\.(\d+)`)
@@ -200,7 +215,10 @@ func fetchRawOAS(ctx context.Context, input tools.OASInput, opts FetchOpts) ([]b
 			return nil, "", fmt.Errorf("kan OAS response body niet sluiten: %w", closeErr)
 		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return nil, "", fmt.Errorf("kan OAS niet ophalen: status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+			return nil, "", &HTTPStatusError{
+				StatusCode: resp.StatusCode,
+				Body:       string(body),
+			}
 		}
 		contentType := resp.Header.Get("Content-Type")
 		originLabel := "zonder Origin"

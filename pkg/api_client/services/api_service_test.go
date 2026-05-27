@@ -13,6 +13,7 @@ import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
 
@@ -863,6 +864,59 @@ func TestGetApiFilters_ReturnsRequestedGroups(t *testing.T) {
 			assert.True(t, g.Options[0].Selected)
 		}
 	}
+}
+
+func TestGetApiFilters_KeepsSelectedOptionsWithoutCount(t *testing.T) {
+	repo := &stubRepo{
+		filterCounts: func(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error) {
+			return &models.ApiFilterCounts{}, nil
+		},
+	}
+	service := services.NewAPIsAPIService(repo)
+	org := "https://example.org/org"
+
+	groups, err := service.GetApiFilters(context.Background(), &models.ApiFiltersParams{
+		Query:        "bla",
+		Organisation: &org,
+		Status:       []string{"deprecated"},
+		OasVersion:   []string{"3.1.0"},
+		AdrScore:     []string{"88"},
+		Auth:         []string{"oauth2"},
+	})
+	require.NoError(t, err)
+
+	byKey := map[string]models.FilterGroup{}
+	for _, group := range groups {
+		byKey[group.Key] = group
+	}
+
+	require.Len(t, byKey["organisation"].Options, 1)
+	assert.Equal(t, org, byKey["organisation"].Options[0].Value)
+	assert.Equal(t, org, byKey["organisation"].Options[0].Label)
+	assert.Equal(t, 0, byKey["organisation"].Options[0].Count)
+	assert.True(t, byKey["organisation"].Options[0].Selected)
+
+	require.Len(t, byKey["status"].Options, 1)
+	assert.Equal(t, "deprecated", byKey["status"].Options[0].Value)
+	assert.Equal(t, "Deprecated", byKey["status"].Options[0].Label)
+	assert.Equal(t, 0, byKey["status"].Options[0].Count)
+	assert.True(t, byKey["status"].Options[0].Selected)
+
+	require.Len(t, byKey["oasVersion"].Options, 1)
+	assert.Equal(t, "3.1.0", byKey["oasVersion"].Options[0].Value)
+	assert.Equal(t, 0, byKey["oasVersion"].Options[0].Count)
+	assert.True(t, byKey["oasVersion"].Options[0].Selected)
+
+	require.Len(t, byKey["adrScore"].Options, 1)
+	assert.Equal(t, "88", byKey["adrScore"].Options[0].Value)
+	assert.Equal(t, 0, byKey["adrScore"].Options[0].Count)
+	assert.True(t, byKey["adrScore"].Options[0].Selected)
+
+	require.Len(t, byKey["auth"].Options, 1)
+	assert.Equal(t, "oauth2", byKey["auth"].Options[0].Value)
+	assert.Equal(t, "OAuth 2.0", byKey["auth"].Options[0].Label)
+	assert.Equal(t, 0, byKey["auth"].Options[0].Count)
+	assert.True(t, byKey["auth"].Options[0].Selected)
 }
 
 func TestCreateApiFromOas_Success(t *testing.T) {

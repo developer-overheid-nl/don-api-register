@@ -202,21 +202,21 @@ func TestUpdateOasUri_LifecycleOnlyUpdateWithoutOAS(t *testing.T) {
 		Id:              "api-123",
 		OrganisationUri: orgURI,
 		Sunset:          models.NewOptionalString("2027-11-11"),
-		Deprecated:      models.NewOptionalString("2026-10-10"),
 	})
 
 	assert.NoError(t, err)
 	if assert.NotNil(t, summary) {
 		assert.Equal(t, "2027-11-11", summary.Lifecycle.Sunset)
-		assert.Equal(t, "2026-10-10", summary.Lifecycle.Deprecated)
+		assert.Equal(t, "2023-01-01", summary.Lifecycle.Deprecated)
 	}
 	assert.Equal(t, "https://old.example.com/openapi.json", saved.OasUri)
 	assert.Equal(t, "2027-11-11", saved.Sunset)
-	assert.Equal(t, "2026-10-10", saved.Deprecated)
+	assert.Equal(t, "2023-01-01", saved.Deprecated)
 	if assert.Len(t, feedEvents, 1) {
 		assert.Equal(t, models.ApiFeedEventLifecycleChanged, feedEvents[0].Type)
 		assert.Equal(t, "api-123", feedEvents[0].ApiID)
-		assert.Contains(t, feedEvents[0].Description, "Lifecycle status is gewijzigd")
+		assert.Equal(t, "Lifecycle gewijzigd", feedEvents[0].Title)
+		assert.Equal(t, "Lifecycle status is gewijzigd van `retired, sunset=2024-01-01` naar `sunset, sunset=2027-11-11`.", feedEvents[0].Description)
 	}
 }
 

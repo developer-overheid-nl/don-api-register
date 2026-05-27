@@ -1045,6 +1045,30 @@ type rssGUID struct {
 	Value       string `xml:",chardata"`
 }
 
+type apiFeedEventText struct {
+	Title       string
+	Description string
+}
+
+var apiFeedEventTexts = map[string]apiFeedEventText{
+	models.ApiFeedEventLifecycleChanged: {
+		Title:       "Lifecycle gewijzigd",
+		Description: "Lifecycle status is gewijzigd van `{old}` naar `{new}`.",
+	},
+	models.ApiFeedEventADRScoreChanged: {
+		Title:       "ADR-score gewijzigd",
+		Description: "ADR-score wijzigde van {old} naar {new}.",
+	},
+	models.ApiFeedEventOASHashChanged: {
+		Title:       "OpenAPI-specificatie gewijzigd",
+		Description: "De inhoud van de OpenAPI-specificatie is gewijzigd.",
+	},
+	models.ApiFeedEventOASUnavailable: {
+		Title:       "OpenAPI-specificatie niet beschikbaar",
+		Description: "De OpenAPI-specificatie kon tijdens de dagelijkse controle niet worden opgehaald.",
+	},
+}
+
 func (s *APIsAPIService) recordLifecycleChange(ctx context.Context, before, after models.Api) {
 	if before.Sunset == after.Sunset && before.Deprecated == after.Deprecated {
 		return
@@ -1052,11 +1076,9 @@ func (s *APIsAPIService) recordLifecycleChange(ctx context.Context, before, afte
 	now := time.Now()
 	oldStatus := before.LifecycleStatus(now)
 	newStatus := after.LifecycleStatus(now)
-	oldValue := lifecycleFeedValue(before, oldStatus)
-	newValue := lifecycleFeedValue(after, newStatus)
-	title := "Lifecycle gewijzigd"
-	description := fmt.Sprintf("Lifecycle status is gewijzigd van `%s` naar `%s`.", oldValue, newValue)
-	s.saveFeedEvent(ctx, after.Id, models.ApiFeedEventLifecycleChanged, title, description, oldValue, newValue)
+	oldValue := lifecycleFeedValue(before, after, oldStatus)
+	newValue := lifecycleFeedValue(after, before, newStatus)
+	s.saveFeedEvent(ctx, after.Id, models.ApiFeedEventLifecycleChanged, oldValue, newValue)
 }
 
 func (s *APIsAPIService) recordADRScoreChange(ctx context.Context, before, after *int, apiID string) {
@@ -1065,9 +1087,7 @@ func (s *APIsAPIService) recordADRScoreChange(ctx context.Context, before, after
 	}
 	oldValue := scorePtrValue(before)
 	newValue := scorePtrValue(after)
-	s.saveFeedEvent(ctx, apiID, models.ApiFeedEventADRScoreChanged, "ADR-score gewijzigd",
-		fmt.Sprintf("ADR-score wijzigde van %s naar %s.", oldValue, newValue),
-		oldValue, newValue)
+	s.saveFeedEvent(ctx, apiID, models.ApiFeedEventADRScoreChanged, oldValue, newValue)
 }
 
 func (s *APIsAPIService) recordOASHashChange(ctx context.Context, apiID, before, after string) {
@@ -1076,8 +1096,7 @@ func (s *APIsAPIService) recordOASHashChange(ctx context.Context, apiID, before,
 	if before == after {
 		return
 	}
-	s.saveFeedEvent(ctx, apiID, models.ApiFeedEventOASHashChanged, "OpenAPI-specificatie gewijzigd",
-		"De inhoud van de OpenAPI-specificatie is gewijzigd.", before, after)
+	s.saveFeedEvent(ctx, apiID, models.ApiFeedEventOASHashChanged, before, after)
 }
 
 func (s *APIsAPIService) recordOASUnavailable(ctx context.Context, apiID string, before, after models.OASMetadata) {
@@ -1090,15 +1109,14 @@ func (s *APIsAPIService) recordOASUnavailable(ctx context.Context, apiID string,
 	if oldValue == "" {
 		oldValue = models.OASStatusUnknown
 	}
-	s.saveFeedEvent(ctx, apiID, models.ApiFeedEventOASUnavailable, "OpenAPI-specificatie niet beschikbaar",
-		"De OpenAPI-specificatie kon tijdens de dagelijkse controle niet worden opgehaald.",
-		oldValue, afterStatus)
+	s.saveFeedEvent(ctx, apiID, models.ApiFeedEventOASUnavailable, oldValue, afterStatus)
 }
 
-func (s *APIsAPIService) saveFeedEvent(ctx context.Context, apiID, eventType, title, description, oldValue, newValue string) {
+func (s *APIsAPIService) saveFeedEvent(ctx context.Context, apiID, eventType, oldValue, newValue string) {
 	if strings.TrimSpace(apiID) == "" {
 		return
 	}
+	title, description := feedEventText(eventType, oldValue, newValue)
 	event := &models.ApiFeedEvent{
 		ID:          uuid.New().String(),
 		ApiID:       apiID,
@@ -1114,12 +1132,24 @@ func (s *APIsAPIService) saveFeedEvent(ctx context.Context, apiID, eventType, ti
 	}
 }
 
-func lifecycleFeedValue(api models.Api, status string) string {
+func feedEventText(eventType, oldValue, newValue string) (string, string) {
+	text, ok := apiFeedEventTexts[eventType]
+	if !ok {
+		return eventType, ""
+	}
+	description := strings.NewReplacer(
+		"{old}", oldValue,
+		"{new}", newValue,
+	).Replace(text.Description)
+	return text.Title, description
+}
+
+func lifecycleFeedValue(api, compare models.Api, status string) string {
 	parts := []string{status}
-	if strings.TrimSpace(api.Deprecated) != "" {
+	if api.Deprecated != compare.Deprecated && strings.TrimSpace(api.Deprecated) != "" {
 		parts = append(parts, "deprecated="+strings.TrimSpace(api.Deprecated))
 	}
-	if strings.TrimSpace(api.Sunset) != "" {
+	if api.Sunset != compare.Sunset && strings.TrimSpace(api.Sunset) != "" {
 		parts = append(parts, "sunset="+strings.TrimSpace(api.Sunset))
 	}
 	return strings.Join(parts, ", ")

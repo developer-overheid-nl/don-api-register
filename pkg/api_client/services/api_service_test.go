@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"testing"
+	"time"
 
 	httpclient "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
 	openapihelper "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/openapi"
@@ -13,6 +14,7 @@ import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
 
@@ -302,6 +304,48 @@ func TestUpdateOasUri_UnchangedOASURLWithoutSunsetStillValidatesOAS(t *testing.T
 	assert.Error(t, err)
 	assert.Equal(t, 1, requests)
 	assert.False(t, updateCalled)
+}
+
+func TestUpdateOasUri_RetiresAPIWhenUnchangedOASURLReturnsNotFound(t *testing.T) {
+	orgURI := "https://example.org/org"
+	srv := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "niet gevonden", http.StatusNotFound)
+	}))
+
+	existing := &models.Api{
+		Id:           "api-123",
+		OasUri:       srv.URL,
+		Title:        "Bestaande API",
+		Organisation: &models.Organisation{Uri: orgURI, Label: "Org Label"},
+	}
+	existing.OrganisationID = &orgURI
+
+	var saved models.Api
+	repo := &stubRepo{
+		getByID: func(ctx context.Context, id string) (*models.Api, error) {
+			assert.Equal(t, "api-123", id)
+			return existing, nil
+		},
+		updateApi: func(ctx context.Context, api models.Api) error {
+			saved = api
+			return nil
+		},
+	}
+
+	service := services.NewAPIsAPIService(repo)
+	summary, err := service.UpdateOasUri(context.Background(), &models.UpdateApiInput{
+		Id:              "api-123",
+		OasUrl:          srv.URL,
+		OrganisationUri: orgURI,
+	})
+
+	assert.NoError(t, err)
+	if assert.NotNil(t, summary) {
+		assert.Equal(t, "retired", summary.Lifecycle.Status)
+		assert.NotEmpty(t, summary.Lifecycle.Sunset)
+	}
+	assert.NotEmpty(t, saved.Sunset)
+	assert.Equal(t, "retired", saved.LifecycleStatus(time.Now()))
 }
 
 func TestUpdateOasUri_InvalidLifecycleDate(t *testing.T) {
@@ -713,6 +757,59 @@ func TestRefreshChangedApis_MarksOASUnreachableOnFetchError(t *testing.T) {
 	}
 }
 
+func TestRefreshChangedApis_RetiresAPIWhenOASReturnsNotFound(t *testing.T) {
+	srv := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "niet gevonden", http.StatusNotFound)
+	}))
+
+	var capturedOAS models.OASMetadata
+	var saved models.Api
+	repo := &stubRepo{
+		allApis: func(ctx context.Context) ([]models.Api, error) {
+			return []models.Api{
+				{
+					Id:     "api-missing-oas",
+					OasUri: srv.URL,
+					OAS: models.OASMetadata{
+						Version: "3.0.0",
+						Auth:    "oauth2",
+					},
+				},
+			}, nil
+		},
+		getByID: func(ctx context.Context, id string) (*models.Api, error) {
+			assert.Equal(t, "api-missing-oas", id)
+			return &models.Api{
+				Id:     "api-missing-oas",
+				OasUri: srv.URL,
+				OAS: models.OASMetadata{
+					Version: "3.0.0",
+					Auth:    "oauth2",
+				},
+			}, nil
+		},
+		updateOAS: func(ctx context.Context, apiID string, oas models.OASMetadata) error {
+			assert.Equal(t, "api-missing-oas", apiID)
+			capturedOAS = oas
+			return nil
+		},
+		updateApi: func(ctx context.Context, api models.Api) error {
+			saved = api
+			return nil
+		},
+	}
+
+	service := services.NewAPIsAPIService(repo)
+	count, err := service.RefreshChangedApis(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, 1, count)
+	assert.Equal(t, "3.0.0", capturedOAS.Version)
+	assert.Equal(t, "oauth2", capturedOAS.Auth)
+	assert.Equal(t, models.OASStatusUnreachable, capturedOAS.Status)
+	assert.NotEmpty(t, saved.Sunset)
+	assert.Equal(t, "retired", saved.LifecycleStatus(time.Now()))
+}
+
 func TestRetrieveApi_Success(t *testing.T) {
 	api := &models.Api{
 		Id: "1234",
@@ -902,6 +999,59 @@ func TestGetApiFilters_ReturnsRequestedGroups(t *testing.T) {
 			assert.True(t, g.Options[0].Selected)
 		}
 	}
+}
+
+func TestGetApiFilters_KeepsSelectedOptionsWithoutCount(t *testing.T) {
+	repo := &stubRepo{
+		filterCounts: func(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error) {
+			return &models.ApiFilterCounts{}, nil
+		},
+	}
+	service := services.NewAPIsAPIService(repo)
+	org := "https://example.org/org"
+
+	groups, err := service.GetApiFilters(context.Background(), &models.ApiFiltersParams{
+		Query:        "bla",
+		Organisation: &org,
+		Status:       []string{"deprecated"},
+		OasVersion:   []string{"3.1.0"},
+		AdrScore:     []string{"88"},
+		Auth:         []string{"oauth2"},
+	})
+	require.NoError(t, err)
+
+	byKey := map[string]models.FilterGroup{}
+	for _, group := range groups {
+		byKey[group.Key] = group
+	}
+
+	require.Len(t, byKey["organisation"].Options, 1)
+	assert.Equal(t, org, byKey["organisation"].Options[0].Value)
+	assert.Equal(t, org, byKey["organisation"].Options[0].Label)
+	assert.Equal(t, 0, byKey["organisation"].Options[0].Count)
+	assert.True(t, byKey["organisation"].Options[0].Selected)
+
+	require.Len(t, byKey["status"].Options, 1)
+	assert.Equal(t, "deprecated", byKey["status"].Options[0].Value)
+	assert.Equal(t, "Deprecated", byKey["status"].Options[0].Label)
+	assert.Equal(t, 0, byKey["status"].Options[0].Count)
+	assert.True(t, byKey["status"].Options[0].Selected)
+
+	require.Len(t, byKey["oasVersion"].Options, 1)
+	assert.Equal(t, "3.1.0", byKey["oasVersion"].Options[0].Value)
+	assert.Equal(t, 0, byKey["oasVersion"].Options[0].Count)
+	assert.True(t, byKey["oasVersion"].Options[0].Selected)
+
+	require.Len(t, byKey["adrScore"].Options, 1)
+	assert.Equal(t, "88", byKey["adrScore"].Options[0].Value)
+	assert.Equal(t, 0, byKey["adrScore"].Options[0].Count)
+	assert.True(t, byKey["adrScore"].Options[0].Selected)
+
+	require.Len(t, byKey["auth"].Options, 1)
+	assert.Equal(t, "oauth2", byKey["auth"].Options[0].Value)
+	assert.Equal(t, "OAuth 2.0", byKey["auth"].Options[0].Label)
+	assert.Equal(t, 0, byKey["auth"].Options[0].Count)
+	assert.True(t, byKey["auth"].Options[0].Selected)
 }
 
 func TestCreateApiFromOas_Success(t *testing.T) {

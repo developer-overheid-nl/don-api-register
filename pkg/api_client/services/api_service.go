@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -83,6 +84,17 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 		Origin: "https://developer.overheid.nl",
 	})
 	if err != nil {
+		if openapi.IsHTTPStatus(err, http.StatusNotFound) && !hasOASDocumentChange(api, body) {
+			if _, retireErr := s.retireAPIForUnavailableOAS(ctx, *api); retireErr != nil {
+				return nil, retireErr
+			}
+			api.Sunset = retiredLifecycleDate(time.Now())
+			if api.Deprecated == "" {
+				api.Deprecated = api.Sunset
+			}
+			updated := util.ToApiSummary(api)
+			return &updated, nil
+		}
 		return nil, problem.NewBadRequest(body.OasUrl, err.Error())
 	}
 
@@ -394,6 +406,15 @@ func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
 			Origin: "https://developer.overheid.nl",
 		})
 		if err != nil {
+			if openapi.IsHTTPStatus(err, http.StatusNotFound) {
+				retired, retireErr := s.retireAPIForUnavailableOAS(ctx, candidate)
+				if retireErr != nil {
+					log.Printf("[oas-refresh] kon api=%s niet retired zetten na 404: %v", candidate.Id, retireErr)
+				} else if retired {
+					updated++
+				}
+				continue
+			}
 			nextSnapshot := models.OASMetadata{
 				Version: candidate.OAS.Version,
 				Status:  classifyOASStatus(err),
@@ -465,6 +486,11 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 		oasInput := toolslint.OASInput{OasUrl: api.OasUri}
 		resp, err := openapi.FetchParseValidateAndHash(ctx, oasInput, openapi.FetchOpts{Origin: "https://developer.overheid.nl"})
 		if err != nil {
+			if openapi.IsHTTPStatus(err, http.StatusNotFound) {
+				if _, retireErr := s.retireAPIForUnavailableOAS(ctx, api); retireErr != nil {
+					log.Printf("[lint] kon api=%s niet retired zetten na 404: %v", api.Id, retireErr)
+				}
+			}
 			log.Printf("[lint] skip api=%s: hash fetch failed: %v", api.Id, err)
 		} else {
 			if err := sem.Acquire(ctx, 1); err != nil {
@@ -985,6 +1011,45 @@ func currentOASAuth(api models.Api) string {
 		return auth
 	}
 	return strings.TrimSpace(api.Auth)
+}
+
+func (s *APIsAPIService) retireAPIForUnavailableOAS(ctx context.Context, api models.Api) (bool, error) {
+	if strings.TrimSpace(api.Id) == "" {
+		return false, nil
+	}
+	full, err := s.repo.GetApiByID(ctx, api.Id)
+	if err != nil {
+		return false, err
+	}
+	if full == nil {
+		return false, nil
+	}
+
+	nextOAS := models.OASMetadata{
+		Version: full.OAS.Version,
+		Status:  models.OASStatusUnreachable,
+		Auth:    currentOASAuth(*full),
+	}
+	if err := s.updateOASMetadataSnapshot(ctx, full.Id, full.OAS, nextOAS); err != nil {
+		return false, err
+	}
+
+	now := time.Now()
+	if full.LifecycleStatus(now) == "retired" {
+		return false, nil
+	}
+	full.Sunset = retiredLifecycleDate(now)
+	if full.Deprecated == "" {
+		full.Deprecated = full.Sunset
+	}
+	if err := s.repo.UpdateApi(ctx, *full); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func retiredLifecycleDate(now time.Time) string {
+	return now.AddDate(0, 0, -1).Format(time.DateOnly)
 }
 
 func classifyOASStatus(err error) string {

@@ -37,6 +37,13 @@ func buildOrganisationGroup(p *models.ApiFiltersParams, counts *models.ApiFilter
 			Selected: selected[fc.Value],
 		})
 	}
+	options = appendMissingSelectedOptions(options, selected, func(value string) models.FilterOption {
+		return models.FilterOption{
+			Value:    value,
+			Label:    value,
+			Selected: true,
+		}
+	})
 
 	return models.FilterGroup{
 		Key:         "organisation",
@@ -51,21 +58,11 @@ func buildOasVersionGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCo
 	selected := selectedSet(p.OasVersion, p.Version)
 	options := make([]models.FilterOption, 0, len(counts.OasVersion))
 	for _, fc := range counts.OasVersion {
-		label := fc.Value
-		var desc *string
-		if fc.Value == "unknown" {
-			label = "Onbekend"
-			d := "Er is geen OpenAPI-versie bekend."
-			desc = &d
-		}
-		options = append(options, models.FilterOption{
-			Value:       fc.Value,
-			Label:       label,
-			Description: desc,
-			Count:       fc.Count,
-			Selected:    selected[fc.Value],
-		})
+		options = append(options, oasVersionOption(fc.Value, fc.Count, selected[fc.Value]))
 	}
+	options = appendMissingSelectedOptions(options, selected, func(value string) models.FilterOption {
+		return oasVersionOption(value, 0, true)
+	})
 	return models.FilterGroup{
 		Key:         "oasVersion",
 		Label:       "OAS versie",
@@ -79,21 +76,11 @@ func buildAdrScoreGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCoun
 	selected := selectedSet(p.AdrScore)
 	options := make([]models.FilterOption, 0, len(counts.AdrScore))
 	for _, fc := range counts.AdrScore {
-		label := fc.Value
-		var desc *string
-		if fc.Value == "unknown" {
-			label = "Niet bekend"
-			d := "Er is nog geen ADR score opgeslagen."
-			desc = &d
-		}
-		options = append(options, models.FilterOption{
-			Value:       fc.Value,
-			Label:       label,
-			Description: desc,
-			Count:       fc.Count,
-			Selected:    selected[fc.Value],
-		})
+		options = append(options, adrScoreOption(fc.Value, fc.Count, selected[fc.Value]))
 	}
+	options = appendMissingSelectedOptions(options, selected, func(value string) models.FilterOption {
+		return adrScoreOption(value, 0, true)
+	})
 	return models.FilterGroup{
 		Key:         "adrScore",
 		Label:       "ADR score",
@@ -116,20 +103,75 @@ func buildAuthGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCounts) 
 func buildLabeledOptions(counts []models.FilterCount, selected map[string]bool, labels map[string][2]string) []models.FilterOption {
 	options := make([]models.FilterOption, 0, len(counts))
 	for _, fc := range counts {
-		label := fc.Value
-		var desc *string
-		if meta, ok := labels[fc.Value]; ok {
-			label = meta[0]
-			d := meta[1]
-			desc = &d
+		options = append(options, labeledOption(fc.Value, fc.Count, selected[fc.Value], labels))
+	}
+	options = appendMissingSelectedOptions(options, selected, func(value string) models.FilterOption {
+		return labeledOption(value, 0, true, labels)
+	})
+	return options
+}
+
+func oasVersionOption(value string, count int, selected bool) models.FilterOption {
+	label := value
+	var desc *string
+	if value == "unknown" {
+		label = "Onbekend"
+		d := "Er is geen OpenAPI-versie bekend."
+		desc = &d
+	}
+	return models.FilterOption{
+		Value:       value,
+		Label:       label,
+		Description: desc,
+		Count:       count,
+		Selected:    selected,
+	}
+}
+
+func adrScoreOption(value string, count int, selected bool) models.FilterOption {
+	label := value
+	var desc *string
+	if value == "unknown" {
+		label = "Niet bekend"
+		d := "Er is nog geen ADR score opgeslagen."
+		desc = &d
+	}
+	return models.FilterOption{
+		Value:       value,
+		Label:       label,
+		Description: desc,
+		Count:       count,
+		Selected:    selected,
+	}
+}
+
+func labeledOption(value string, count int, selected bool, labels map[string][2]string) models.FilterOption {
+	label := value
+	var desc *string
+	if meta, ok := labels[value]; ok {
+		label = meta[0]
+		d := meta[1]
+		desc = &d
+	}
+	return models.FilterOption{
+		Value:       value,
+		Label:       label,
+		Description: desc,
+		Count:       count,
+		Selected:    selected,
+	}
+}
+
+func appendMissingSelectedOptions(options []models.FilterOption, selected map[string]bool, build func(string) models.FilterOption) []models.FilterOption {
+	seen := make(map[string]bool, len(options))
+	for _, option := range options {
+		seen[option.Value] = true
+	}
+	for value, isSelected := range selected {
+		if value == "" || !isSelected || seen[value] {
+			continue
 		}
-		options = append(options, models.FilterOption{
-			Value:       fc.Value,
-			Label:       label,
-			Description: desc,
-			Count:       fc.Count,
-			Selected:    selected[fc.Value],
-		})
+		options = append(options, build(value))
 	}
 	return options
 }

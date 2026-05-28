@@ -26,6 +26,7 @@ func setupDB(t *testing.T) *gorm.DB {
 		&models.LintResult{},
 		&models.LintMessage{},
 		&models.LintMessageInfo{},
+		&models.ApiFeedEvent{},
 	))
 	return db
 }
@@ -41,6 +42,44 @@ func TestApiRepository_SaveAndGet(t *testing.T) {
 	got, err := repo.GetApiByID(context.Background(), api.Id)
 	require.NoError(t, err)
 	assert.Equal(t, "u1", got.OasUri)
+}
+
+func TestApiRepository_ListApiFeedEvents(t *testing.T) {
+	db := setupDB(t)
+	repo := repositories.NewApiRepository(db)
+	ctx := context.Background()
+
+	older := models.ApiFeedEvent{
+		ID:        "event-older",
+		ApiID:     "api-1",
+		Type:      models.ApiFeedEventLifecycleChanged,
+		Title:     "older",
+		CreatedAt: time.Date(2026, 1, 1, 10, 0, 0, 0, time.UTC),
+	}
+	newer := models.ApiFeedEvent{
+		ID:        "event-newer",
+		ApiID:     "api-1",
+		Type:      models.ApiFeedEventOASHashChanged,
+		Title:     "newer",
+		CreatedAt: time.Date(2026, 1, 2, 10, 0, 0, 0, time.UTC),
+	}
+	other := models.ApiFeedEvent{
+		ID:        "event-other",
+		ApiID:     "api-2",
+		Type:      models.ApiFeedEventADRScoreChanged,
+		Title:     "other",
+		CreatedAt: time.Date(2026, 1, 3, 10, 0, 0, 0, time.UTC),
+	}
+
+	require.NoError(t, repo.SaveApiFeedEvent(ctx, &older))
+	require.NoError(t, repo.SaveApiFeedEvent(ctx, &newer))
+	require.NoError(t, repo.SaveApiFeedEvent(ctx, &other))
+
+	events, err := repo.ListApiFeedEvents(ctx, "api-1", 10)
+	require.NoError(t, err)
+	require.Len(t, events, 2)
+	assert.Equal(t, "event-newer", events[0].ID)
+	assert.Equal(t, "event-older", events[1].ID)
 }
 
 func TestApiRepository_FindByOasUrl(t *testing.T) {

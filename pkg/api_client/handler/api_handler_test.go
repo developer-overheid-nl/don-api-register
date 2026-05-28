@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
@@ -27,6 +29,7 @@ type stubRepo struct {
 	saveOrg      func(org *models.Organisation) error
 	getOasArt    func(ctx context.Context, apiID, version, format string) (*models.ApiArtifact, error)
 	filterCounts func(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error)
+	listFeed     func(ctx context.Context, apiID string, limit int) ([]models.ApiFeedEvent, error)
 }
 
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
@@ -100,6 +103,15 @@ func (s *stubRepo) GetApiFilterCounts(ctx context.Context, p *models.ApiFiltersP
 	}
 	return &models.ApiFilterCounts{}, nil
 }
+func (s *stubRepo) SaveApiFeedEvent(ctx context.Context, event *models.ApiFeedEvent) error {
+	return nil
+}
+func (s *stubRepo) ListApiFeedEvents(ctx context.Context, apiID string, limit int) ([]models.ApiFeedEvent, error) {
+	if s.listFeed != nil {
+		return s.listFeed(ctx, apiID, limit)
+	}
+	return []models.ApiFeedEvent{}, nil
+}
 
 func TestGetOas_Handler(t *testing.T) {
 	repo := &stubRepo{
@@ -137,6 +149,49 @@ func TestGetOas_Handler(t *testing.T) {
 	assert.Equal(t, "converted", w.Header().Get("OAS-Source"))
 	assert.Equal(t, "3.1", w.Header().Get("OAS-Version"))
 	assert.Equal(t, `{"openapi":"3.1.0"}`, w.Body.String())
+}
+
+func TestGetApiFeed_Handler(t *testing.T) {
+	createdAt := time.Date(2026, 5, 6, 12, 0, 0, 0, time.UTC)
+	repo := &stubRepo{
+		retrFunc: func(ctx context.Context, id string) (*models.Api, error) {
+			assert.Equal(t, "api-1", id)
+			return &models.Api{Id: id, Title: "Demo API"}, nil
+		},
+		listFeed: func(ctx context.Context, apiID string, limit int) ([]models.ApiFeedEvent, error) {
+			assert.Equal(t, "api-1", apiID)
+			assert.Equal(t, 50, limit)
+			return []models.ApiFeedEvent{
+				{
+					ID:          "event-1",
+					ApiID:       apiID,
+					Type:        models.ApiFeedEventLifecycleChanged,
+					Title:       "Lifecycle gewijzigd",
+					Description: "Lifecycle wijzigde van active naar deprecated.",
+					CreatedAt:   createdAt,
+				},
+			}, nil
+		},
+	}
+	svc := services.NewAPIsAPIService(repo)
+	ctrl := NewAPIsAPIController(svc)
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request = httptest.NewRequest("GET", "/v1/apis/api-1/feed.rss", nil)
+
+	err := ctrl.GetApiFeed(ctx, &models.ApiParams{Id: "api-1"})
+	assert.NoError(t, err)
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "application/rss+xml; charset=utf-8", w.Header().Get("Content-Type"))
+	body := w.Body.String()
+	assert.True(t, strings.HasPrefix(body, "<?xml"))
+	assert.Contains(t, body, `<rss version="2.0">`)
+	assert.NotContains(t, body, `xmlns:atom`)
+	assert.NotContains(t, body, `<atom:link`)
+	assert.Contains(t, body, "<link>https://apis.developer.overheid.nl/apis/api-1</link>")
+	assert.Contains(t, body, "<title>Wijzigingen voor Demo API</title>")
+	assert.Contains(t, body, "<guid isPermaLink=\"false\">event-1</guid>")
 }
 
 func TestGetOas_AllowsPatchVersion(t *testing.T) {

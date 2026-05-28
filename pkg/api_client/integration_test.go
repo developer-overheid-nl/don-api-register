@@ -130,6 +130,7 @@ func newIntegrationEnv(t *testing.T) *integrationEnv {
 		&models.LintMessage{},
 		&models.LintMessageInfo{},
 		&models.ApiArtifact{},
+		&models.ApiFeedEvent{},
 	))
 
 	repo := repositories.NewApiRepository(db)
@@ -732,6 +733,51 @@ func TestOASEndpoint_SuccessAndErrors(t *testing.T) {
 		require.Equal(t, 404, prob.Status)
 		require.Contains(t, prob.Errors[0].Detail, "OAS artifact not found")
 	})
+}
+
+func TestApiFeedEndpoint(t *testing.T) {
+	env := newIntegrationEnv(t)
+	ctx := context.Background()
+
+	org, err := env.service.CreateOrganisation(ctx, &models.Organisation{
+		Uri:   "https://voorbeelden.example.com/organisaties/feed",
+		Label: "Feed Org",
+	})
+	require.NoError(t, err)
+
+	apiID := uuid.NewString()
+	require.NoError(t, env.repo.Save(&models.Api{
+		Id:             apiID,
+		OasUri:         "https://voorbeelden.example.com/apis/feed/openapi.yaml",
+		Title:          "Feed API",
+		ContactName:    "Feed Team",
+		ContactEmail:   "feed@example.com",
+		ContactUrl:     "https://voorbeelden.example.com/contact",
+		OrganisationID: &org.Uri,
+		Organisation:   org,
+	}))
+	require.NoError(t, env.repo.SaveApiFeedEvent(ctx, &models.ApiFeedEvent{
+		ID:          "feed-event-1",
+		ApiID:       apiID,
+		Type:        models.ApiFeedEventOASHashChanged,
+		Title:       "OpenAPI-specificatie gewijzigd",
+		Description: "De inhoud van de OpenAPI-specificatie is gewijzigd.",
+		OldValue:    "old",
+		NewValue:    "new",
+		CreatedAt:   time.Date(2026, 5, 6, 12, 0, 0, 0, time.UTC),
+	}))
+
+	resp := env.doRequest(t, http.MethodGet, "/v1/apis/"+apiID+"/feed.rss")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, "application/rss+xml; charset=utf-8", resp.Header.Get("Content-Type"))
+	require.Equal(t, "test-version", resp.Header.Get("API-Version"))
+	body := string(readRawBody(t, resp))
+	require.Contains(t, body, `<rss version="2.0">`)
+	require.NotContains(t, body, `xmlns:atom`)
+	require.NotContains(t, body, `<atom:link`)
+	require.Contains(t, body, "<link>https://apis.developer.overheid.nl/apis/"+apiID+"</link>")
+	require.Contains(t, body, "<title>Wijzigingen voor Feed API</title>")
+	require.Contains(t, body, "<guid isPermaLink=\"false\">feed-event-1</guid>")
 }
 
 func TestCreateOrganisationEndpoint_Success(t *testing.T) {

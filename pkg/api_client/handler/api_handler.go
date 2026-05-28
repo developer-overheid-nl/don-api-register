@@ -75,6 +75,20 @@ func (c *APIsAPIController) RetrieveApi(ctx *gin.Context, params *models.ApiPara
 	return api, nil
 }
 
+// GetApiFeed handles GET /apis/:id/feed.rss
+func (c *APIsAPIController) GetApiFeed(ctx *gin.Context, params *models.ApiParams) error {
+	frontendURL := util.FrontendAPIURL(params.Id)
+	data, err := c.Service.GetApiFeed(ctx.Request.Context(), params.Id, frontendURL)
+	if err != nil {
+		return err
+	}
+	if data == nil {
+		return problem.NewNotFound(params.Id, "Api not found")
+	}
+	ctx.Data(200, "application/rss+xml; charset=utf-8", data)
+	return nil
+}
+
 // ListLintResults handles GET /lint-results
 func (c *APIsAPIController) ListLintResults(ctx *gin.Context) ([]models.LintResult, error) {
 	return c.Service.ListLintResults(ctx.Request.Context())

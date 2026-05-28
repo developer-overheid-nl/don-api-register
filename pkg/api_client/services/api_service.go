@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -114,6 +116,7 @@ func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, re
 	if res == nil {
 		return nil, fmt.Errorf("OAS resultaat ontbreekt")
 	}
+	before := *api
 
 	orgLabel := ""
 	if api.Organisation != nil {
@@ -140,6 +143,7 @@ func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, re
 	if err := s.repo.UpdateApi(ctx, *api); err != nil {
 		return nil, err
 	}
+	s.recordLifecycleChange(ctx, before, *api)
 
 	oasInput := toOASInput(request)
 	arazzoInput := toArazzoInput(request)
@@ -162,10 +166,12 @@ func (s *APIsAPIService) applyLifecycleUpdate(ctx context.Context, api *models.A
 	if api == nil {
 		return nil, fmt.Errorf("api ontbreekt")
 	}
+	before := *api
 	applyLifecycleOverrides(api, body)
 	if err := s.repo.UpdateApi(ctx, *api); err != nil {
 		return nil, err
 	}
+	s.recordLifecycleChange(ctx, before, *api)
 	updated := util.ToApiSummary(api)
 	return &updated, nil
 }
@@ -184,6 +190,47 @@ func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Ap
 	detail.LintResults = lintResults
 
 	return detail, nil
+}
+
+func (s *APIsAPIService) GetApiFeed(ctx context.Context, id, apiURL string) ([]byte, error) {
+	api, err := s.repo.GetApiByID(ctx, id)
+	if err != nil || api == nil {
+		return nil, err
+	}
+	events, err := s.repo.ListApiFeedEvents(ctx, id, 50)
+	if err != nil {
+		return nil, err
+	}
+	title := strings.TrimSpace(api.Title)
+	if title == "" {
+		title = api.Id
+	}
+	feed := rss{
+		Version: "2.0",
+		Channel: rssChannel{
+			Title:       fmt.Sprintf("Wijzigingen voor %s", title),
+			Link:        apiURL,
+			Description: fmt.Sprintf("RSS feed met inhoudelijke wijzigingen voor %s.", title),
+			Language:    "nl",
+		},
+	}
+	if len(events) > 0 {
+		feed.Channel.LastBuildDate = events[0].CreatedAt.Format(time.RFC1123Z)
+	}
+	for _, event := range events {
+		feed.Channel.Items = append(feed.Channel.Items, rssItem{
+			Title:       event.Title,
+			Link:        apiURL,
+			GUID:        rssGUID{Value: event.ID, IsPermaLink: "false"},
+			Description: event.Description,
+			PubDate:     event.CreatedAt.Format(time.RFC1123Z),
+		})
+	}
+	out, err := xml.MarshalIndent(feed, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return append([]byte(xml.Header), out...), nil
 }
 
 func (s *APIsAPIService) ListLintResults(ctx context.Context) ([]models.LintResult, error) {
@@ -368,12 +415,15 @@ func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
 				}
 				continue
 			}
-			if updateErr := s.updateOASMetadataSnapshot(ctx, candidate.Id, candidate.OAS, models.OASMetadata{
+			nextSnapshot := models.OASMetadata{
 				Version: candidate.OAS.Version,
 				Status:  classifyOASStatus(err),
 				Auth:    currentOASAuth(candidate),
-			}); updateErr != nil {
+			}
+			if updateErr := s.updateOASMetadataSnapshot(ctx, candidate.Id, candidate.OAS, nextSnapshot); updateErr != nil {
 				log.Printf("[oas-refresh] kon oas status niet opslaan api=%s: %v", candidate.Id, updateErr)
+			} else {
+				s.recordOASUnavailable(ctx, candidate.Id, candidate.OAS, nextSnapshot)
 			}
 			log.Printf("[oas-refresh] skip api=%s url=%s: %v", candidate.Id, candidate.OasUri, err)
 			continue
@@ -475,6 +525,8 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID string, input
 		return err
 	}
 	if current.OasHash != expectedHash || current.AdrScore == nil {
+		previousHash := current.OasHash
+		previousScore := current.AdrScore
 		log.Printf("[lint] calling tools lint for api=%s", apiID)
 		dto, lintErr := toolslint.LintGet(ctx, input)
 		if dto == nil {
@@ -544,6 +596,8 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID string, input
 			log.Printf("[lint] update api failed: %v", err)
 			return err
 		}
+		s.recordADRScoreChange(ctx, previousScore, current.AdrScore, apiID)
+		s.recordOASHashChange(ctx, apiID, previousHash, expectedHash)
 		log.Printf("[lint] updated AdrScore=%d & OasHash=%s api=%s", score, expectedHash, apiID)
 	}
 	return nil
@@ -1026,6 +1080,151 @@ func (s *APIsAPIService) updateOASMetadataSnapshot(ctx context.Context, apiID st
 		return nil
 	}
 	return s.repo.UpdateOASMetadata(ctx, apiID, next)
+}
+
+type rss struct {
+	XMLName xml.Name   `xml:"rss"`
+	Version string     `xml:"version,attr"`
+	Channel rssChannel `xml:"channel"`
+}
+
+type rssChannel struct {
+	Title         string    `xml:"title"`
+	Link          string    `xml:"link"`
+	Description   string    `xml:"description"`
+	Language      string    `xml:"language,omitempty"`
+	LastBuildDate string    `xml:"lastBuildDate,omitempty"`
+	Items         []rssItem `xml:"item"`
+}
+
+type rssItem struct {
+	Title       string  `xml:"title"`
+	Link        string  `xml:"link"`
+	GUID        rssGUID `xml:"guid"`
+	Description string  `xml:"description"`
+	PubDate     string  `xml:"pubDate"`
+}
+
+type rssGUID struct {
+	IsPermaLink string `xml:"isPermaLink,attr"`
+	Value       string `xml:",chardata"`
+}
+
+type apiFeedEventText struct {
+	Title       string
+	Description string
+}
+
+var apiFeedEventTexts = map[string]apiFeedEventText{
+	models.ApiFeedEventLifecycleChanged: {
+		Title:       "Lifecycle gewijzigd",
+		Description: "Lifecycle status is gewijzigd van `{old}` naar `{new}`.",
+	},
+	models.ApiFeedEventADRScoreChanged: {
+		Title:       "ADR-score gewijzigd",
+		Description: "ADR-score wijzigde van {old} naar {new}.",
+	},
+	models.ApiFeedEventOASHashChanged: {
+		Title:       "OpenAPI-specificatie gewijzigd",
+		Description: "De inhoud van de OpenAPI-specificatie is gewijzigd.",
+	},
+	models.ApiFeedEventOASUnavailable: {
+		Title:       "OpenAPI-specificatie niet beschikbaar",
+		Description: "De OpenAPI-specificatie kon tijdens de dagelijkse controle niet worden opgehaald.",
+	},
+}
+
+func (s *APIsAPIService) recordLifecycleChange(ctx context.Context, before, after models.Api) {
+	if before.Sunset == after.Sunset && before.Deprecated == after.Deprecated {
+		return
+	}
+	now := time.Now()
+	oldStatus := before.LifecycleStatus(now)
+	newStatus := after.LifecycleStatus(now)
+	oldValue := lifecycleFeedValue(before, after, oldStatus)
+	newValue := lifecycleFeedValue(after, before, newStatus)
+	s.saveFeedEvent(ctx, after.Id, models.ApiFeedEventLifecycleChanged, oldValue, newValue)
+}
+
+func (s *APIsAPIService) recordADRScoreChange(ctx context.Context, before, after *int, apiID string) {
+	if scorePtrValue(before) == scorePtrValue(after) {
+		return
+	}
+	oldValue := scorePtrValue(before)
+	newValue := scorePtrValue(after)
+	s.saveFeedEvent(ctx, apiID, models.ApiFeedEventADRScoreChanged, oldValue, newValue)
+}
+
+func (s *APIsAPIService) recordOASHashChange(ctx context.Context, apiID, before, after string) {
+	before = strings.TrimSpace(before)
+	after = strings.TrimSpace(after)
+	if before == after {
+		return
+	}
+	s.saveFeedEvent(ctx, apiID, models.ApiFeedEventOASHashChanged, before, after)
+}
+
+func (s *APIsAPIService) recordOASUnavailable(ctx context.Context, apiID string, before, after models.OASMetadata) {
+	beforeStatus := strings.TrimSpace(before.Status)
+	afterStatus := strings.TrimSpace(after.Status)
+	if afterStatus != models.OASStatusUnreachable || beforeStatus == afterStatus {
+		return
+	}
+	oldValue := beforeStatus
+	if oldValue == "" {
+		oldValue = models.OASStatusUnknown
+	}
+	s.saveFeedEvent(ctx, apiID, models.ApiFeedEventOASUnavailable, oldValue, afterStatus)
+}
+
+func (s *APIsAPIService) saveFeedEvent(ctx context.Context, apiID, eventType, oldValue, newValue string) {
+	if strings.TrimSpace(apiID) == "" {
+		return
+	}
+	title, description := feedEventText(eventType, oldValue, newValue)
+	event := &models.ApiFeedEvent{
+		ID:          uuid.New().String(),
+		ApiID:       apiID,
+		Type:        eventType,
+		Title:       title,
+		Description: description,
+		OldValue:    oldValue,
+		NewValue:    newValue,
+		CreatedAt:   time.Now(),
+	}
+	if err := s.repo.SaveApiFeedEvent(ctx, event); err != nil {
+		log.Printf("[feed] save event failed api=%s type=%s: %v", apiID, eventType, err)
+	}
+}
+
+func feedEventText(eventType, oldValue, newValue string) (string, string) {
+	text, ok := apiFeedEventTexts[eventType]
+	if !ok {
+		return eventType, ""
+	}
+	description := strings.NewReplacer(
+		"{old}", oldValue,
+		"{new}", newValue,
+	).Replace(text.Description)
+	return text.Title, description
+}
+
+func lifecycleFeedValue(api, compare models.Api, status string) string {
+	parts := []string{status}
+	if api.Deprecated != compare.Deprecated && strings.TrimSpace(api.Deprecated) != "" {
+		parts = append(parts, "deprecated="+strings.TrimSpace(api.Deprecated))
+	}
+	if api.Sunset != compare.Sunset && strings.TrimSpace(api.Sunset) != "" {
+		parts = append(parts, "sunset="+strings.TrimSpace(api.Sunset))
+	}
+	return strings.Join(parts, ", ")
+}
+
+func scorePtrValue(score *int) string {
+	if score == nil {
+		return "unknown"
+	}
+	return strconv.Itoa(*score)
 }
 
 func deriveOrganisationURI(api *models.Api) string {

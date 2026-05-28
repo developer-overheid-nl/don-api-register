@@ -571,6 +571,50 @@
         }
       }
     },
+    "/apis/{id}/feed.rss": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Unique identifier of the resource.",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Public endpoints",
+          "APIs"
+        ],
+        "summary": "Get API RSS feed",
+        "description": "Returns an RSS 2.0 feed with content changes for a single API. Feed items are created for ADR-score changes, lifecycle changes, OpenAPI document hash changes, and OpenAPI documents that become unavailable during the daily refresh job.",
+        "operationId": "getApiFeed",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "API-Version": {
+                "$ref": "#/components/headers/ApiVersion"
+              }
+            },
+            "content": {
+              "application/rss+xml": {
+                "schema": {
+                  "type": "string",
+                  "description": "RSS 2.0 XML feed."
+                },
+                "example": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<rss version=\"2.0\">\n  <channel>\n    <title>Wijzigingen voor Voorbeeld API</title>\n    <link>https://apis.developer.overheid.nl/apis/api-1</link>\n    <description>RSS feed met inhoudelijke wijzigingen voor Voorbeeld API.</description>\n    <language>nl</language>\n  </channel>\n</rss>"
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      }
+    },
     "/apis/{id}/postman": {
       "parameters": [
         {

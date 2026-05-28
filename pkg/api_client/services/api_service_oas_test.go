@@ -110,6 +110,12 @@ func (a *artifactRepoStub) DeleteArtifactsByKind(ctx context.Context, apiID, kin
 func (a *artifactRepoStub) GetApiFilterCounts(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error) {
 	return &models.ApiFilterCounts{}, nil
 }
+func (a *artifactRepoStub) SaveApiFeedEvent(ctx context.Context, event *models.ApiFeedEvent) error {
+	return nil
+}
+func (a *artifactRepoStub) ListApiFeedEvents(ctx context.Context, apiID string, limit int) ([]models.ApiFeedEvent, error) {
+	return nil, nil
+}
 
 func TestPersistOASArtifacts_StoresOriginalAndConverted(t *testing.T) {
 	repo := &artifactRepoStub{}

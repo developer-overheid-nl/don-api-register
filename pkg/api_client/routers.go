@@ -114,9 +114,20 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 
 	retrieveApiJson := tonic.Handler(controller.RetrieveApi, 200)
 	retrieveApiJsonLd := tonic.Handler(controller.RetrieveApiJsonLd, 200)
+	publicApis.GET("/apis/:id/feed.rss",
+		[]fizz.OperationOption{
+			fizz.ID("getApiFeed"),
+			fizz.Summary("Get API RSS feed"),
+			fizz.Description("Returns an RSS feed with content changes for a single API."),
+			apiVersionHeaderOption,
+			notFoundResponse,
+		},
+		tonic.Handler(controller.GetApiFeed, 200),
+	)
+
 	publicApis.GET("/apis/:id",
 		[]fizz.OperationOption{
-			fizz.ID("retreiveApi"),
+			fizz.ID("retrieveApi"),
 			fizz.Summary("Get API by id"),
 			fizz.Description("Returns a single API by id."),
 			fizz.WithOptionalSecurity(),

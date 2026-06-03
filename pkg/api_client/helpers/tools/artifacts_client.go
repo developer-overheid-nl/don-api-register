@@ -7,12 +7,6 @@ import (
 	"strings"
 )
 
-// BrunoPost calls the tools API /bruno endpoint with the provided OAS input
-// and returns the raw bytes, filename (if any), and content type.
-func BrunoPost(ctx context.Context, input OASInput) ([]byte, string, string, error) {
-	return postBinary(ctx, input, "bruno/convert", "application/octet-stream", "bruno.zip")
-}
-
 // PostmanPost calls the tools API /postman endpoint with the provided OAS input
 // and returns the raw bytes, filename (if any), and content type.
 func PostmanPost(ctx context.Context, input OASInput) ([]byte, string, string, error) {

@@ -20,13 +20,13 @@ description:
       Via deze backend-API kunnen APIs worden geregistreerd, opgevraagd en beheerd. Nieuwe registraties worden
       automatisch gevalideerd en geïndexeerd in Typesense zodat ze vindbaar zijn via de zoekfunctie op
       apis.developer.overheid.nl. De service synchroniseert dagelijks de OpenAPI-specificaties van alle
-      geregistreerde APIs en genereert automatisch artifacts zoals Bruno- en Postman-collecties.
+      geregistreerde APIs en genereert automatisch artifacts zoals Postman-collecties.
     features:
       - Registratie en beheer van overheids-APIs
       - Validatie van OpenAPI-specificaties
       - Automatische dagelijkse refresh van OAS-bestanden
       - Integratie met Typesense voor zoekfunctionaliteit
-      - Generatie van Bruno- en Postman-collecties
+      - Generatie van Postman-collecties
 
 legal:
   license: EUPL-1.2

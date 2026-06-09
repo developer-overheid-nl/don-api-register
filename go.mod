@@ -10,7 +10,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/stretchr/testify v1.11.1
 	github.com/wI2L/fizz v0.23.0
-	go.yaml.in/yaml/v4 v4.0.0-rc.4
+	go.yaml.in/yaml/v4 v4.0.0-rc.5
 	golang.org/x/time v0.15.0
 	gorm.io/driver/sqlite v1.6.0
 	sigs.k8s.io/yaml v1.6.0

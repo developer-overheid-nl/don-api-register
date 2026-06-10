@@ -401,10 +401,6 @@ func apiMatchesQuery(api models.Api, query string) bool {
 	return strings.Contains(strings.ToLower(api.Title), query)
 }
 
-func escapeSQLLike(value string) string {
-	return commonquery.EscapeSQLLike(value)
-}
-
 func selectedFilterSet(groups ...[]string) map[string]bool {
 	values := make(map[string]bool)
 	for _, group := range groups {

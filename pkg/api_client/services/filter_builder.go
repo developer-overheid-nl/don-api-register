@@ -139,10 +139,6 @@ func adrScoreOption(value string, count int, selected bool) models.FilterOption 
 	}
 }
 
-func labeledOption(value string, count int, selected bool, labels map[string][2]string) models.FilterOption {
-	return commonfilters.LabeledOption(value, count, selected, labels)
-}
-
 func appendMissingSelectedOptions(options []models.FilterOption, selected map[string]bool, build func(string) models.FilterOption) []models.FilterOption {
 	return commonfilters.AppendMissingSelectedOptions(options, selected, build)
 }

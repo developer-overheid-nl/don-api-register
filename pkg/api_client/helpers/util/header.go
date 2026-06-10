@@ -10,7 +10,3 @@ import (
 func SetPaginationHeaders(r *http.Request, setHeader func(key, val string), p models.Pagination) {
 	commonpagination.SetHeaders(r, setHeader, p)
 }
-
-func buildLinkHeader(r *http.Request, p models.Pagination) string {
-	return commonpagination.BuildLinkHeader(r, p)
-}

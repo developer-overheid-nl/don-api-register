@@ -1,20 +1,13 @@
 package typesense
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"os"
-	"strconv"
 	"strings"
 
 	httpclient "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	commontypesense "github.com/developer-overheid-nl/don-register-common/typesense"
 )
 
 const (
@@ -24,100 +17,23 @@ const (
 )
 
 // ErrDisabled is returned when Typesense configuration is missing.
-var ErrDisabled = errors.New("typesense indexing disabled: missing endpoint, api key or collection name")
+var ErrDisabled = commontypesense.ErrDisabled
 
-type config struct {
-	endpoint       string
-	apiKey         string
-	collection     string
-	detailBaseURL  string
-	language       string
-	itemPriority   int
-	defaultTags    []string
-	featureEnabled bool
-}
+type config = commontypesense.Config
 
 func loadConfigFromEnv() config {
-	endpoint := strings.TrimSpace(os.Getenv("TYPESENSE_ENDPOINT"))
-	if endpoint == "" {
-		endpoint = strings.TrimSpace(os.Getenv("TYPESENSE_BASE_URL"))
-	}
-
-	apiKey := strings.TrimSpace(os.Getenv("TYPESENSE_API_KEY"))
-	collection := strings.TrimSpace(os.Getenv("TYPESENSE_COLLECTION"))
-	if collection == "" {
-		collection = "api_register"
-	}
-
-	detailBase := strings.TrimSpace(os.Getenv("TYPESENSE_DETAIL_BASE_URL"))
-	if detailBase == "" {
-		detailBase = defaultDetailBaseURL
-	}
-
-	language := strings.TrimSpace(os.Getenv("TYPESENSE_LANGUAGE"))
-	if language == "" {
-		language = defaultLanguage
-	}
-
-	itemPriority := defaultItemPriority
-	if raw := strings.TrimSpace(os.Getenv("TYPESENSE_ITEM_PRIORITY")); raw != "" {
-		if v, err := strconv.Atoi(raw); err == nil {
-			itemPriority = v
-		}
-	}
-
-	tags := parseDefaultTags()
-
-	return config{
-		endpoint:       endpoint,
-		apiKey:         apiKey,
-		collection:     collection,
-		detailBaseURL:  detailBase,
-		language:       language,
-		itemPriority:   itemPriority,
-		defaultTags:    tags,
-		featureEnabled: isFeatureEnabled(),
-	}
-}
-
-func (c config) enabled() bool {
-	return c.featureEnabled && c.endpoint != "" && c.apiKey != "" && c.collection != ""
-}
-
-func isFeatureEnabled() bool {
-	raw := strings.TrimSpace(os.Getenv("ENABLE_TYPESENSE"))
-	if raw == "" {
-		return true
-	}
-	switch strings.ToLower(raw) {
-	case "0", "false", "no", "off":
-		return false
-	default:
-		return true
-	}
+	return commontypesense.LoadConfigFromEnv(commontypesense.Defaults{
+		Collection:    "api_register",
+		DetailBaseURL: defaultDetailBaseURL,
+		Language:      defaultLanguage,
+		ItemPriority:  defaultItemPriority,
+		DefaultTags:   []string{"api-register", "api"},
+	})
 }
 
 // Enabled reports whether Typesense indexing is active based on env vars.
 func Enabled() bool {
-	return loadConfigFromEnv().enabled()
-}
-
-func parseDefaultTags() []string {
-	raw := os.Getenv("TYPESENSE_DEFAULT_TAGS")
-	if strings.TrimSpace(raw) == "" {
-		return []string{"api-register", "api"}
-	}
-	parts := strings.Split(raw, ",")
-	out := make([]string, 0, len(parts))
-	for _, part := range parts {
-		if trimmed := strings.TrimSpace(part); trimmed != "" {
-			out = append(out, trimmed)
-		}
-	}
-	if len(out) == 0 {
-		return []string{"api-register", "api"}
-	}
-	return out
+	return loadConfigFromEnv().Enabled()
 }
 
 // PublishApi pushes the provided API to Typesense for full-text search.
@@ -127,64 +43,15 @@ func PublishApi(ctx context.Context, api *models.Api) (err error) {
 	}
 
 	cfg := loadConfigFromEnv()
-	if !cfg.enabled() {
+	if !cfg.Enabled() {
 		return ErrDisabled
 	}
 
-	payload, err := json.Marshal(buildDocument(cfg, api))
-	if err != nil {
-		return fmt.Errorf("typesense: marshal payload: %w", err)
-	}
-
-	base := strings.TrimRight(cfg.endpoint, "/")
-	target := fmt.Sprintf("%s/collections/%s/documents?action=upsert", base, url.PathEscape(cfg.collection))
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, target, bytes.NewReader(payload))
-	if err != nil {
-		return fmt.Errorf("typesense: create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-TYPESENSE-API-KEY", cfg.apiKey)
-
-	resp, err := httpclient.HTTPClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("typesense: request failed: %w", err)
-	}
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil && err == nil {
-			err = fmt.Errorf("typesense: close response body: %w", closeErr)
-		}
-	}()
-
-	if resp.StatusCode >= http.StatusMultipleChoices {
-		body, readErr := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		if readErr != nil {
-			return fmt.Errorf("typesense: read error response: %w", readErr)
-		}
-		return fmt.Errorf("typesense: indexing failed with status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
-	}
-
-	return nil
+	return commontypesense.UpsertDocument(ctx, httpclient.HTTPClient, cfg, buildDocument(cfg, api))
 }
 
 func buildDocument(cfg config, api *models.Api) map[string]any {
-	doc := map[string]any{
-		"type":          "doc",
-		"language":      cfg.language,
-		"item_priority": cfg.itemPriority,
-	}
-
-	if id := strings.TrimSpace(api.Id); id != "" {
-		doc["id"] = id
-	}
-
-	detailBase := strings.TrimRight(cfg.detailBaseURL, "/")
-	if detailBase != "" && api.Id != "" {
-		detailURL := fmt.Sprintf("%s/%s", detailBase, api.Id)
-		doc["url"] = detailURL
-		doc["url_without_anchor"] = detailURL
-		doc["anchor"] = nil
-	}
+	doc := commontypesense.BaseDocument(cfg, api.Id)
 
 	if title := strings.TrimSpace(api.Title); title != "" {
 		doc["hierarchy.lvl0"] = title
@@ -268,9 +135,9 @@ func buildContent(api *models.Api) string {
 
 func buildTags(cfg config, api *models.Api) []string {
 	seen := make(map[string]struct{})
-	out := make([]string, 0, len(cfg.defaultTags)+5)
+	out := make([]string, 0, len(cfg.DefaultTags)+5)
 
-	for _, tag := range cfg.defaultTags {
+	for _, tag := range cfg.DefaultTags {
 		out = appendUnique(out, tag, seen)
 	}
 
@@ -292,13 +159,5 @@ func buildTags(cfg config, api *models.Api) []string {
 }
 
 func appendUnique(tags []string, value string, seen map[string]struct{}) []string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return tags
-	}
-	if _, ok := seen[value]; ok {
-		return tags
-	}
-	seen[value] = struct{}{}
-	return append(tags, value)
+	return commontypesense.AppendUnique(tags, value, seen)
 }

@@ -1,46 +1,12 @@
 package models
 
-import "fmt"
+import commonfilters "github.com/developer-overheid-nl/don-register-common/filters"
 
-type FilterOption struct {
-	Value       string  `json:"value"`
-	Label       string  `json:"label"`
-	Description *string `json:"description"`
-	Count       int     `json:"count"`
-	Selected    bool    `json:"selected"`
-}
+type FilterOption = commonfilters.FilterOption
 
-type FilterGroup struct {
-	Key         string         `json:"key"`
-	Label       string         `json:"label"`
-	Description string         `json:"description"`
-	Type        string         `json:"type"`
-	Value       any            `json:"value,omitempty"`
-	Count       *int           `json:"count,omitempty"`
-	Options     []FilterOption `json:"options,omitempty"`
-}
+type FilterGroup = commonfilters.FilterGroup
 
-func (f FilterGroup) Validate() error {
-	switch f.Type {
-	case "toggle":
-		if _, ok := f.Value.(bool); !ok {
-			return fmt.Errorf("filter %q: toggle value must be bool, got %T", f.Key, f.Value)
-		}
-	case "date":
-		if f.Value != nil {
-			if _, ok := f.Value.(string); !ok {
-				return fmt.Errorf("filter %q: date value must be string, got %T", f.Key, f.Value)
-			}
-		}
-	}
-	return nil
-}
-
-type FilterCount struct {
-	Value string
-	Label string
-	Count int
-}
+type FilterCount = commonfilters.FilterCount
 
 type ApiFilterCounts struct {
 	Organisation []FilterCount

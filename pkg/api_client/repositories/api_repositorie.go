@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	commonpagination "github.com/developer-overheid-nl/don-register-common/pagination"
+	commonquery "github.com/developer-overheid-nl/don-register-common/query"
 	"gorm.io/gorm"
 )
 
@@ -99,25 +100,7 @@ func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, p *model
 	}
 
 	totalRecords := len(filtered)
-	totalPages := 0
-	if totalRecords > 0 {
-		totalPages = int(math.Ceil(float64(totalRecords) / float64(perPage)))
-	}
-	pagination := models.Pagination{
-		CurrentPage:    page,
-		RecordsPerPage: perPage,
-		TotalPages:     totalPages,
-		TotalRecords:   totalRecords,
-	}
-
-	if page < totalPages {
-		next := page + 1
-		pagination.Next = &next
-	}
-	if page > 1 && totalPages > 0 {
-		prev := page - 1
-		pagination.Previous = &prev
-	}
+	pagination := commonpagination.New(page, perPage, totalRecords)
 
 	offset := (page - 1) * perPage
 	if offset >= totalRecords {
@@ -141,7 +124,7 @@ func applyApiSQLFilters(db *gorm.DB, matcher *apiFilterMatcher) *gorm.DB {
 		return db
 	}
 	if matcher.query != "" {
-		db = db.Where("LOWER(title) LIKE ? ESCAPE '\\'", "%"+escapeSQLLike(matcher.query)+"%")
+		db = db.Where("LOWER(title) LIKE ? ESCAPE '\\'", "%"+commonquery.EscapeSQLLike(matcher.query)+"%")
 	}
 	return db
 }
@@ -233,7 +216,7 @@ func (r *apiRepository) SearchApis(ctx context.Context, page, perPage int, organ
 		if organisation != nil && strings.TrimSpace(*organisation) != "" {
 			db = db.Where("organisation_id = ?", strings.TrimSpace(*organisation))
 		}
-		return db.Where("LOWER(title) LIKE ? ESCAPE '\\'", "%"+escapeSQLLike(trimmed)+"%")
+		return db.Where("LOWER(title) LIKE ? ESCAPE '\\'", "%"+commonquery.EscapeSQLLike(trimmed)+"%")
 	}
 
 	var totalRecords int64
@@ -251,24 +234,7 @@ func (r *apiRepository) SearchApis(ctx context.Context, page, perPage int, organ
 		return nil, models.Pagination{}, err
 	}
 
-	totalPages := 0
-	if totalRecords > 0 {
-		totalPages = int(math.Ceil(float64(totalRecords) / float64(perPage)))
-	}
-	pagination := models.Pagination{
-		CurrentPage:    page,
-		RecordsPerPage: perPage,
-		TotalPages:     totalPages,
-		TotalRecords:   int(totalRecords),
-	}
-	if page < totalPages {
-		next := page + 1
-		pagination.Next = &next
-	}
-	if page > 1 && totalPages > 0 {
-		prev := page - 1
-		pagination.Previous = &prev
-	}
+	pagination := commonpagination.New(page, perPage, int(totalRecords))
 
 	return apis, pagination, nil
 }
@@ -436,16 +402,7 @@ func apiMatchesQuery(api models.Api, query string) bool {
 }
 
 func escapeSQLLike(value string) string {
-	var builder strings.Builder
-	builder.Grow(len(value))
-	for _, char := range value {
-		switch char {
-		case '\\', '%', '_':
-			builder.WriteByte('\\')
-		}
-		builder.WriteRune(char)
-	}
-	return builder.String()
+	return commonquery.EscapeSQLLike(value)
 }
 
 func selectedFilterSet(groups ...[]string) map[string]bool {

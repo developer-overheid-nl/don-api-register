@@ -3,7 +3,7 @@ module github.com/developer-overheid-nl/don-api-register
 go 1.25.9
 
 require (
-	github.com/gin-contrib/cors v1.7.7
+	github.com/developer-overheid-nl/don-register-common v0.0.0-20260610113526-fad29a66214e
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/lib/pq v1.12.3
 	github.com/loopfz/gadgeto v0.11.6
@@ -25,6 +25,7 @@ require (
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
+	github.com/gin-contrib/cors v1.7.7 // indirect
 	github.com/gin-contrib/sse v1.1.1 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
@@ -72,6 +73,6 @@ require (
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/sync v0.20.0
 	golang.org/x/text v0.37.0 // indirect
-	gorm.io/driver/postgres v1.6.0
+	gorm.io/driver/postgres v1.6.0 // indirect
 	gorm.io/gorm v1.31.1
 )

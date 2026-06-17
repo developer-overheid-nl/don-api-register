@@ -556,7 +556,6 @@ func (r *apiRepository) SaveLintResult(ctx context.Context, result *models.LintR
 				result.Messages[i].LintResultID = result.ID
 			}
 		}
-		fmt.Printf("%+v\n", result)
 		if err := tx.Create(result).Error; err != nil {
 			return err
 		}

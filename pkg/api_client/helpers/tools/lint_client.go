@@ -25,15 +25,15 @@ type LintMessageDTO struct {
 }
 
 type LintResultDTO struct {
-	ID        string           `json:"id"`
-	ApiID     string           `json:"apiId,omitempty"`
-	Successes bool             `json:"successes"`
-	Failures  int              `json:"failures"`
-	Warnings  int              `json:"warnings"`
-	Score     int              `json:"score"`
-	Messages  []LintMessageDTO `json:"messages"`
-	CreatedAt time.Time        `json:"createdAt"`
-	RulesetVersion string `json:"rulesetVersion"`
+	ID             string           `json:"id"`
+	ApiID          string           `json:"apiId,omitempty"`
+	Successes      bool             `json:"successes"`
+	Failures       int              `json:"failures"`
+	Warnings       int              `json:"warnings"`
+	Score          int              `json:"score"`
+	Messages       []LintMessageDTO `json:"messages"`
+	CreatedAt      time.Time        `json:"createdAt"`
+	RulesetVersion string           `json:"rulesetVersion"`
 }
 
 // LintGet calls the tools API to lint the given OAS input and returns the result DTO.
@@ -52,6 +52,6 @@ func LintGet(ctx context.Context, input OASInput) (*LintResultDTO, error) {
 		log.Printf("[LintGet] decode response failed: %v", err)
 		return nil, err
 	}
-	log.Printf("[LintGet] Lint-resultaat succesvol ontvangen: %+v", out)
+	log.Printf("[LintGet] lint result id=%s messages=%d failures=%d warnings=%d score=%d", out.ID, len(out.Messages), out.Failures, out.Warnings, out.Score)
 	return &out, nil
 }

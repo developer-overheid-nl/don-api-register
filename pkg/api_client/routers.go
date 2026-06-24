@@ -6,7 +6,7 @@ import (
 	apispec "github.com/developer-overheid-nl/don-api-register/api"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/handler"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
-	"github.com/gin-contrib/cors"
+	commonrouter "github.com/developer-overheid-nl/don-register-common/router"
 	"github.com/gin-gonic/gin"
 	"github.com/loopfz/gadgeto/tonic"
 	"github.com/wI2L/fizz"
@@ -45,17 +45,10 @@ var (
 
 func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.Fizz {
 	//gin.SetMode(gin.ReleaseMode)
-	g := gin.Default()
-
-	// Configure CORS to allow access from everywhere
-	config := cors.DefaultConfig()
-	config.AllowAllOrigins = true
-	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization", "API-Version"}
-	config.ExposeHeaders = []string{"API-Version"}
-	g.Use(cors.New(config))
-
-	g.Use(APIVersionMiddleware(apiVersion))
+	g := commonrouter.NewEngine(apiVersion, commonrouter.CORSOptions{
+		AllowHeaders:  []string{"Origin", "Content-Length", "Content-Type", "Authorization", "API-Version"},
+		ExposeHeaders: []string{"API-Version"},
+	})
 	f := fizz.NewFromEngine(g)
 
 	apiGroup := f.Group("/v1", "APIs", "Endpoints for listing and managing APIs.")
@@ -277,21 +270,8 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 	return f
 }
 
-type apiVersionWriter struct {
-	gin.ResponseWriter
-	version string
-}
-
-func (w *apiVersionWriter) WriteHeader(code int) {
-	w.Header().Set("API-Version", w.version)
-	w.ResponseWriter.WriteHeader(code)
-}
-
 func APIVersionMiddleware(version string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer = &apiVersionWriter{c.Writer, version}
-		c.Next()
-	}
+	return commonrouter.APIVersionMiddleware(version)
 }
 
 func serveOpenAPISpec(c *gin.Context) {

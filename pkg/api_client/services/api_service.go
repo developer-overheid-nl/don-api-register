@@ -1368,9 +1368,6 @@ func oasFilename(version, source, format string) string {
 func renderCanonicalJSON(res *openapi.OASResult, originalFormat string) ([]byte, error) {
 	if res.Spec != nil {
 		if rendered, err := res.Spec.RenderJSON("  "); err == nil && len(rendered) > 0 {
-			if pretty, perr := prettyJSON(rendered); perr == nil {
-				return pretty, nil
-			}
 			return rendered, nil
 		}
 	}
@@ -1412,11 +1409,15 @@ func targetVersion(res *openapi.OASResult) (short string, full string, ok bool) 
 }
 
 func updateOpenAPIVersion(jsonData []byte, targetVersion string) ([]byte, error) {
-	var doc map[string]any
+	var doc map[string]json.RawMessage
 	if err := json.Unmarshal(jsonData, &doc); err != nil {
 		return nil, err
 	}
-	doc["openapi"] = targetVersion
+	versionJSON, err := json.Marshal(targetVersion)
+	if err != nil {
+		return nil, err
+	}
+	doc["openapi"] = versionJSON
 	if strings.HasPrefix(targetVersion, "3.0") {
 		delete(doc, "webhooks")
 		delete(doc, "jsonSchemaDialect")

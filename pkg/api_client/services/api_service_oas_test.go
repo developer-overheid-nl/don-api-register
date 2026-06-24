@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
@@ -227,6 +228,44 @@ func TestPersistOASArtifacts_AcceptsJSONOriginal(t *testing.T) {
 	assert.Equal(t, "application/yaml", artifacts["3.1-yaml"].ContentType)
 	assert.Equal(t, "application/json", artifacts["3.0-json"].ContentType)
 	assert.Equal(t, "application/yaml", artifacts["3.0-yaml"].ContentType)
+}
+
+func TestUpdateOpenAPIVersion_UsesTopLevelRawMessages(t *testing.T) {
+	out, err := updateOpenAPIVersion([]byte(`{
+  "openapi": "3.1.0",
+  "jsonSchemaDialect": "https://spec.openapis.org/oas/3.1/dialect/base",
+  "$self": "https://example.com/openapi.json",
+  "webhooks": {
+    "changed": {}
+  },
+  "info": {
+    "title": "Demo",
+    "version": "1.0"
+  },
+  "paths": {
+    "/items": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ok"
+          }
+        }
+      }
+    }
+  }
+}`), "3.0.3")
+	require.NoError(t, err)
+
+	var doc map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(out, &doc))
+
+	var version string
+	require.NoError(t, json.Unmarshal(doc["openapi"], &version))
+	assert.Equal(t, "3.0.3", version)
+	assert.NotContains(t, doc, "jsonSchemaDialect")
+	assert.NotContains(t, doc, "$self")
+	assert.NotContains(t, doc, "webhooks")
+	assert.Contains(t, doc, "paths")
 }
 
 func TestBackfillOASArtifacts_GeneratesWhenMissing(t *testing.T) {

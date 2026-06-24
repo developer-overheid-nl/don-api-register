@@ -169,7 +169,7 @@ func bundleOAS(ctx context.Context, input tools.OASInput) ([]byte, string, error
 	if err != nil {
 		return nil, "", err
 	}
-	log.Printf("[oas] bundle succeeded (len=%d, ct=%s)", len(data), contentType)
+	log.Printf("[oas] bundle succeeded url=%s body=%t len=%d ct=%s", input.OasUrl, input.OasBody != "", len(data), contentType)
 	return data, contentType, nil
 }
 

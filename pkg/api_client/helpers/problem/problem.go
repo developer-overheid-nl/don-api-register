@@ -1,31 +1,18 @@
 package problem
 
-type InvalidParam struct {
-	Name   string `json:"name"`
-	Reason string `json:"reason"`
-}
+import commonproblem "github.com/developer-overheid-nl/don-register-common/problem"
 
-type ErrorDetail struct {
-	In       string `json:"in"`
-	Location string `json:"location"`
-	Code     string `json:"code"`
-	Detail   string `json:"detail"`
-}
+type InvalidParam = commonproblem.InvalidParam
+type ErrorDetail = commonproblem.ErrorDetail
 
 // APIError implementeert error + Problem Details (RFC 7807)
-type APIError struct {
-	Title  string        `json:"title"`
-	Status int           `json:"status"`
-	Errors []ErrorDetail `json:"errors,omitempty"`
-}
-
-func (e APIError) Error() string { return e.Title }
+type APIError = commonproblem.Problem
 
 func NewBadRequest(oasUri, detail string, params ...InvalidParam) APIError {
 	return APIError{
 		Title:  "Request validation failed",
 		Status: 400,
-		Errors: toErrorDetails(params, detail, "body", "body", "bad_request"),
+		Errors: commonproblem.ErrorDetailsFromInvalidParams(params, detail, "body", "body", "bad_request"),
 	}
 }
 
@@ -54,25 +41,5 @@ func NewForbidden(oasUri, detail string) APIError {
 }
 
 func toErrorDetails(params []InvalidParam, fallbackDetail, fallbackIn, fallbackLocation, fallbackCode string) []ErrorDetail {
-	if len(params) == 0 {
-		if fallbackDetail == "" {
-			return nil
-		}
-		return []ErrorDetail{{
-			In:       fallbackIn,
-			Location: fallbackLocation,
-			Code:     fallbackCode,
-			Detail:   fallbackDetail,
-		}}
-	}
-	out := make([]ErrorDetail, 0, len(params))
-	for _, p := range params {
-		out = append(out, ErrorDetail{
-			In:       "body",
-			Location: p.Name,
-			Code:     p.Name,
-			Detail:   p.Reason,
-		})
-	}
-	return out
+	return commonproblem.ErrorDetailsFromInvalidParams(params, fallbackDetail, fallbackIn, fallbackLocation, fallbackCode)
 }

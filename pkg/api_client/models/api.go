@@ -13,6 +13,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"time"
+
+	commonpagination "github.com/developer-overheid-nl/don-register-common/pagination"
 )
 
 type Api struct {
@@ -149,14 +151,7 @@ type ApiResponse struct {
 	Lifecycle Lifecycle `json:"lifecycle"`
 }
 
-type Pagination struct {
-	Next           *int
-	Previous       *int
-	CurrentPage    int
-	RecordsPerPage int
-	TotalPages     int
-	TotalRecords   int
-}
+type Pagination = commonpagination.Pagination
 type ApiSummary struct {
 	Id           string              `json:"id"`
 	OasUrl       string              `json:"oasUrl"`

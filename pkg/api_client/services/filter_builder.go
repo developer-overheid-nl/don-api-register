@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	commonfilters "github.com/developer-overheid-nl/don-register-common/filters"
 )
 
 func buildStatusGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCounts) models.FilterGroup {
@@ -101,14 +102,7 @@ func buildAuthGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCounts) 
 }
 
 func buildLabeledOptions(counts []models.FilterCount, selected map[string]bool, labels map[string][2]string) []models.FilterOption {
-	options := make([]models.FilterOption, 0, len(counts))
-	for _, fc := range counts {
-		options = append(options, labeledOption(fc.Value, fc.Count, selected[fc.Value], labels))
-	}
-	options = appendMissingSelectedOptions(options, selected, func(value string) models.FilterOption {
-		return labeledOption(value, 0, true, labels)
-	})
-	return options
+	return commonfilters.LabeledOptions(counts, selected, labels, false)
 }
 
 func oasVersionOption(value string, count int, selected bool) models.FilterOption {
@@ -145,59 +139,16 @@ func adrScoreOption(value string, count int, selected bool) models.FilterOption 
 	}
 }
 
-func labeledOption(value string, count int, selected bool, labels map[string][2]string) models.FilterOption {
-	label := value
-	var desc *string
-	if meta, ok := labels[value]; ok {
-		label = meta[0]
-		d := meta[1]
-		desc = &d
-	}
-	return models.FilterOption{
-		Value:       value,
-		Label:       label,
-		Description: desc,
-		Count:       count,
-		Selected:    selected,
-	}
-}
-
 func appendMissingSelectedOptions(options []models.FilterOption, selected map[string]bool, build func(string) models.FilterOption) []models.FilterOption {
-	seen := make(map[string]bool, len(options))
-	for _, option := range options {
-		seen[option.Value] = true
-	}
-	for value, isSelected := range selected {
-		if value == "" || !isSelected || seen[value] {
-			continue
-		}
-		options = append(options, build(value))
-	}
-	return options
+	return commonfilters.AppendMissingSelectedOptions(options, selected, build)
 }
 
 func selectedSet(groups ...[]string) map[string]bool {
-	m := make(map[string]bool)
-	for _, values := range groups {
-		for _, raw := range values {
-			for _, val := range strings.Split(raw, ",") {
-				trimmed := strings.TrimSpace(val)
-				if trimmed != "" {
-					m[trimmed] = true
-				}
-			}
-		}
-	}
-	return m
+	return commonfilters.SelectedSet(groups...)
 }
 
 func selectedLowerSet(groups ...[]string) map[string]bool {
-	values := selectedSet(groups...)
-	lowered := make(map[string]bool, len(values))
-	for val := range values {
-		lowered[strings.ToLower(val)] = true
-	}
-	return lowered
+	return commonfilters.SelectedLowerSet(groups...)
 }
 
 func normalizeAuthSelection(values []string) []string {

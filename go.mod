@@ -10,7 +10,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/stretchr/testify v1.11.1
 	github.com/wI2L/fizz v0.23.0
-	go.yaml.in/yaml/v4 v4.0.0-rc.4
+	go.yaml.in/yaml/v4 v4.0.0-rc.6
 	golang.org/x/time v0.15.0
 	gorm.io/driver/sqlite v1.6.0
 	sigs.k8s.io/yaml v1.6.0
@@ -68,10 +68,10 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/joho/godotenv v1.5.1
-	github.com/pb33f/libopenapi v0.37.2
+	github.com/pb33f/libopenapi v0.38.3
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	golang.org/x/crypto v0.52.0 // indirect
-	golang.org/x/sync v0.20.0
+	golang.org/x/sync v0.21.0
 	golang.org/x/text v0.37.0 // indirect
 	gorm.io/driver/postgres v1.6.0 // indirect
 	gorm.io/gorm v1.31.1

@@ -603,9 +603,9 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID string, input
 	return nil
 }
 
-// runToolsAndPersist runs lint, bruno and postman generation
+// runToolsAndPersist runs lint and postman generation
 // and persists their outputs. Lint result + ADR score are stored as before;
-// Bruno and Postman artifacts are stored as blobs linked to the API.
+// Postman artifacts are stored as blobs linked to the API.
 func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, oasInput toolslint.OASInput, arazzoInput toolslint.ArazzoInput, result *openapi.OASResult) error {
 	if err := s.lintAndPersist(ctx, apiID, oasInput, result.Hash); err != nil {
 		log.Printf("[tools] lint failed: %v", err)
@@ -616,35 +616,6 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, o
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
-
-	g.Go(func() error {
-		if err := s.withRateLimit(ctx); err != nil {
-			return nil
-		}
-		data, name, ct, err := toolslint.BrunoPost(ctx, oasInput)
-		if err != nil {
-			log.Printf("[tools] bruno generation failed: %v", err)
-			return nil
-		}
-		art := &models.ApiArtifact{
-			ID:          uuid.New().String(),
-			ApiID:       apiID,
-			Kind:        "bruno",
-			Filename:    name,
-			ContentType: ct,
-			Data:        data,
-			CreatedAt:   time.Now(),
-		}
-		if err := s.repo.SaveArtifact(ctx, art); err != nil {
-			log.Printf("[tools] save bruno artifact failed: %v", err)
-		} else {
-			log.Printf("[tools] saved bruno artifact id=%s api=%s", art.ID, apiID)
-			if err := s.repo.DeleteArtifactsByKind(ctx, apiID, "bruno", []string{art.ID}); err != nil {
-				log.Printf("[tools] cleanup oude bruno artifacts mislukt api=%s: %v", apiID, err)
-			}
-		}
-		return nil
-	})
 
 	g.Go(func() error {
 		if err := s.withRateLimit(ctx); err != nil {

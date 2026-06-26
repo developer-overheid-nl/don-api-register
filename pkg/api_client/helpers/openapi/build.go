@@ -86,7 +86,15 @@ func populateApiFromSpec(api *models.Api, spec *v3.Document, requestBody models.
 
 	if spec != nil && spec.Info != nil {
 		api.Title = spec.Info.Title
+		api.Summary = spec.Info.Summary
 		api.Description = spec.Info.Description
+		if summary, description := models.NormalizeSummaryAndDescription(api.Summary, api.Description); summary != nil {
+			api.Summary = *summary
+			api.Description = description
+		} else {
+			api.Summary = ""
+			api.Description = description
+		}
 
 		api.ContactName = ""
 		api.ContactEmail = ""
@@ -105,6 +113,7 @@ func populateApiFromSpec(api *models.Api, spec *v3.Document, requestBody models.
 		api.Deprecated = extString(spec.Info.Extensions, "x-deprecated")
 	} else {
 		api.Title = ""
+		api.Summary = ""
 		api.Description = ""
 		api.ContactName = ""
 		api.ContactEmail = ""

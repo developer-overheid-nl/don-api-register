@@ -9,11 +9,13 @@ import (
 )
 
 func ToApiSummary(api *models.Api) models.ApiSummary {
+	summary, description := models.NormalizeSummaryAndDescription(api.Summary, api.Description)
 	return models.ApiSummary{
 		Id:          api.Id,
 		OasUrl:      api.OasUri,
 		Title:       api.Title,
-		Description: api.Description,
+		Summary:     summary,
+		Description: description,
 		Contact: models.Contact{
 			Name:  api.ContactName,
 			URL:   api.ContactUrl,

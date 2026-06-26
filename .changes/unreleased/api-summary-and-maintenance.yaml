@@ -1,0 +1,3 @@
+kind: Changed
+body: Return API summaries in list and detail responses, derive summaries from descriptions up to 180 characters without cutting words, update Go dependencies including the quic-go fix for GHSA-vvgj-x9jq-8cj9, rely on the tools API to reject circular OAS dereference results, and update workflow action pins.
+time: 2026-06-25T08:10:58+02:00

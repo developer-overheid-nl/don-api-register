@@ -84,6 +84,8 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 		Origin: "https://developer.overheid.nl",
 	})
 	if err != nil {
+		s.recordOpenAPIProcessingEvents(ctx, api.Id, openapi.EventsFromError(err))
+		s.recordProcessingEvent(ctx, api.Id, models.ProcessingToolOASFetch, models.ProcessingStatusFailed, "OpenAPI-specificatie kon niet worden opgehaald of verwerkt", err.Error())
 		if openapi.IsHTTPStatus(err, http.StatusNotFound) && !hasOASDocumentChange(api, body) {
 			if _, retireErr := s.retireAPIForUnavailableOAS(ctx, *api); retireErr != nil {
 				return nil, retireErr
@@ -97,6 +99,7 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 		}
 		return nil, problem.NewBadRequest(body.OasUrl, err.Error())
 	}
+	s.recordOpenAPIProcessingEvents(ctx, api.Id, res.Events)
 
 	return s.applyOASUpdate(ctx, api, models.ApiPost{
 		Id:              body.Id,
@@ -188,6 +191,12 @@ func (s *APIsAPIService) RetrieveApi(ctx context.Context, id string) (*models.Ap
 		return nil, err
 	}
 	detail.LintResults = lintResults
+
+	processingEvents, err := s.repo.ListApiProcessingEvents(ctx, api.Id, 25)
+	if err != nil {
+		return nil, err
+	}
+	detail.ProcessingEvents = toProcessingEventSummaries(processingEvents)
 
 	return detail, nil
 }
@@ -375,6 +384,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 	if err := s.repo.UpdateApi(ctx, *api); err != nil {
 		return nil, problem.NewInternalServerError("kan API hash niet opslaan: " + err.Error())
 	}
+	s.recordOpenAPIProcessingEvents(ctx, api.Id, resp.Events)
 
 	toolslint.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
 		return s.runToolsAndPersist(ctx, api.Id, oasInput, arazzoInput, resp)
@@ -406,6 +416,8 @@ func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
 			Origin: "https://developer.overheid.nl",
 		})
 		if err != nil {
+			s.recordOpenAPIProcessingEvents(ctx, candidate.Id, openapi.EventsFromError(err))
+			s.recordProcessingEvent(ctx, candidate.Id, models.ProcessingToolOASFetch, models.ProcessingStatusFailed, "OpenAPI-specificatie kon tijdens refresh niet worden opgehaald of verwerkt", err.Error())
 			if openapi.IsHTTPStatus(err, http.StatusNotFound) {
 				retired, retireErr := s.retireAPIForUnavailableOAS(ctx, candidate)
 				if retireErr != nil {
@@ -428,6 +440,7 @@ func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
 			log.Printf("[oas-refresh] skip api=%s url=%s: %v", candidate.Id, candidate.OasUri, err)
 			continue
 		}
+		s.recordOpenAPIProcessingEvents(ctx, candidate.Id, res.Events)
 
 		if err := s.updateOASMetadataSnapshot(ctx, candidate.Id, candidate.OAS, deriveOASSnapshot(candidate.OAS, res)); err != nil {
 			log.Printf("[oas-refresh] kon oas snapshot niet bijwerken api=%s: %v", candidate.Id, err)
@@ -486,6 +499,8 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 		oasInput := toolslint.OASInput{OasUrl: api.OasUri}
 		resp, err := openapi.FetchParseValidateAndHash(ctx, oasInput, openapi.FetchOpts{Origin: "https://developer.overheid.nl"})
 		if err != nil {
+			s.recordOpenAPIProcessingEvents(ctx, api.Id, openapi.EventsFromError(err))
+			s.recordProcessingEvent(ctx, api.Id, models.ProcessingToolOASFetch, models.ProcessingStatusFailed, "OpenAPI-specificatie kon voor linting niet worden opgehaald of verwerkt", err.Error())
 			if openapi.IsHTTPStatus(err, http.StatusNotFound) {
 				if _, retireErr := s.retireAPIForUnavailableOAS(ctx, api); retireErr != nil {
 					log.Printf("[lint] kon api=%s niet retired zetten na 404: %v", api.Id, retireErr)
@@ -493,6 +508,7 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 			}
 			log.Printf("[lint] skip api=%s: hash fetch failed: %v", api.Id, err)
 		} else {
+			s.recordOpenAPIProcessingEvents(ctx, api.Id, resp.Events)
 			if err := sem.Acquire(ctx, 1); err != nil {
 				return err
 			}
@@ -532,6 +548,7 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID string, input
 		if dto == nil {
 			if lintErr != nil {
 				log.Printf("[lint] tools lint error: %v", lintErr)
+				s.recordProcessingEvent(ctx, apiID, models.ProcessingToolLint, models.ProcessingStatusFailed, "Linten van OAS is mislukt", lintErr.Error())
 			}
 			return lintErr
 		}
@@ -613,6 +630,7 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, o
 
 	if err := s.persistOASArtifacts(ctx, apiID, result); err != nil {
 		log.Printf("[tools] persist oas artifacts failed: %v", err)
+		s.recordProcessingEvent(ctx, apiID, models.ProcessingToolOASArtifacts, models.ProcessingStatusFailed, "Opslaan van OAS artifacts is mislukt", err.Error())
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -624,6 +642,7 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, o
 		data, name, ct, err := toolslint.PostmanPost(ctx, oasInput)
 		if err != nil {
 			log.Printf("[tools] postman generation failed: %v", err)
+			s.recordProcessingEvent(ctx, apiID, models.ProcessingToolPostman, models.ProcessingStatusFailed, "Genereren van Postman collectie is mislukt", err.Error())
 			return nil
 		}
 		art := &models.ApiArtifact{
@@ -637,6 +656,7 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, o
 		}
 		if err := s.repo.SaveArtifact(ctx, art); err != nil {
 			log.Printf("[tools] save postman artifact failed: %v", err)
+			s.recordProcessingEvent(ctx, apiID, models.ProcessingToolPostman, models.ProcessingStatusFailed, "Opslaan van Postman collectie is mislukt", err.Error())
 		} else {
 			log.Printf("[tools] saved postman artifact id=%s api=%s", art.ID, apiID)
 			if err := s.repo.DeleteArtifactsByKind(ctx, apiID, "postman", []string{art.ID}); err != nil {
@@ -655,6 +675,7 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, o
 			data, ct, err := toolslint.ArazzoMarkdown(ctx, arazzoInput)
 			if err != nil {
 				log.Printf("[tools] arazzo markdown failed: %v", err)
+				s.recordProcessingEvent(ctx, apiID, models.ProcessingToolArazzoMarkdown, models.ProcessingStatusFailed, "Genereren van Arazzo markdown is mislukt", err.Error())
 				return nil
 			}
 			art := &models.ApiArtifact{
@@ -670,6 +691,7 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, o
 			}
 			if err := s.repo.SaveArtifact(ctx, art); err != nil {
 				log.Printf("[tools] save arazzo markdown failed: %v", err)
+				s.recordProcessingEvent(ctx, apiID, models.ProcessingToolArazzoMarkdown, models.ProcessingStatusFailed, "Opslaan van Arazzo markdown is mislukt", err.Error())
 			} else {
 				log.Printf("[tools] saved arazzo markdown artifact id=%s api=%s", art.ID, apiID)
 			}
@@ -683,6 +705,7 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, o
 			data, ct, err := toolslint.ArazzoMermaid(ctx, arazzoInput)
 			if err != nil {
 				log.Printf("[tools] arazzo mermaid failed: %v", err)
+				s.recordProcessingEvent(ctx, apiID, models.ProcessingToolArazzoMermaid, models.ProcessingStatusFailed, "Genereren van Arazzo Mermaid is mislukt", err.Error())
 				return nil
 			}
 			art := &models.ApiArtifact{
@@ -698,6 +721,7 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, o
 			}
 			if err := s.repo.SaveArtifact(ctx, art); err != nil {
 				log.Printf("[tools] save arazzo mermaid failed: %v", err)
+				s.recordProcessingEvent(ctx, apiID, models.ProcessingToolArazzoMermaid, models.ProcessingStatusFailed, "Opslaan van Arazzo Mermaid is mislukt", err.Error())
 			} else {
 				log.Printf("[tools] saved arazzo mermaid artifact id=%s api=%s", art.ID, apiID)
 			}
@@ -718,6 +742,7 @@ func (s *APIsAPIService) publishToTypesense(api models.Api) {
 			return
 		}
 		log.Printf("[typesense] indexing failed for api=%s: %v", api.Id, err)
+		s.recordProcessingEvent(ctx, api.Id, models.ProcessingToolTypesense, models.ProcessingStatusFailed, "Indexeren in Typesense is mislukt", err.Error())
 	}
 }
 
@@ -751,6 +776,7 @@ func (s *APIsAPIService) PublishAllApisToTypesense(ctx context.Context) error {
 				return nil
 			}
 			log.Printf("[typesense] bulk indexing failed for api=%s: %v", apiCopy.Id, err)
+			s.recordProcessingEvent(ctx, apiCopy.Id, models.ProcessingToolTypesense, models.ProcessingStatusFailed, "Bulk indexeren in Typesense is mislukt", err.Error())
 		}
 	}
 	return nil
@@ -1166,6 +1192,62 @@ func (s *APIsAPIService) saveFeedEvent(ctx context.Context, apiID, eventType, ol
 	if err := s.repo.SaveApiFeedEvent(ctx, event); err != nil {
 		log.Printf("[feed] save event failed api=%s type=%s: %v", apiID, eventType, err)
 	}
+}
+
+func (s *APIsAPIService) recordOpenAPIProcessingEvents(ctx context.Context, apiID string, events []openapi.ProcessingEvent) {
+	for _, event := range events {
+		s.recordProcessingEvent(ctx, apiID, event.Tool, event.Status, event.Message, event.Detail)
+	}
+}
+
+func toProcessingEventSummaries(events []models.ApiProcessingEvent) []models.ApiProcessingEventSummary {
+	if len(events) == 0 {
+		return nil
+	}
+	summaries := make([]models.ApiProcessingEventSummary, len(events))
+	for i, event := range events {
+		summaries[i] = models.ApiProcessingEventSummary{
+			Tool:      event.Tool,
+			Status:    event.Status,
+			Message:   event.Message,
+			Detail:    event.Detail,
+			CreatedAt: event.CreatedAt,
+		}
+	}
+	return summaries
+}
+
+func (s *APIsAPIService) recordProcessingEvent(ctx context.Context, apiID, tool, status, message, detail string) {
+	if strings.TrimSpace(apiID) == "" || strings.TrimSpace(tool) == "" || strings.TrimSpace(status) == "" {
+		return
+	}
+	event := &models.ApiProcessingEvent{
+		ID:        uuid.New().String(),
+		ApiID:     apiID,
+		Tool:      strings.TrimSpace(tool),
+		Status:    strings.TrimSpace(status),
+		Message:   trimProcessingEventText(message, 500),
+		Detail:    trimProcessingEventText(detail, 4000),
+		CreatedAt: time.Now(),
+	}
+	if event.Message == "" {
+		event.Message = event.Tool + " " + event.Status
+	}
+	if err := s.repo.SaveApiProcessingEvent(ctx, event); err != nil {
+		log.Printf("[processing-event] save failed api=%s tool=%s status=%s: %v", apiID, tool, status, err)
+	}
+}
+
+func trimProcessingEventText(value string, max int) string {
+	value = strings.TrimSpace(value)
+	if max <= 0 {
+		return value
+	}
+	runes := []rune(value)
+	if len(runes) <= max {
+		return value
+	}
+	return string(runes[:max])
 }
 
 func feedEventText(eventType, oldValue, newValue string) (string, string) {

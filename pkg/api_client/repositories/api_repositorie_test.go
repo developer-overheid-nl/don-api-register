@@ -27,6 +27,7 @@ func setupDB(t *testing.T) *gorm.DB {
 		&models.LintMessage{},
 		&models.LintMessageInfo{},
 		&models.ApiFeedEvent{},
+		&models.ApiProcessingEvent{},
 	))
 	return db
 }
@@ -80,6 +81,47 @@ func TestApiRepository_ListApiFeedEvents(t *testing.T) {
 	require.Len(t, events, 2)
 	assert.Equal(t, "event-newer", events[0].ID)
 	assert.Equal(t, "event-older", events[1].ID)
+}
+
+func TestApiRepository_ListApiProcessingEvents(t *testing.T) {
+	db := setupDB(t)
+	repo := repositories.NewApiRepository(db)
+	ctx := context.Background()
+
+	older := models.ApiProcessingEvent{
+		ID:        "process-older",
+		ApiID:     "api-1",
+		Tool:      models.ProcessingToolOASBundle,
+		Status:    models.ProcessingStatusFallbackSucceeded,
+		Message:   "older",
+		CreatedAt: time.Date(2026, 1, 1, 10, 0, 0, 0, time.UTC),
+	}
+	newer := models.ApiProcessingEvent{
+		ID:        "process-newer",
+		ApiID:     "api-1",
+		Tool:      models.ProcessingToolLint,
+		Status:    models.ProcessingStatusFailed,
+		Message:   "newer",
+		CreatedAt: time.Date(2026, 1, 2, 10, 0, 0, 0, time.UTC),
+	}
+	other := models.ApiProcessingEvent{
+		ID:        "process-other",
+		ApiID:     "api-2",
+		Tool:      models.ProcessingToolTypesense,
+		Status:    models.ProcessingStatusFailed,
+		Message:   "other",
+		CreatedAt: time.Date(2026, 1, 3, 10, 0, 0, 0, time.UTC),
+	}
+
+	require.NoError(t, repo.SaveApiProcessingEvent(ctx, &older))
+	require.NoError(t, repo.SaveApiProcessingEvent(ctx, &newer))
+	require.NoError(t, repo.SaveApiProcessingEvent(ctx, &other))
+
+	events, err := repo.ListApiProcessingEvents(ctx, "api-1", 10)
+	require.NoError(t, err)
+	require.Len(t, events, 2)
+	assert.Equal(t, "process-newer", events[0].ID)
+	assert.Equal(t, "process-older", events[1].ID)
 }
 
 func TestApiRepository_FindByOasUrl(t *testing.T) {

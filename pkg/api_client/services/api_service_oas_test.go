@@ -117,6 +117,12 @@ func (a *artifactRepoStub) SaveApiFeedEvent(ctx context.Context, event *models.A
 func (a *artifactRepoStub) ListApiFeedEvents(ctx context.Context, apiID string, limit int) ([]models.ApiFeedEvent, error) {
 	return nil, nil
 }
+func (a *artifactRepoStub) SaveApiProcessingEvent(ctx context.Context, event *models.ApiProcessingEvent) error {
+	return nil
+}
+func (a *artifactRepoStub) ListApiProcessingEvents(ctx context.Context, apiID string, limit int) ([]models.ApiProcessingEvent, error) {
+	return nil, nil
+}
 
 func TestPersistOASArtifacts_StoresOriginalAndConverted(t *testing.T) {
 	repo := &artifactRepoStub{}

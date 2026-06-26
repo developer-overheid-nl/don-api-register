@@ -38,6 +38,8 @@ type stubRepo struct {
 	filterCounts func(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error)
 	saveFeed     func(ctx context.Context, event *models.ApiFeedEvent) error
 	listFeed     func(ctx context.Context, apiID string, limit int) ([]models.ApiFeedEvent, error)
+	saveProcess  func(ctx context.Context, event *models.ApiProcessingEvent) error
+	listProcess  func(ctx context.Context, apiID string, limit int) ([]models.ApiProcessingEvent, error)
 }
 
 func (s *stubRepo) FindByOasUrl(ctx context.Context, url string) (*models.Api, error) {
@@ -138,6 +140,18 @@ func (s *stubRepo) ListApiFeedEvents(ctx context.Context, apiID string, limit in
 		return s.listFeed(ctx, apiID, limit)
 	}
 	return []models.ApiFeedEvent{}, nil
+}
+func (s *stubRepo) SaveApiProcessingEvent(ctx context.Context, event *models.ApiProcessingEvent) error {
+	if s.saveProcess != nil {
+		return s.saveProcess(ctx, event)
+	}
+	return nil
+}
+func (s *stubRepo) ListApiProcessingEvents(ctx context.Context, apiID string, limit int) ([]models.ApiProcessingEvent, error) {
+	if s.listProcess != nil {
+		return s.listProcess(ctx, apiID, limit)
+	}
+	return []models.ApiProcessingEvent{}, nil
 }
 
 func TestGetOasDocument_InvalidVersion(t *testing.T) {
@@ -811,6 +825,7 @@ func TestRefreshChangedApis_RetiresAPIWhenOASReturnsNotFound(t *testing.T) {
 }
 
 func TestRetrieveApi_Success(t *testing.T) {
+	createdAt := time.Date(2026, 6, 26, 9, 45, 0, 0, time.UTC)
 	api := &models.Api{
 		Id: "1234",
 		Organisation: &models.Organisation{
@@ -822,11 +837,29 @@ func TestRetrieveApi_Success(t *testing.T) {
 		getByID: func(ctx context.Context, id string) (*models.Api, error) {
 			return api, nil
 		},
+		listProcess: func(ctx context.Context, apiID string, limit int) ([]models.ApiProcessingEvent, error) {
+			assert.Equal(t, "1234", apiID)
+			assert.Equal(t, 25, limit)
+			return []models.ApiProcessingEvent{
+				{
+					Tool:      models.ProcessingToolOASBundle,
+					Status:    models.ProcessingStatusFallbackSucceeded,
+					Message:   "Bundelen van OAS faalde; raw OAS is gebruikt",
+					Detail:    "422 Unprocessable Entity",
+					CreatedAt: createdAt,
+				},
+			}, nil
+		},
 	}
 	service := services.NewAPIsAPIService(repo)
 	resp, err := service.RetrieveApi(context.Background(), "1234")
 	assert.NoError(t, err)
 	assert.Equal(t, api.Id, resp.Id)
+	require.Len(t, resp.ProcessingEvents, 1)
+	assert.Equal(t, models.ProcessingToolOASBundle, resp.ProcessingEvents[0].Tool)
+	assert.Equal(t, models.ProcessingStatusFallbackSucceeded, resp.ProcessingEvents[0].Status)
+	assert.Equal(t, "422 Unprocessable Entity", resp.ProcessingEvents[0].Detail)
+	assert.Equal(t, createdAt, resp.ProcessingEvents[0].CreatedAt)
 }
 
 func TestListApis_Pagination(t *testing.T) {

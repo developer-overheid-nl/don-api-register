@@ -170,12 +170,21 @@ type ServerInfo struct {
 }
 
 type ApiDetail struct {
-	ApiSummary               // embed alles van ApiSummary
-	Auth        []string     `json:"auth,omitempty"`
-	DocsUrl     string       `json:"docsUrl,omitempty"`
-	Servers     []ServerInfo `json:"servers,omitempty"`
-	LintResults []LintResult `json:"lintResults,omitempty"`
-	OasVersion  string       `json:"-"`
+	ApiSummary                                   // embed alles van ApiSummary
+	Auth             []string                    `json:"auth,omitempty"`
+	DocsUrl          string                      `json:"docsUrl,omitempty"`
+	Servers          []ServerInfo                `json:"servers,omitempty"`
+	LintResults      []LintResult                `json:"lintResults,omitempty"`
+	ProcessingEvents []ApiProcessingEventSummary `json:"processingEvents,omitempty"`
+	OasVersion       string                      `json:"-"`
+}
+
+type ApiProcessingEventSummary struct {
+	Tool      string    `json:"tool"`
+	Status    string    `json:"status"`
+	Message   string    `json:"message"`
+	Detail    string    `json:"detail,omitempty"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 type ContactJsonLd struct {

@@ -33,6 +33,41 @@ type OASResult struct {
 	Major       int
 	Minor       int
 	Patch       int
+	Events      []ProcessingEvent
+}
+
+type ProcessingEvent struct {
+	Tool    string
+	Status  string
+	Message string
+	Detail  string
+}
+
+type FetchError struct {
+	Err    error
+	Events []ProcessingEvent
+}
+
+func (e *FetchError) Error() string {
+	if e == nil || e.Err == nil {
+		return ""
+	}
+	return e.Err.Error()
+}
+
+func (e *FetchError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.Err
+}
+
+func EventsFromError(err error) []ProcessingEvent {
+	var fetchErr *FetchError
+	if errors.As(err, &fetchErr) {
+		return fetchErr.Events
+	}
+	return nil
 }
 
 type HTTPStatusError struct {
@@ -61,33 +96,60 @@ func FetchParseValidateAndHash(ctx context.Context, input tools.OASInput, opts F
 		raw         []byte
 		contentType string
 		fromBundle  bool
+		events      []ProcessingEvent
 		err         error
 	)
 
 	raw, contentType, err = bundleOAS(ctx, input)
 	if err != nil {
 		log.Printf("[oas] bundle failed (%v), fallback naar directe fetch", err)
+		bundleEvent := ProcessingEvent{
+			Tool:    "oas_bundle",
+			Status:  "fallback_succeeded",
+			Message: "Bundelen van OAS faalde; raw OAS is gebruikt",
+			Detail:  err.Error(),
+		}
 		raw, contentType, err = fetchRawOAS(ctx, input, opts)
 		if err != nil {
-			return nil, err
+			bundleEvent.Status = "failed"
+			bundleEvent.Message = "Bundelen van OAS faalde; raw OAS kon niet worden gebruikt"
+			events = append(events, bundleEvent)
+			return nil, &FetchError{Err: err, Events: events}
 		}
+		events = append(events, bundleEvent)
 	} else {
 		fromBundle = true
 	}
 
 	res, err := parseValidateAndHash(raw, contentType)
 	if err == nil {
+		res.Events = append(res.Events, events...)
 		return res, nil
 	}
 	if fromBundle && shouldRetryRawFetchAfterBundleParseError(err) {
 		log.Printf("[oas] bundled parse failed with recursive YAML anchors, retrying raw fetch for %s", input.OasUrl)
+		bundleEvent := ProcessingEvent{
+			Tool:    "oas_bundle",
+			Status:  "fallback_succeeded",
+			Message: "Gebundelde OAS kon niet worden verwerkt; raw OAS is gebruikt",
+			Detail:  err.Error(),
+		}
 		raw, contentType, retryErr := fetchRawOAS(ctx, input, opts)
 		if retryErr != nil {
-			return nil, retryErr
+			bundleEvent.Status = "failed"
+			bundleEvent.Message = "Gebundelde OAS kon niet worden verwerkt; raw OAS kon niet worden gebruikt"
+			events = append(events, bundleEvent)
+			return nil, &FetchError{Err: retryErr, Events: events}
 		}
-		return parseValidateAndHash(raw, contentType)
+		events = append(events, bundleEvent)
+		res, err := parseValidateAndHash(raw, contentType)
+		if err == nil {
+			res.Events = append(res.Events, events...)
+			return res, nil
+		}
+		return nil, &FetchError{Err: err, Events: events}
 	}
-	return nil, err
+	return nil, &FetchError{Err: err, Events: events}
 }
 
 func shouldRetryRawFetchAfterBundleParseError(err error) bool {

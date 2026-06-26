@@ -39,6 +39,8 @@ type ApiRepository interface {
 	GetApiFilterCounts(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error)
 	SaveApiFeedEvent(ctx context.Context, event *models.ApiFeedEvent) error
 	ListApiFeedEvents(ctx context.Context, apiID string, limit int) ([]models.ApiFeedEvent, error)
+	SaveApiProcessingEvent(ctx context.Context, event *models.ApiProcessingEvent) error
+	ListApiProcessingEvents(ctx context.Context, apiID string, limit int) ([]models.ApiProcessingEvent, error)
 }
 
 type apiRepository struct {
@@ -189,6 +191,26 @@ func (r *apiRepository) ListApiFeedEvents(ctx context.Context, apiID string, lim
 		limit = 50
 	}
 	var events []models.ApiFeedEvent
+	err := r.db.WithContext(ctx).
+		Where("api_id = ?", apiID).
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&events).Error
+	return events, err
+}
+
+func (r *apiRepository) SaveApiProcessingEvent(ctx context.Context, event *models.ApiProcessingEvent) error {
+	return r.db.WithContext(ctx).Create(event).Error
+}
+
+func (r *apiRepository) ListApiProcessingEvents(ctx context.Context, apiID string, limit int) ([]models.ApiProcessingEvent, error) {
+	if strings.TrimSpace(apiID) == "" {
+		return nil, fmt.Errorf("apiID is verplicht")
+	}
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	var events []models.ApiProcessingEvent
 	err := r.db.WithContext(ctx).
 		Where("api_id = ?", apiID).
 		Order("created_at DESC").

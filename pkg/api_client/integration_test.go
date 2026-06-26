@@ -131,6 +131,7 @@ func newIntegrationEnv(t *testing.T) *integrationEnv {
 		&models.LintMessageInfo{},
 		&models.ApiArtifact{},
 		&models.ApiFeedEvent{},
+		&models.ApiProcessingEvent{},
 	))
 
 	repo := repositories.NewApiRepository(db)
@@ -244,6 +245,15 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		Version:        "1.2.3",
 	}
 	require.NoError(t, env.repo.Save(api))
+	require.NoError(t, env.repo.SaveApiProcessingEvent(ctx, &models.ApiProcessingEvent{
+		ID:        uuid.NewString(),
+		ApiID:     apiID,
+		Tool:      models.ProcessingToolOASBundle,
+		Status:    models.ProcessingStatusFallbackSucceeded,
+		Message:   "Bundelen van OAS faalde; raw OAS is gebruikt",
+		Detail:    "De OpenAPI specificatie bevat circulaire verwijzingen en kan niet volledig worden gedereferenced.",
+		CreatedAt: time.Date(2026, 6, 26, 9, 45, 0, 0, time.UTC),
+	}))
 
 	t.Run("list apis", func(t *testing.T) {
 		resp := env.doRequest(t, http.MethodGet, "/v1/apis")
@@ -279,6 +289,10 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		require.Equal(t, "realtime@example.com", detail.Contact.Email)
 		require.Equal(t, "Realtime Org", detail.Organisation.Label)
 		require.Empty(t, detail.LintResults)
+		require.Len(t, detail.ProcessingEvents, 1)
+		require.Equal(t, models.ProcessingToolOASBundle, detail.ProcessingEvents[0].Tool)
+		require.Equal(t, models.ProcessingStatusFallbackSucceeded, detail.ProcessingEvents[0].Status)
+		require.Equal(t, "De OpenAPI specificatie bevat circulaire verwijzingen en kan niet volledig worden gedereferenced.", detail.ProcessingEvents[0].Detail)
 		require.Nil(t, detail.Links)
 	})
 

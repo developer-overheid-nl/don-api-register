@@ -15,6 +15,12 @@ import (
 	httpclient "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
 )
 
+type toolsProblem struct {
+	Title  string `json:"title"`
+	Detail string `json:"detail"`
+	Status int    `json:"status"`
+}
+
 func buildToolsURL(endpoint string) (*url.URL, error) {
 	base := strings.TrimSpace(os.Getenv("TOOLS_API_ENDPOINT"))
 	if base == "" {
@@ -26,6 +32,24 @@ func buildToolsURL(endpoint string) (*url.URL, error) {
 	}
 	pu.Path = path.Join(pu.Path, endpoint)
 	return pu, nil
+}
+
+func toolsErrorMessage(status string, data []byte) string {
+	var problem toolsProblem
+	if err := json.Unmarshal(data, &problem); err == nil {
+		if detail := strings.TrimSpace(problem.Detail); detail != "" {
+			return detail
+		}
+		if title := strings.TrimSpace(problem.Title); title != "" {
+			return title
+		}
+	}
+
+	body := strings.TrimSpace(string(data))
+	if body == "" {
+		return status
+	}
+	return fmt.Sprintf("%s body=%s", status, body)
 }
 
 func doToolsJSONRequest(ctx context.Context, endpoint string, payload any, accept string) (data []byte, headers http.Header, err error) {
@@ -66,7 +90,7 @@ func doToolsJSONRequest(ctx context.Context, endpoint string, payload any, accep
 		return nil, nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, nil, fmt.Errorf("tools %s request failed: %s body=%s", endpoint, resp.Status, string(data))
+		return nil, nil, errors.New(toolsErrorMessage(resp.Status, data))
 	}
 	return data, resp.Header.Clone(), nil
 }

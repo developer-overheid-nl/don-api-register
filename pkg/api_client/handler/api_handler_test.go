@@ -112,6 +112,12 @@ func (s *stubRepo) ListApiFeedEvents(ctx context.Context, apiID string, limit in
 	}
 	return []models.ApiFeedEvent{}, nil
 }
+func (s *stubRepo) SaveApiProcessingEvent(ctx context.Context, event *models.ApiProcessingEvent) error {
+	return nil
+}
+func (s *stubRepo) ListApiProcessingEvents(ctx context.Context, apiID string, limit int) ([]models.ApiProcessingEvent, error) {
+	return []models.ApiProcessingEvent{}, nil
+}
 
 func TestGetOas_Handler(t *testing.T) {
 	repo := &stubRepo{

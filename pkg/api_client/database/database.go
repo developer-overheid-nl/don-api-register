@@ -15,5 +15,6 @@ func Connect(connStr string) (*gorm.DB, error) {
 		&models.LintMessageInfo{},
 		&models.ApiArtifact{},
 		&models.ApiFeedEvent{},
+		&models.ApiProcessingEvent{},
 	)
 }

@@ -21,6 +21,8 @@ type toolsProblem struct {
 	Status int    `json:"status"`
 }
 
+const maxToolsResponseBytes int64 = 32 << 20
+
 func buildToolsURL(endpoint string) (*url.URL, error) {
 	base := strings.TrimSpace(os.Getenv("TOOLS_API_ENDPOINT"))
 	if base == "" {
@@ -85,7 +87,7 @@ func doToolsJSONRequest(ctx context.Context, endpoint string, payload any, accep
 		}
 	}()
 
-	data, err = io.ReadAll(resp.Body)
+	data, err = readResponseBody(resp.Body, maxToolsResponseBytes)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -93,4 +95,19 @@ func doToolsJSONRequest(ctx context.Context, endpoint string, payload any, accep
 		return nil, nil, errors.New(toolsErrorMessage(resp.Status, data))
 	}
 	return data, resp.Header.Clone(), nil
+}
+
+func readResponseBody(body io.Reader, limit int64) ([]byte, error) {
+	if limit <= 0 {
+		return io.ReadAll(body)
+	}
+	limited := io.LimitReader(body, limit+1)
+	data, err := io.ReadAll(limited)
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > limit {
+		return nil, fmt.Errorf("tools response too large: exceeds %d bytes", limit)
+	}
+	return data, nil
 }

@@ -3,6 +3,7 @@ package openapi
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 
 	toolslint "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
@@ -48,6 +49,13 @@ func TestFetchParseValidateAndHash_AllowsOpenAPI31(t *testing.T) {
 	}
 	if res.Hash == "" {
 		t.Fatalf("expected hash, got empty string")
+	}
+}
+
+func TestReadLimitedRejectsOversizedResponse(t *testing.T) {
+	_, err := readLimited(strings.NewReader("abcdef"), 5)
+	if err == nil {
+		t.Fatal("expected oversized response error")
 	}
 }
 

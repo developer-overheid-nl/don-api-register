@@ -19,6 +19,8 @@ import (
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 )
 
+const maxRawOASBytes int64 = 32 << 20
+
 type FetchOpts struct {
 	Origin     string       // bv. "https://developer.overheid.nl"
 	HTTPClient *http.Client // optioneel
@@ -268,7 +270,7 @@ func fetchRawOAS(ctx context.Context, input tools.OASInput, opts FetchOpts) ([]b
 		if err != nil {
 			return nil, "", fmt.Errorf("kan OAS niet ophalen: %w", err)
 		}
-		body, readErr := io.ReadAll(resp.Body)
+		body, readErr := readLimited(resp.Body, maxRawOASBytes)
 		closeErr := resp.Body.Close()
 		if readErr != nil {
 			return nil, "", fmt.Errorf("kan OAS niet lezen: %w", readErr)
@@ -303,4 +305,19 @@ func fetchRawOAS(ctx context.Context, input tools.OASInput, opts FetchOpts) ([]b
 		return body, contentType, nil
 	}
 	return nil, "", fmt.Errorf("kan OAS niet ophalen: geen geldige response")
+}
+
+func readLimited(body io.Reader, limit int64) ([]byte, error) {
+	if limit <= 0 {
+		return io.ReadAll(body)
+	}
+	limited := io.LimitReader(body, limit+1)
+	data, err := io.ReadAll(limited)
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > limit {
+		return nil, fmt.Errorf("response groter dan %d bytes", limit)
+	}
+	return data, nil
 }

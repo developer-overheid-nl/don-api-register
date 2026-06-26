@@ -428,6 +428,7 @@ func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
 		}
 
 		oasInput := toolslint.OASInput{OasUrl: candidate.OasUri}
+		log.Printf("[oas-refresh] check api=%s url=%s", candidate.Id, candidate.OasUri)
 		res, err := openapi.FetchParseValidateAndHash(ctx, oasInput, openapi.FetchOpts{
 			Origin: "https://developer.overheid.nl",
 		})

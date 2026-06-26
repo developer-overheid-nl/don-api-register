@@ -8,7 +8,6 @@ import (
 
 	toolslint "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/testutil"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -237,9 +236,5 @@ components:
 	if got := res.Spec.Info.Title; got != "Recursive Raw" {
 		t.Fatalf("expected fallback to raw spec, got title %q", got)
 	}
-	require.Len(t, res.Events, 1)
-	assert.Equal(t, "oas_bundle", res.Events[0].Tool)
-	assert.Equal(t, "fallback_succeeded", res.Events[0].Status)
-	assert.Contains(t, res.Events[0].Message, "raw OAS is gebruikt")
-	assert.Contains(t, res.Events[0].Detail, "anchor")
+	require.Empty(t, res.Events)
 }

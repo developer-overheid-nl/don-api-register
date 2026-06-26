@@ -848,6 +848,13 @@ func TestRetrieveApi_Success(t *testing.T) {
 					Detail:    "422 Unprocessable Entity",
 					CreatedAt: createdAt,
 				},
+				{
+					Tool:      models.ProcessingToolLint,
+					Status:    models.ProcessingStatusFailed,
+					Message:   "Lint faalde",
+					Detail:    "lint detail",
+					CreatedAt: createdAt,
+				},
 			}, nil
 		},
 	}
@@ -856,9 +863,9 @@ func TestRetrieveApi_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, api.Id, resp.Id)
 	require.Len(t, resp.ProcessingEvents, 1)
-	assert.Equal(t, models.ProcessingToolOASBundle, resp.ProcessingEvents[0].Tool)
-	assert.Equal(t, models.ProcessingStatusFallbackSucceeded, resp.ProcessingEvents[0].Status)
-	assert.Equal(t, "422 Unprocessable Entity", resp.ProcessingEvents[0].Detail)
+	assert.Equal(t, models.ProcessingToolLint, resp.ProcessingEvents[0].Tool)
+	assert.Equal(t, models.ProcessingStatusFailed, resp.ProcessingEvents[0].Status)
+	assert.Equal(t, "lint detail", resp.ProcessingEvents[0].Detail)
 	assert.Equal(t, createdAt, resp.ProcessingEvents[0].CreatedAt)
 }
 

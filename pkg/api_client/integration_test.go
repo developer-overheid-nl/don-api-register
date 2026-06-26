@@ -254,6 +254,15 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		Detail:    "De OpenAPI specificatie bevat circulaire verwijzingen en kan niet volledig worden gedereferenced.",
 		CreatedAt: time.Date(2026, 6, 26, 9, 45, 0, 0, time.UTC),
 	}))
+	require.NoError(t, env.repo.SaveApiProcessingEvent(ctx, &models.ApiProcessingEvent{
+		ID:        uuid.NewString(),
+		ApiID:     apiID,
+		Tool:      models.ProcessingToolLint,
+		Status:    models.ProcessingStatusFailed,
+		Message:   "Lint faalde",
+		Detail:    "Lint kon niet worden uitgevoerd.",
+		CreatedAt: time.Date(2026, 6, 26, 9, 50, 0, 0, time.UTC),
+	}))
 
 	t.Run("list apis", func(t *testing.T) {
 		resp := env.doRequest(t, http.MethodGet, "/v1/apis")
@@ -290,9 +299,9 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		require.Equal(t, "Realtime Org", detail.Organisation.Label)
 		require.Empty(t, detail.LintResults)
 		require.Len(t, detail.ProcessingEvents, 1)
-		require.Equal(t, models.ProcessingToolOASBundle, detail.ProcessingEvents[0].Tool)
-		require.Equal(t, models.ProcessingStatusFallbackSucceeded, detail.ProcessingEvents[0].Status)
-		require.Equal(t, "De OpenAPI specificatie bevat circulaire verwijzingen en kan niet volledig worden gedereferenced.", detail.ProcessingEvents[0].Detail)
+		require.Equal(t, models.ProcessingToolLint, detail.ProcessingEvents[0].Tool)
+		require.Equal(t, models.ProcessingStatusFailed, detail.ProcessingEvents[0].Status)
+		require.Equal(t, "Lint kon niet worden uitgevoerd.", detail.ProcessingEvents[0].Detail)
 		require.Nil(t, detail.Links)
 	})
 

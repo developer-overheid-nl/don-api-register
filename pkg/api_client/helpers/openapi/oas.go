@@ -109,20 +109,18 @@ func FetchParseValidateAndHash(ctx context.Context, input tools.OASInput, opts F
 	raw, contentType, err = bundleOAS(ctx, input)
 	if err != nil {
 		log.Printf("[oas] bundle failed (%v), fallback naar directe fetch", err)
-		bundleEvent := ProcessingEvent{
-			Tool:    "oas_bundle",
-			Status:  "fallback_succeeded",
-			Message: "Bundelen van OAS faalde; raw OAS is gebruikt",
-			Detail:  err.Error(),
-		}
+		bundleErr := err
 		raw, contentType, err = fetchRawOAS(ctx, input, opts)
 		if err != nil {
-			bundleEvent.Status = "failed"
-			bundleEvent.Message = "Bundelen van OAS faalde; raw OAS kon niet worden gebruikt"
+			bundleEvent := ProcessingEvent{
+				Tool:    "oas_bundle",
+				Status:  "failed",
+				Message: "Bundelen van OAS faalde; raw OAS kon niet worden gebruikt",
+				Detail:  fmt.Sprintf("bundelen: %v; fallback: %v", bundleErr, err),
+			}
 			events = append(events, bundleEvent)
 			return nil, &FetchError{Err: err, Events: events}
 		}
-		events = append(events, bundleEvent)
 	} else {
 		fromBundle = true
 	}
@@ -134,20 +132,18 @@ func FetchParseValidateAndHash(ctx context.Context, input tools.OASInput, opts F
 	}
 	if fromBundle && shouldRetryRawFetchAfterBundleParseError(err) {
 		log.Printf("[oas] bundled parse failed with recursive YAML anchors, retrying raw fetch for %s", input.OasUrl)
-		bundleEvent := ProcessingEvent{
-			Tool:    "oas_bundle",
-			Status:  "fallback_succeeded",
-			Message: "Gebundelde OAS kon niet worden verwerkt; raw OAS is gebruikt",
-			Detail:  err.Error(),
-		}
+		bundleParseErr := err
 		raw, contentType, retryErr := fetchRawOAS(ctx, input, opts)
 		if retryErr != nil {
-			bundleEvent.Status = "failed"
-			bundleEvent.Message = "Gebundelde OAS kon niet worden verwerkt; raw OAS kon niet worden gebruikt"
+			bundleEvent := ProcessingEvent{
+				Tool:    "oas_bundle",
+				Status:  "failed",
+				Message: "Gebundelde OAS kon niet worden verwerkt; raw OAS kon niet worden gebruikt",
+				Detail:  fmt.Sprintf("gebundelde OAS: %v; fallback: %v", bundleParseErr, retryErr),
+			}
 			events = append(events, bundleEvent)
 			return nil, &FetchError{Err: retryErr, Events: events}
 		}
-		events = append(events, bundleEvent)
 		res, err := parseValidateAndHash(raw, contentType)
 		if err == nil {
 			res.Events = append(res.Events, events...)

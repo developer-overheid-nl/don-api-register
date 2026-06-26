@@ -1213,6 +1213,9 @@ func (s *APIsAPIService) saveFeedEvent(ctx context.Context, apiID, eventType, ol
 
 func (s *APIsAPIService) recordOpenAPIProcessingEvents(ctx context.Context, apiID string, events []openapi.ProcessingEvent) {
 	for _, event := range events {
+		if event.Status != models.ProcessingStatusFailed {
+			continue
+		}
 		s.recordProcessingEvent(ctx, apiID, event.Tool, event.Status, event.Message, event.Detail)
 	}
 }
@@ -1221,15 +1224,21 @@ func toProcessingEventSummaries(events []models.ApiProcessingEvent) []models.Api
 	if len(events) == 0 {
 		return nil
 	}
-	summaries := make([]models.ApiProcessingEventSummary, len(events))
-	for i, event := range events {
-		summaries[i] = models.ApiProcessingEventSummary{
+	summaries := make([]models.ApiProcessingEventSummary, 0, len(events))
+	for _, event := range events {
+		if event.Status != models.ProcessingStatusFailed {
+			continue
+		}
+		summaries = append(summaries, models.ApiProcessingEventSummary{
 			Tool:      event.Tool,
 			Status:    event.Status,
 			Message:   event.Message,
 			Detail:    event.Detail,
 			CreatedAt: event.CreatedAt,
-		}
+		})
+	}
+	if len(summaries) == 0 {
+		return nil
 	}
 	return summaries
 }

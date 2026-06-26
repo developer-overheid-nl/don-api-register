@@ -59,6 +59,20 @@ func TestReadLimitedRejectsOversizedResponse(t *testing.T) {
 	}
 }
 
+func TestHasYAMLAlias(t *testing.T) {
+	raw := []byte(`openapi: 3.0.0
+info: &info
+  title: Anchor
+  version: 1.0.0
+x-copy: *info
+paths: {}
+`)
+
+	if !hasYAMLAlias(raw) {
+		t.Fatal("expected YAML alias to be detected")
+	}
+}
+
 func TestParseValidateAndHash_AllowsCircularArrayReferences(t *testing.T) {
 	spec := []byte(`{
 	  "openapi": "3.0.0",

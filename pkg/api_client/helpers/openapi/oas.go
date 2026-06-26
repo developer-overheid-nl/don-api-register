@@ -18,6 +18,7 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	yamlv4 "go.yaml.in/yaml/v4"
 	"sigs.k8s.io/yaml"
 )
 
@@ -319,8 +320,34 @@ func bundleOAS(ctx context.Context, input tools.OASInput) ([]byte, string, error
 	if err != nil {
 		return nil, "", err
 	}
+	if hasYAMLAlias(data) {
+		return nil, "", fmt.Errorf("gebundelde OAS bevat YAML anchors/aliases")
+	}
 	log.Printf("[oas] bundle succeeded url=%s body=%t len=%d ct=%s", input.OasUrl, input.OasBody != "", len(data), contentType)
 	return data, contentType, nil
+}
+
+func hasYAMLAlias(raw []byte) bool {
+	var node yamlv4.Node
+	if err := yamlv4.Unmarshal(raw, &node); err != nil {
+		return false
+	}
+	return containsYAMLAlias(&node)
+}
+
+func containsYAMLAlias(node *yamlv4.Node) bool {
+	if node == nil {
+		return false
+	}
+	if node.Kind == yamlv4.AliasNode {
+		return true
+	}
+	for _, child := range node.Content {
+		if containsYAMLAlias(child) {
+			return true
+		}
+	}
+	return false
 }
 
 func fetchRawOAS(ctx context.Context, input tools.OASInput, opts FetchOpts) ([]byte, string, error) {

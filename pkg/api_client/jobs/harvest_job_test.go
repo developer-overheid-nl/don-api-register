@@ -55,7 +55,7 @@ func waitForHarvestCall(t *testing.T, ch <-chan harvestCall) harvestCall {
 	}
 }
 
-func TestScheduleHarvest_RunsSourcesImmediatelyOnStartup(t *testing.T) {
+func TestScheduleHarvest_DoesNotRunSourcesImmediatelyOnStartup(t *testing.T) {
 	stub := &harvesterStub{callCh: make(chan harvestCall, 2)}
 	sources := []models.HarvestSource{
 		{Name: "source-a", IndexURL: "https://example.com/a/index.json"},
@@ -68,16 +68,14 @@ func TestScheduleHarvest_RunsSourcesImmediatelyOnStartup(t *testing.T) {
 	c := jobs.ScheduleHarvest(ctx, stub, sources)
 	require.NotNil(t, c)
 
-	first := waitForHarvestCall(t, stub.callCh)
-	second := waitForHarvestCall(t, stub.callCh)
-
-	assert.Equal(t, "source-a", first.src.Name)
-	assert.Equal(t, "source-b", second.src.Name)
-	assert.True(t, first.hasDeadline)
-	assert.True(t, second.hasDeadline)
+	select {
+	case call := <-stub.callCh:
+		t.Fatalf("unexpected startup harvest for %s", call.src.Name)
+	case <-time.After(100 * time.Millisecond):
+	}
 }
 
-func TestScheduleHarvest_CronEntryRunsHarvestAgain(t *testing.T) {
+func TestScheduleHarvest_CronEntryRunsHarvest(t *testing.T) {
 	stub := &harvesterStub{callCh: make(chan harvestCall, 2)}
 	source := models.HarvestSource{Name: "source-a", IndexURL: "https://example.com/a/index.json"}
 
@@ -86,9 +84,6 @@ func TestScheduleHarvest_CronEntryRunsHarvestAgain(t *testing.T) {
 
 	c := jobs.ScheduleHarvest(ctx, stub, []models.HarvestSource{source})
 	require.NotNil(t, c)
-
-	startupCall := waitForHarvestCall(t, stub.callCh)
-	assert.Equal(t, source.Name, startupCall.src.Name)
 
 	entries := c.Entries()
 	require.Len(t, entries, 1)
@@ -118,6 +113,10 @@ func TestScheduleHarvest_ContinuesAfterRunOnceError(t *testing.T) {
 	c := jobs.ScheduleHarvest(ctx, stub, sources)
 	require.NotNil(t, c)
 
+	entries := c.Entries()
+	require.Len(t, entries, 1)
+	entries[0].Job.Run()
+
 	first := waitForHarvestCall(t, stub.callCh)
 	second := waitForHarvestCall(t, stub.callCh)
 
@@ -133,6 +132,10 @@ func TestSchedulePDOKHarvest_UsesExpectedDefaultSource(t *testing.T) {
 
 	c := jobs.SchedulePDOKHarvest(ctx, stub)
 	require.NotNil(t, c)
+
+	entries := c.Entries()
+	require.Len(t, entries, 1)
+	entries[0].Job.Run()
 
 	call := waitForHarvestCall(t, stub.callCh)
 

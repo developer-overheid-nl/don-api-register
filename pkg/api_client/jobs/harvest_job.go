@@ -43,17 +43,6 @@ func ScheduleHarvest(ctx context.Context, svc Harvester, sources []models.Harves
 	// start cron
 	c.Start()
 
-	// directe run bij opstart
-	go func() {
-		jobCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-		defer cancel()
-		for _, src := range sources {
-			if err := svc.RunOnce(jobCtx, src); err != nil {
-				fmt.Printf("[initial harvest %s] failed: %v\n", src.Name, err)
-			}
-		}
-	}()
-
 	// stoppen als context sluit
 	go func() {
 		<-ctx.Done()

@@ -104,7 +104,7 @@ func (s *HarvesterService) RunOnce(ctx context.Context, src models.HarvestSource
 			return fmt.Errorf("limiter error: %w", err)
 		}
 
-		if _, err := s.apiService.CreateApiFromOas(payload); err != nil {
+		if _, err := s.apiService.CreateApiFromOasSync(ctx, payload); err != nil {
 			aggErrs = append(aggErrs, fmt.Sprintf("%s: create api from oas failed: %v", oasURL, err))
 			continue
 		}

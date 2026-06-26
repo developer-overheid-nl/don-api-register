@@ -1,0 +1,3 @@
+kind: Fixed
+body: Prevent the PDOK harvest from running immediately on API register startup and run harvest tooling synchronously to avoid startup OOM kills.
+time: 2026-06-26T12:46:00+02:00

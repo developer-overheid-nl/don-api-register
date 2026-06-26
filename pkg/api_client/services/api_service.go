@@ -313,8 +313,17 @@ func (s *APIsAPIService) UpdateApi(ctx context.Context, api models.Api) error {
 }
 
 func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.ApiSummary, error) {
-	ctx := context.Background()
+	return s.createApiFromOas(context.Background(), requestBody, true)
+}
 
+func (s *APIsAPIService) CreateApiFromOasSync(ctx context.Context, requestBody models.ApiPost) (*models.ApiSummary, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return s.createApiFromOas(ctx, requestBody, false)
+}
+
+func (s *APIsAPIService) createApiFromOas(ctx context.Context, requestBody models.ApiPost, asyncTools bool) (*models.ApiSummary, error) {
 	// 1) Strict validate + hash
 	oasInput := toolslint.OASInput{
 		OasUrl:  requestBody.OasUrl,
@@ -331,7 +340,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 	// 3) Build & validate.
 	var label string
 	var shouldSaveOrg bool
-	if org, err := s.repo.FindOrganisationByURI(context.Background(), requestBody.OrganisationUri); err != nil {
+	if org, err := s.repo.FindOrganisationByURI(ctx, requestBody.OrganisationUri); err != nil {
 		return nil, problem.NewInternalServerError("kan organisatie niet ophalen: " + err.Error())
 	} else if org != nil {
 		label = org.Label
@@ -343,7 +352,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 				problem.InvalidParam{Name: "organisationUri", Reason: "Moet een geldige URL zijn"},
 			)
 		}
-		lbl, err := httpclient.FetchOrganisationLabel(context.Background(), requestBody.OrganisationUri)
+		lbl, err := httpclient.FetchOrganisationLabel(ctx, requestBody.OrganisationUri)
 		if err != nil {
 			return nil, problem.NewBadRequest(requestBody.OrganisationUri, fmt.Sprintf("fout bij ophalen organisatie: %s", err))
 		}
@@ -386,12 +395,19 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 	}
 	s.recordOpenAPIProcessingEvents(ctx, api.Id, resp.Events)
 
-	toolslint.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
-		return s.runToolsAndPersist(ctx, api.Id, oasInput, arazzoInput, resp)
-	})
-
 	apiCopy := *api
-	go s.publishToTypesense(apiCopy)
+	run := func(runCtx context.Context) error {
+		return s.runToolsAndPersist(runCtx, api.Id, oasInput, arazzoInput, resp)
+	}
+	if asyncTools {
+		toolslint.Dispatch(context.Background(), "tools", run)
+		go s.publishToTypesense(apiCopy)
+	} else {
+		if err := run(ctx); err != nil {
+			log.Printf("[tools] sync run failed for api=%s: %v", api.Id, err)
+		}
+		s.publishToTypesense(apiCopy)
+	}
 
 	created := util.ToApiSummary(api)
 	return &created, nil

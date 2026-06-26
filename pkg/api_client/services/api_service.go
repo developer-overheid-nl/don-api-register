@@ -1436,7 +1436,7 @@ func oasFilename(version, source, format string) string {
 }
 
 func renderCanonicalJSON(res *openapi.OASResult, originalFormat string) ([]byte, error) {
-	if res.Spec != nil {
+	if res.Spec != nil && !res.CircularRefs {
 		if rendered, err := res.Spec.RenderJSON("  "); err == nil && len(rendered) > 0 {
 			return rendered, nil
 		}

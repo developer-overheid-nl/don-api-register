@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"sigs.k8s.io/yaml"
 )
 
 const maxRawOASBytes int64 = 32 << 20
@@ -27,15 +29,16 @@ type FetchOpts struct {
 }
 
 type OASResult struct {
-	Spec        *v3.Document // high-level v3 model
-	Hash        string       // sha256 van de genormaliseerde spec
-	Raw         []byte       // oorspronkelijke bytes zoals opgehaald
-	ContentType string       // content-type header van de response (kan leeg zijn)
-	Version     string       // volledige openapi versiestring, bv. 3.0.3
-	Major       int
-	Minor       int
-	Patch       int
-	Events      []ProcessingEvent
+	Spec         *v3.Document // high-level v3 model
+	Hash         string       // sha256 van de genormaliseerde spec
+	Raw          []byte       // oorspronkelijke bytes zoals opgehaald
+	ContentType  string       // content-type header van de response (kan leeg zijn)
+	Version      string       // volledige openapi versiestring, bv. 3.0.3
+	Major        int
+	Minor        int
+	Patch        int
+	CircularRefs bool
+	Events       []ProcessingEvent
 }
 
 type ProcessingEvent struct {
@@ -165,6 +168,8 @@ func shouldRetryRawFetchAfterBundleParseError(err error) bool {
 }
 
 func parseValidateAndHash(raw []byte, contentType string) (*OASResult, error) {
+	circularRefs := hasCircularSchemaRefs(raw)
+
 	// 2) libopenapi config voor (remote) refs
 	cfg := datamodel.DocumentConfiguration{
 		AllowRemoteReferences:               true,
@@ -192,9 +197,13 @@ func parseValidateAndHash(raw []byte, contentType string) (*OASResult, error) {
 
 	// 6) Hash over de genormaliseerde weergave
 	//    RenderJSON levert een deterministische representatie.
-	rendered, err := model.Model.RenderJSON("  ")
-	if err != nil || len(rendered) == 0 {
-		log.Printf("[oas] RenderJSON failed (err=%v), fallback to raw bytes for hashing", err)
+	rendered := raw
+	var renderErr error
+	if !circularRefs {
+		rendered, renderErr = model.Model.RenderJSON("  ")
+	}
+	if circularRefs || renderErr != nil || len(rendered) == 0 {
+		log.Printf("[oas] RenderJSON skipped/failed (circular=%t err=%v), fallback to raw bytes for hashing", circularRefs, renderErr)
 		rendered = raw
 	}
 	sum := sha256.Sum256(rendered)
@@ -220,15 +229,89 @@ func parseValidateAndHash(raw []byte, contentType string) (*OASResult, error) {
 		return nil, fmt.Errorf("invalid OAS: unsupported OpenAPI version %s (alleen 3.0 en 3.1 worden ondersteund)", version)
 	}
 	return &OASResult{
-		Spec:        &spec,
-		Hash:        hex.EncodeToString(sum[:]),
-		Raw:         raw,
-		ContentType: contentType,
-		Version:     version,
-		Major:       major,
-		Minor:       minor,
-		Patch:       patch,
+		Spec:         &spec,
+		Hash:         hex.EncodeToString(sum[:]),
+		Raw:          raw,
+		ContentType:  contentType,
+		Version:      version,
+		Major:        major,
+		Minor:        minor,
+		Patch:        patch,
+		CircularRefs: circularRefs,
 	}, nil
+}
+
+func hasCircularSchemaRefs(raw []byte) bool {
+	jsonData, err := yaml.YAMLToJSON(raw)
+	if err != nil {
+		jsonData = raw
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(jsonData, &doc); err != nil {
+		return false
+	}
+	components, _ := doc["components"].(map[string]any)
+	schemas, _ := components["schemas"].(map[string]any)
+	if len(schemas) == 0 {
+		return false
+	}
+
+	edges := make(map[string][]string, len(schemas))
+	for name, schema := range schemas {
+		seen := map[string]struct{}{}
+		collectSchemaRefs(schema, seen)
+		for ref := range seen {
+			if _, ok := schemas[ref]; ok {
+				edges[name] = append(edges[name], ref)
+			}
+		}
+	}
+
+	visited := map[string]bool{}
+	inStack := map[string]bool{}
+	var visit func(string) bool
+	visit = func(name string) bool {
+		if inStack[name] {
+			return true
+		}
+		if visited[name] {
+			return false
+		}
+		visited[name] = true
+		inStack[name] = true
+		for _, next := range edges[name] {
+			if visit(next) {
+				return true
+			}
+		}
+		inStack[name] = false
+		return false
+	}
+	for name := range schemas {
+		if visit(name) {
+			return true
+		}
+	}
+	return false
+}
+
+func collectSchemaRefs(value any, refs map[string]struct{}) {
+	switch typed := value.(type) {
+	case map[string]any:
+		if ref, ok := typed["$ref"].(string); ok {
+			const prefix = "#/components/schemas/"
+			if strings.HasPrefix(ref, prefix) {
+				refs[strings.TrimPrefix(ref, prefix)] = struct{}{}
+			}
+		}
+		for _, child := range typed {
+			collectSchemaRefs(child, refs)
+		}
+	case []any:
+		for _, child := range typed {
+			collectSchemaRefs(child, refs)
+		}
+	}
 }
 
 func bundleOAS(ctx context.Context, input tools.OASInput) ([]byte, string, error) {

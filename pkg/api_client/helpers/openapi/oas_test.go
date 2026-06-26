@@ -96,6 +96,9 @@ func TestParseValidateAndHash_AllowsCircularArrayReferences(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected circular array refs to parse, got %v", err)
 	}
+	if !res.CircularRefs {
+		t.Fatal("expected circular refs to be detected")
+	}
 	if got := res.Spec.Info.Title; got != "Circular Geometry" {
 		t.Fatalf("expected parsed title, got %q", got)
 	}

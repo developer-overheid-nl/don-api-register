@@ -167,8 +167,11 @@ func shouldRetryRawFetchAfterBundleParseError(err error) bool {
 func parseValidateAndHash(raw []byte, contentType string) (*OASResult, error) {
 	// 2) libopenapi config voor (remote) refs
 	cfg := datamodel.DocumentConfiguration{
-		AllowRemoteReferences: true,
-		AllowFileReferences:   true,
+		AllowRemoteReferences:               true,
+		AllowFileReferences:                 true,
+		IgnoreArrayCircularReferences:       true,
+		IgnorePolymorphicCircularReferences: true,
+		ExtractRefsSequentially:             true,
 	}
 
 	// 3) Parse document met config

@@ -59,6 +59,48 @@ func TestReadLimitedRejectsOversizedResponse(t *testing.T) {
 	}
 }
 
+func TestParseValidateAndHash_AllowsCircularArrayReferences(t *testing.T) {
+	spec := []byte(`{
+	  "openapi": "3.0.0",
+	  "info": {
+	    "title": "Circular Geometry",
+	    "version": "1.0.0"
+	  },
+	  "paths": {},
+	  "components": {
+	    "schemas": {
+	      "geometry": {
+	        "type": "object",
+	        "properties": {
+	          "collection": {
+	            "$ref": "#/components/schemas/geometryCollection"
+	          }
+	        }
+	      },
+	      "geometryCollection": {
+	        "type": "object",
+	        "properties": {
+	          "geometries": {
+	            "type": "array",
+	            "items": {
+	              "$ref": "#/components/schemas/geometry"
+	            }
+	          }
+	        }
+	      }
+	    }
+	  }
+	}`)
+
+	res, err := parseValidateAndHash(spec, "application/json")
+	if err != nil {
+		t.Fatalf("expected circular array refs to parse, got %v", err)
+	}
+	if got := res.Spec.Info.Title; got != "Circular Geometry" {
+		t.Fatalf("expected parsed title, got %q", got)
+	}
+}
+
 func TestFetchParseValidateAndHash_RetriesWithoutOriginOnEmptyBody(t *testing.T) {
 	spec := `{
 	  "openapi": "3.0.1",

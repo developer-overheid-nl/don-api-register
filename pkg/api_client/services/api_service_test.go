@@ -459,6 +459,7 @@ func TestUpdateOasUri_PersistsUpdatedFields(t *testing.T) {
   "info": {
     "title": "Nieuwe API",
     "version": "2.0.0",
+    "summary": "Nieuwe samenvatting",
     "description": "Nieuwe beschrijving",
     "contact": {
       "name": "Nieuw Contact",
@@ -566,6 +567,7 @@ func TestUpdateOasUri_PersistsUpdatedFields(t *testing.T) {
 
 	assert.Equal(t, srv.URL, saved.OasUri)
 	assert.Equal(t, "Nieuwe API", saved.Title)
+	assert.Equal(t, "Nieuwe samenvatting", saved.Summary)
 	assert.Equal(t, "Nieuwe beschrijving", saved.Description)
 	assert.Equal(t, "2.0.0", saved.Version)
 	assert.Equal(t, "2027-12-31", saved.Sunset)
@@ -589,6 +591,9 @@ func TestUpdateOasUri_PersistsUpdatedFields(t *testing.T) {
 	assert.Len(t, saved.Servers, 1)
 	assert.Equal(t, srv.URL, summary.OasUrl)
 	assert.Equal(t, "Nieuwe API", summary.Title)
+	require.NotNil(t, summary.Summary)
+	assert.Equal(t, "Nieuwe samenvatting", *summary.Summary)
+	assert.Equal(t, "Nieuwe beschrijving", summary.Description)
 	assert.Equal(t, "2.0.0", summary.Lifecycle.Version)
 	assert.Equal(t, "2027-12-31", summary.Lifecycle.Sunset)
 }

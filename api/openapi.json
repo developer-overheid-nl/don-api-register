@@ -1222,6 +1222,16 @@
               "API register API v1"
             ]
           },
+          "summary": {
+            "description": "Short plain-text summary of the API. Derived from description when no explicit summary is available.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "examples": [
+              "Short summary of the API register."
+            ]
+          },
           "description": {
             "description": "The description of the API",
             "type": "string",
@@ -1252,6 +1262,7 @@
           "id",
           "contact",
           "title",
+          "summary",
           "description",
           "organisation",
           "adrScore",

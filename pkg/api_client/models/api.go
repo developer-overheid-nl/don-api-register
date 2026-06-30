@@ -12,9 +12,22 @@ package models
 import (
 	"bytes"
 	"encoding/json"
+	"regexp"
+	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	commonpagination "github.com/developer-overheid-nl/don-register-common/pagination"
+)
+
+const SummaryMaxLength = 180
+
+var (
+	markdownLinkRE       = regexp.MustCompile(`!?\[([^\]]*)\]\([^)]+\)`)
+	markdownSyntaxRE     = regexp.MustCompile("[*_`~>#|]")
+	markdownListMarkerRE = regexp.MustCompile(`(?m)^\s*[-+*]\s+`)
+	whitespaceRE         = regexp.MustCompile(`\s+`)
 )
 
 type Api struct {
@@ -24,6 +37,7 @@ type Api struct {
 	OAS            OASMetadata   `gorm:"embedded;embeddedPrefix:oas_" json:"-"`
 	DocsUrl        string        `json:"docsUrl,omitempty"`
 	Title          string        `json:"title,omitempty"`
+	Summary        string        `json:"summary,omitempty"`
 	Description    string        `json:"description,omitempty"`
 	Auth           string        `json:"auth,omitempty"`
 	AdrScore       *int          `gorm:"column:adr_score" json:"adrScore,omitempty"`
@@ -156,6 +170,7 @@ type ApiSummary struct {
 	Id           string              `json:"id"`
 	OasUrl       string              `json:"oasUrl"`
 	Title        string              `json:"title"`
+	Summary      *string             `json:"summary"`
 	Description  string              `json:"description,omitempty"`
 	Contact      Contact             `json:"contact"`
 	Organisation OrganisationSummary `json:"organisation"`
@@ -176,6 +191,61 @@ type ApiDetail struct {
 	Servers     []ServerInfo `json:"servers,omitempty"`
 	LintResults []LintResult `json:"lintResults,omitempty"`
 	OasVersion  string       `json:"-"`
+}
+
+func NormalizeSummaryAndDescription(summary, description string) (*string, string) {
+	summary = strings.TrimSpace(summary)
+	description = strings.TrimSpace(description)
+
+	if summary == "" && description != "" {
+		summary = DeriveSummary(description)
+	}
+	if description == "" && summary != "" {
+		description = summary
+	}
+	if summary == "" {
+		return nil, description
+	}
+	return &summary, description
+}
+
+func DeriveSummary(description string) string {
+	text := stripMarkdown(description)
+	if text == "" {
+		return ""
+	}
+	return truncateSummary(text, SummaryMaxLength)
+}
+
+func stripMarkdown(value string) string {
+	value = markdownLinkRE.ReplaceAllString(value, "$1")
+	value = markdownListMarkerRE.ReplaceAllString(value, "")
+	value = markdownSyntaxRE.ReplaceAllString(value, "")
+	value = strings.ReplaceAll(value, "\r", " ")
+	value = strings.ReplaceAll(value, "\n", " ")
+	return strings.TrimSpace(whitespaceRE.ReplaceAllString(value, " "))
+}
+
+func truncateSummary(value string, max int) string {
+	if max <= 0 || utf8.RuneCountInString(value) <= max {
+		return value
+	}
+	runes := []rune(value)
+	end := max
+	if end < len(runes) && !isWhitespace(runes[end-1]) && !isWhitespace(runes[end]) {
+		for end < len(runes) && !isWhitespace(runes[end]) {
+			end++
+		}
+	}
+	summary := strings.TrimSpace(string(runes[:end]))
+	if end >= len(runes) {
+		return summary
+	}
+	return summary + "..."
+}
+
+func isWhitespace(value rune) bool {
+	return unicode.IsSpace(value)
 }
 
 type ContactJsonLd struct {

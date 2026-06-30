@@ -17,6 +17,7 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 type FetchOpts struct {
@@ -75,6 +76,15 @@ func FetchParseValidateAndHash(ctx context.Context, input tools.OASInput, opts F
 		fromBundle = true
 	}
 
+	if fromBundle && hasRecursiveYAMLAlias(raw, contentType) {
+		log.Printf("[oas] bundled YAML contains recursive aliases, retrying raw fetch for %s", input.OasUrl)
+		raw, contentType, err = fetchRawOAS(ctx, input, opts)
+		if err != nil {
+			return nil, err
+		}
+		fromBundle = false
+	}
+
 	res, err := parseValidateAndHash(raw, contentType)
 	if err == nil {
 		return res, nil
@@ -98,6 +108,43 @@ func shouldRetryRawFetchAfterBundleParseError(err error) bool {
 	return strings.Contains(msg, "failed to decode yaml to json") &&
 		strings.Contains(msg, "anchor") &&
 		strings.Contains(msg, "contains itself")
+}
+
+func hasRecursiveYAMLAlias(raw []byte, contentType string) bool {
+	if !strings.Contains(strings.ToLower(contentType), "yaml") {
+		return false
+	}
+	var root yaml.Node
+	if err := yaml.Unmarshal(raw, &root); err != nil {
+		return false
+	}
+	visiting := make(map[*yaml.Node]bool)
+	visited := make(map[*yaml.Node]bool)
+	return yamlNodeHasCycle(&root, visiting, visited)
+}
+
+func yamlNodeHasCycle(node *yaml.Node, visiting, visited map[*yaml.Node]bool) bool {
+	if node == nil {
+		return false
+	}
+	if node.Kind == yaml.AliasNode {
+		return yamlNodeHasCycle(node.Alias, visiting, visited)
+	}
+	if visiting[node] {
+		return true
+	}
+	if visited[node] {
+		return false
+	}
+	visiting[node] = true
+	for _, child := range node.Content {
+		if yamlNodeHasCycle(child, visiting, visited) {
+			return true
+		}
+	}
+	delete(visiting, node)
+	visited[node] = true
+	return false
 }
 
 func parseValidateAndHash(raw []byte, contentType string) (*OASResult, error) {

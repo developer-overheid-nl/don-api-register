@@ -762,6 +762,9 @@ func (s *APIsAPIService) CreateOrganisation(ctx context.Context, org *models.Org
 		return nil, problem.NewBadRequest(org.Uri, fmt.Sprintf("foutieve uri: %v", err),
 			problem.InvalidParam{Name: "uri", Reason: "Moet een geldige URL zijn"})
 	}
+	if lbl, err := httpclient.FetchOrganisationLabel(ctx, org.Uri); err == nil && strings.TrimSpace(lbl) != "" {
+		org.Label = lbl
+	}
 	if strings.TrimSpace(org.Label) == "" {
 		return nil, problem.NewBadRequest(org.Uri, "label is verplicht",
 			problem.InvalidParam{Name: "label", Reason: "label is verplicht"})

@@ -2,7 +2,9 @@ package services_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -1147,6 +1149,66 @@ func TestCreateOrganisation_Service(t *testing.T) {
 	assert.Equal(t, saved.Uri, res.Uri)
 }
 
+func TestCreateOrganisation_UsesTOOILabelWhenAvailable(t *testing.T) {
+	tooi := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/ld+json")
+		_ = json.NewEncoder(w).Encode([]httpclient.TooIGraph{{
+			Graph: []httpclient.TooIObject{{
+				ID: "https://identifier.overheid.nl/tooi/id/org/1",
+				Label: []struct {
+					Value    string `json:"@value"`
+					Language string `json:"@language"`
+				}{{Value: "TOOI label", Language: "nl"}},
+			}},
+		}})
+	}))
+	prevClient := httpclient.HTTPClient
+	httpclient.HTTPClient = &http.Client{Transport: rewriteHostTransport(tooi.URL)}
+	t.Cleanup(func() { httpclient.HTTPClient = prevClient })
+
+	var saved models.Organisation
+	repo := &stubRepo{
+		saveOrg: func(org *models.Organisation) error { saved = *org; return nil },
+	}
+	service := services.NewAPIsAPIService(repo)
+
+	res, err := service.CreateOrganisation(context.Background(), &models.Organisation{
+		Uri:   "https://identifier.overheid.nl/tooi/id/org/1",
+		Label: "Request label",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "TOOI label", res.Label)
+	assert.Equal(t, "TOOI label", saved.Label)
+}
+
+func TestCreateOrganisation_FallsBackToRequestLabelWhenTOOILabelUnavailable(t *testing.T) {
+	var calls int
+	tooi := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	prevClient := httpclient.HTTPClient
+	httpclient.HTTPClient = &http.Client{Transport: rewriteHostTransport(tooi.URL)}
+	t.Cleanup(func() { httpclient.HTTPClient = prevClient })
+
+	var saved models.Organisation
+	repo := &stubRepo{
+		saveOrg: func(org *models.Organisation) error { saved = *org; return nil },
+	}
+	service := services.NewAPIsAPIService(repo)
+
+	res, err := service.CreateOrganisation(context.Background(), &models.Organisation{
+		Uri:   "https://identifier.overheid.nl/tooi/id/org/1",
+		Label: "Request label",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, "Request label", res.Label)
+	assert.Equal(t, "Request label", saved.Label)
+}
+
 func TestPublishAllApisToTypesense_Disabled(t *testing.T) {
 	t.Setenv("ENABLE_TYPESENSE", "false")
 	repo := &stubRepo{
@@ -1185,4 +1247,23 @@ func TestPublishAllApisToTypesense_SendsDocuments(t *testing.T) {
 	err := service.PublishAllApisToTypesense(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, 2, calls)
+}
+
+func rewriteHostTransport(targetBase string) http.RoundTripper {
+	return &rewriteTransport{
+		base:   http.DefaultTransport,
+		target: targetBase,
+	}
+}
+
+type rewriteTransport struct {
+	base   http.RoundTripper
+	target string
+}
+
+func (t *rewriteTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	u, _ := url.Parse(t.target)
+	req.URL.Scheme = u.Scheme
+	req.URL.Host = u.Host
+	return t.base.RoundTrip(req)
 }

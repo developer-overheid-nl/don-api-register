@@ -769,6 +769,15 @@ func (s *APIsAPIService) CreateOrganisation(ctx context.Context, org *models.Org
 		return nil, problem.NewBadRequest(org.Uri, "label is verplicht",
 			problem.InvalidParam{Name: "label", Reason: "label is verplicht"})
 	}
+	existing, err := s.repo.FindOrganisationByURI(ctx, org.Uri)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil {
+		return nil, problem.New(http.StatusConflict, "Organisation already exists",
+			bodyError("uri", "conflict", "organisation already exists"),
+		)
+	}
 	if err := s.repo.SaveOrganisatie(org); err != nil {
 		return nil, err
 	}
@@ -1054,6 +1063,15 @@ func (s *APIsAPIService) updateOASMetadataSnapshot(ctx context.Context, apiID st
 		return nil
 	}
 	return s.repo.UpdateOASMetadata(ctx, apiID, next)
+}
+
+func bodyError(field, code, detail string) problem.ErrorDetail {
+	return problem.ErrorDetail{
+		In:       "body",
+		Location: fmt.Sprintf("#/%s", field),
+		Code:     code,
+		Detail:   detail,
+	}
 }
 
 type rss struct {

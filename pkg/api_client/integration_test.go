@@ -853,6 +853,26 @@ func TestCreateApiEndpoint_SuccessAndErrors(t *testing.T) {
 		require.Equal(t, "1.0.0", saved.Version)
 	})
 
+	t.Run("success with oas body", func(t *testing.T) {
+		resp := env.doJSONRequest(t, http.MethodPost, "/v1/apis", map[string]any{
+			"oasBody":         spec,
+			"organisationUri": org.Uri,
+		})
+		require.Equal(t, http.StatusCreated, resp.StatusCode)
+
+		summary := decodeBody[models.ApiSummary](t, resp)
+		require.NotEmpty(t, summary.Id)
+		require.Equal(t, "Created API", summary.Title)
+		require.Equal(t, org.Uri, summary.Organisation.Uri)
+
+		saved, err := env.repo.GetApiByID(ctx, summary.Id)
+		require.NoError(t, err)
+		require.Equal(t, "Created API", saved.Title)
+		require.Empty(t, saved.OasUri)
+		require.NotEmpty(t, saved.OasHash)
+		require.Equal(t, "1.0.0", saved.Version)
+	})
+
 	t.Run("validation error", func(t *testing.T) {
 		resp := env.doJSONRequest(t, http.MethodPost, "/v1/apis", map[string]any{
 			"organisationUri": org.Uri,

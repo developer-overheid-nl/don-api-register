@@ -60,6 +60,9 @@ func (s *stubRepo) FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api
 	return s.findOasFunc(ctx, oasUrl)
 }
 func (s *stubRepo) FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error) {
+	if s.findOrg == nil {
+		return nil, nil
+	}
 	return s.findOrg(ctx, uri)
 }
 func (s *stubRepo) SaveOrganisatie(org *models.Organisation) error {

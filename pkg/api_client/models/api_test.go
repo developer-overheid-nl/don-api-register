@@ -3,6 +3,7 @@ package models
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -63,4 +64,36 @@ func TestDeriveSummary_DoesNotAddEllipsisWhenCompletingLastWord(t *testing.T) {
 	summary := DeriveSummary(text)
 
 	assert.Equal(t, text, summary)
+}
+
+func TestOptionalStringJSON(t *testing.T) {
+	value := NewOptionalString("active")
+	require.True(t, value.Set)
+	require.NotNil(t, value.Value)
+	assert.Equal(t, "active", *value.Value)
+
+	nullValue := NewNullString()
+	assert.True(t, nullValue.Set)
+	assert.Nil(t, nullValue.Value)
+
+	var decoded OptionalString
+	require.NoError(t, decoded.UnmarshalJSON([]byte(`"deprecated"`)))
+	require.True(t, decoded.Set)
+	require.NotNil(t, decoded.Value)
+	assert.Equal(t, "deprecated", *decoded.Value)
+
+	require.NoError(t, decoded.UnmarshalJSON([]byte(`null`)))
+	assert.True(t, decoded.Set)
+	assert.Nil(t, decoded.Value)
+
+	require.Error(t, decoded.UnmarshalJSON([]byte(`123`)))
+}
+
+func TestLifecycleStatus(t *testing.T) {
+	now := time.Date(2026, 7, 8, 12, 0, 0, 0, time.UTC)
+
+	assert.Equal(t, "sunset", Api{Sunset: "2026-07-09"}.LifecycleStatus(now))
+	assert.Equal(t, "retired", Api{Sunset: "2026-07-07"}.LifecycleStatus(now))
+	assert.Equal(t, "deprecated", Api{Deprecated: "2026-07-07"}.LifecycleStatus(now))
+	assert.Equal(t, "retired", Api{Sunset: "not-a-date", Deprecated: "not-a-date"}.LifecycleStatus(now))
 }

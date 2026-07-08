@@ -14,36 +14,17 @@ import (
 	"strings"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
-	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"go.yaml.in/yaml/v4"
 )
 
-type FetchOpts struct {
-	Origin     string       // bv. "https://developer.overheid.nl"
-	HTTPClient *http.Client // optioneel
-}
+type FetchOpts = models.FetchOpts
 
-type OASResult struct {
-	Spec        *v3.Document // high-level v3 model
-	Hash        string       // sha256 van de genormaliseerde spec
-	Raw         []byte       // oorspronkelijke bytes zoals opgehaald
-	ContentType string       // content-type header van de response (kan leeg zijn)
-	Version     string       // volledige openapi versiestring, bv. 3.0.3
-	Major       int
-	Minor       int
-	Patch       int
-}
+type OASResult = models.OASResult
 
-type HTTPStatusError struct {
-	StatusCode int
-	Body       string
-}
-
-func (e *HTTPStatusError) Error() string {
-	return fmt.Sprintf("kan OAS niet ophalen: status %d: %s", e.StatusCode, strings.TrimSpace(e.Body))
-}
+type HTTPStatusError = models.HTTPStatusError
 
 func IsHTTPStatus(err error, statusCode int) bool {
 	var statusErr *HTTPStatusError
@@ -234,20 +215,17 @@ func fetchRawOAS(ctx context.Context, input tools.OASInput, opts FetchOpts) ([]b
 	if cli == nil {
 		cli = http.DefaultClient
 	}
-	type attempt struct {
-		origin string
-	}
-	attempts := []attempt{{origin: opts.Origin}}
+	origins := []string{opts.Origin}
 	if opts.Origin != "" {
-		attempts = append(attempts, attempt{origin: ""})
+		origins = append(origins, "")
 	}
-	for i, att := range attempts {
+	for i, origin := range origins {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, oasURL, nil)
 		if err != nil {
 			return nil, "", err
 		}
-		if att.origin != "" {
-			req.Header.Set("Origin", att.origin)
+		if origin != "" {
+			req.Header.Set("Origin", origin)
 		}
 		resp, err := cli.Do(req)
 		if err != nil {
@@ -269,12 +247,12 @@ func fetchRawOAS(ctx context.Context, input tools.OASInput, opts FetchOpts) ([]b
 		}
 		contentType := resp.Header.Get("Content-Type")
 		originLabel := "zonder Origin"
-		if att.origin != "" {
+		if origin != "" {
 			originLabel = "met Origin"
 		}
 		if n := len(body); n == 0 {
 			log.Printf("[oas] fetched empty body %s from %s (status %d)", originLabel, oasURL, resp.StatusCode)
-			if att.origin != "" && i == 0 {
+			if origin != "" && i == 0 {
 				log.Printf("[oas] retrying fetch without Origin header for %s", oasURL)
 				continue
 			}

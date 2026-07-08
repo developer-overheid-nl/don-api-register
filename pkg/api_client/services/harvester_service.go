@@ -148,17 +148,7 @@ func deriveOASURLWith(href, uiSuffix, oasPath string) string {
 
 // extractIndexHrefs parseert verschillende mogelijke vormen van index.json en retourneert hrefs
 func extractIndexHrefs(data []byte) ([]string, error) {
-	type linkObj struct {
-		Href string `json:"href"`
-	}
-	type apiEntryFlexible struct {
-		Links json.RawMessage `json:"links"`
-	}
-	type root struct {
-		Apis []apiEntryFlexible `json:"apis"`
-	}
-
-	var r root
+	var r models.HarvestIndexRoot
 	if err := json.Unmarshal(data, &r); err != nil {
 		return nil, fmt.Errorf("parse index.json: %w", err)
 	}
@@ -166,7 +156,7 @@ func extractIndexHrefs(data []byte) ([]string, error) {
 	var out []string
 	for _, e := range r.Apis {
 		// 1) links als array van objecten
-		var arr []linkObj
+		var arr []models.HarvestIndexLink
 		if err := json.Unmarshal(e.Links, &arr); err == nil {
 			for _, l := range arr {
 				if strings.TrimSpace(l.Href) != "" {
@@ -176,7 +166,7 @@ func extractIndexHrefs(data []byte) ([]string, error) {
 			continue
 		}
 		// 2) links als enkel object
-		var obj linkObj
+		var obj models.HarvestIndexLink
 		if err := json.Unmarshal(e.Links, &obj); err == nil {
 			if strings.TrimSpace(obj.Href) != "" {
 				out = append(out, obj.Href)

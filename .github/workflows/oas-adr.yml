@@ -1,0 +1,31 @@
+name: OAS ADR validation
+
+on:
+  pull_request:
+    paths:
+      - "api/openapi.json"
+      - ".github/workflows/oas-adr.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate OpenAPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Validate OpenAPI against DON ADR
+        run: |
+          npx -y @developer-overheid-nl/don-checker@latest validate \
+            --ruleset adr-21 \
+            --input api/openapi.json \
+            --format table \
+            --fail-on error

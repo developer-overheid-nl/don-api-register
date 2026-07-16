@@ -46,6 +46,9 @@ func (s *stubRepo) FindByOasUrl(ctx context.Context, url string) (*models.Api, e
 	return s.findByOas(ctx, url)
 }
 func (s *stubRepo) FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error) {
+	if s.findOrg == nil {
+		return nil, nil
+	}
 	return s.findOrg(ctx, uri)
 }
 func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, error) {

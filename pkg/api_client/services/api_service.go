@@ -348,7 +348,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 			return nil, problem.NewInternalServerError("kan organisatie niet opslaan: " + err.Error())
 		}
 	}
-	invalids := openapi.ValidateApi(api)
+	invalids := openapi.ValidateApi(api, requestBody)
 	if len(invalids) > 0 {
 		return nil, problem.NewBadRequest(
 			requestBody.OasUrl,

@@ -205,9 +205,9 @@ func (s *APIsAPIService) GetApiFeed(ctx context.Context, id, apiURL string) ([]b
 	if title == "" {
 		title = api.Id
 	}
-	feed := rss{
+	feed := models.RSSFeed{
 		Version: "2.0",
-		Channel: rssChannel{
+		Channel: models.RSSChannel{
 			Title:       fmt.Sprintf("Wijzigingen voor %s", title),
 			Link:        apiURL,
 			Description: fmt.Sprintf("RSS feed met inhoudelijke wijzigingen voor %s.", title),
@@ -218,10 +218,10 @@ func (s *APIsAPIService) GetApiFeed(ctx context.Context, id, apiURL string) ([]b
 		feed.Channel.LastBuildDate = events[0].CreatedAt.Format(time.RFC1123Z)
 	}
 	for _, event := range events {
-		feed.Channel.Items = append(feed.Channel.Items, rssItem{
+		feed.Channel.Items = append(feed.Channel.Items, models.RSSItem{
 			Title:       event.Title,
 			Link:        apiURL,
-			GUID:        rssGUID{Value: event.ID, IsPermaLink: "false"},
+			GUID:        models.RSSGUID{Value: event.ID, IsPermaLink: "false"},
 			Description: event.Description,
 			PubDate:     event.CreatedAt.Format(time.RFC1123Z),
 		})
@@ -547,12 +547,7 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID string, input
 			}
 			infos := make([]models.LintMessageInfo, 0, len(m.Infos))
 			for _, i := range m.Infos {
-				infos = append(infos, models.LintMessageInfo{
-					ID:            i.ID,
-					LintMessageID: i.LintMessageID,
-					Message:       i.Message,
-					Path:          i.Path,
-				})
+				infos = append(infos, models.LintMessageInfo(i))
 			}
 			id := m.ID
 			if strings.TrimSpace(id) == "" {
@@ -1074,40 +1069,7 @@ func bodyError(field, code, detail string) problem.ErrorDetail {
 	}
 }
 
-type rss struct {
-	XMLName xml.Name   `xml:"rss"`
-	Version string     `xml:"version,attr"`
-	Channel rssChannel `xml:"channel"`
-}
-
-type rssChannel struct {
-	Title         string    `xml:"title"`
-	Link          string    `xml:"link"`
-	Description   string    `xml:"description"`
-	Language      string    `xml:"language,omitempty"`
-	LastBuildDate string    `xml:"lastBuildDate,omitempty"`
-	Items         []rssItem `xml:"item"`
-}
-
-type rssItem struct {
-	Title       string  `xml:"title"`
-	Link        string  `xml:"link"`
-	GUID        rssGUID `xml:"guid"`
-	Description string  `xml:"description"`
-	PubDate     string  `xml:"pubDate"`
-}
-
-type rssGUID struct {
-	IsPermaLink string `xml:"isPermaLink,attr"`
-	Value       string `xml:",chardata"`
-}
-
-type apiFeedEventText struct {
-	Title       string
-	Description string
-}
-
-var apiFeedEventTexts = map[string]apiFeedEventText{
+var apiFeedEventTexts = map[string]models.ApiFeedEventText{
 	models.ApiFeedEventLifecycleChanged: {
 		Title:       "Lifecycle gewijzigd",
 		Description: "Lifecycle status is gewijzigd van `{old}` naar `{new}`.",

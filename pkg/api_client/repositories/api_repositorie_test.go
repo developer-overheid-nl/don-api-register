@@ -363,3 +363,108 @@ func TestApiRepository_SaveLintResult_PersistsMessageRulesetVersion(t *testing.T
 	require.Len(t, stored[0].Messages, 1)
 	assert.Equal(t, "2026.04", stored[0].Messages[0].RulesetVersion)
 }
+
+func TestApiRepository_UpdateOASMetadataAndAllApis(t *testing.T) {
+	db := setupDB(t)
+	repo := repositories.NewApiRepository(db)
+	ctx := context.Background()
+
+	api := &models.Api{
+		Id:      "api-oas",
+		OasUri:  "https://example.org/openapi.json",
+		OAS:     models.OASMetadata{Version: "3.0.0", Status: models.OASStatusUnknown, Auth: "api_key"},
+		Title:   "OAS API",
+		Version: "1.0.0",
+	}
+	require.NoError(t, repo.Save(api))
+
+	require.NoError(t, repo.UpdateOASMetadata(ctx, api.Id, models.OASMetadata{
+		Version: "3.1.0",
+		Status:  models.OASStatusValid,
+		Auth:    "oauth2",
+	}))
+
+	got, err := repo.GetApiByID(ctx, api.Id)
+	require.NoError(t, err)
+	assert.Equal(t, "3.1.0", got.OAS.Version)
+	assert.Equal(t, models.OASStatusValid, got.OAS.Status)
+	assert.Equal(t, "oauth2", got.OAS.Auth)
+
+	all, err := repo.AllApis(ctx)
+	require.NoError(t, err)
+	require.Len(t, all, 1)
+	assert.Equal(t, api.Id, all[0].Id)
+}
+
+func TestApiRepository_ServerAndArtifactLifecycle(t *testing.T) {
+	db := setupDB(t)
+	repo := repositories.NewApiRepository(db)
+	ctx := context.Background()
+
+	api := &models.Api{Id: "api-artifacts", OasUri: "https://example.org/openapi.json", Title: "Artifacts API"}
+	require.NoError(t, repo.Save(api))
+
+	server := models.Server{Id: "server-1", Uri: "https://api.example.org", Description: "Production"}
+	require.NoError(t, repo.SaveServer(server))
+
+	original := &models.ApiArtifact{
+		ID:          "artifact-original",
+		ApiID:       api.Id,
+		Kind:        "oas",
+		Version:     "3.1",
+		Format:      "json",
+		Source:      "original",
+		Filename:    "oas.json",
+		ContentType: "application/json",
+		Data:        []byte(`{"openapi":"3.1.0"}`),
+		CreatedAt:   time.Now().Add(-time.Hour),
+	}
+	converted := &models.ApiArtifact{
+		ID:          "artifact-converted",
+		ApiID:       api.Id,
+		Kind:        "oas",
+		Version:     "3.1",
+		Format:      "yaml",
+		Source:      "converted",
+		Filename:    "oas.yaml",
+		ContentType: "application/yaml",
+		Data:        []byte("openapi: 3.1.0"),
+		CreatedAt:   time.Now(),
+	}
+	postman := &models.ApiArtifact{
+		ID:          "artifact-postman",
+		ApiID:       api.Id,
+		Kind:        "postman",
+		Filename:    "postman.json",
+		ContentType: "application/json",
+		Data:        []byte(`{}`),
+		CreatedAt:   time.Now(),
+	}
+	require.NoError(t, repo.SaveArtifact(ctx, original))
+	require.NoError(t, repo.SaveArtifact(ctx, converted))
+	require.NoError(t, repo.SaveArtifact(ctx, postman))
+
+	has, err := repo.HasArtifactOfKind(ctx, api.Id, "oas")
+	require.NoError(t, err)
+	assert.True(t, has)
+
+	oas, err := repo.GetOasArtifact(ctx, api.Id, "3.1", "yaml")
+	require.NoError(t, err)
+	require.NotNil(t, oas)
+	assert.Equal(t, "artifact-converted", oas.ID)
+
+	latestPostman, err := repo.GetArtifact(ctx, api.Id, "postman")
+	require.NoError(t, err)
+	require.NotNil(t, latestPostman)
+	assert.Equal(t, "artifact-postman", latestPostman.ID)
+
+	require.NoError(t, repo.DeleteArtifactsByKind(ctx, api.Id, "oas", []string{"artifact-converted"}))
+
+	has, err = repo.HasArtifactOfKind(ctx, api.Id, "oas")
+	require.NoError(t, err)
+	assert.True(t, has)
+
+	missing, err := repo.GetOasArtifact(ctx, api.Id, "3.1", "json")
+	require.NoError(t, err)
+	assert.Nil(t, missing)
+}

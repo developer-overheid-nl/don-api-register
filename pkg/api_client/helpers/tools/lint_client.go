@@ -5,36 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
-	"time"
+
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 )
 
-// DTOs that match the tools lint response
-type LintMessageInfoDTO struct {
-	ID            string `json:"id"`
-	LintMessageID string `json:"lintMessageId,omitempty"`
-	Message       string `json:"message"`
-	Path          string `json:"path,omitempty"`
-}
+type LintMessageInfoDTO = models.LintMessageInfoDTO
 
-type LintMessageDTO struct {
-	ID        string               `json:"id"`
-	Code      string               `json:"code"`
-	Severity  string               `json:"severity"`
-	CreatedAt time.Time            `json:"createdAt"`
-	Infos     []LintMessageInfoDTO `json:"infos,omitempty"`
-}
+type LintMessageDTO = models.LintMessageDTO
 
-type LintResultDTO struct {
-	ID             string           `json:"id"`
-	ApiID          string           `json:"apiId,omitempty"`
-	Successes      bool             `json:"successes"`
-	Failures       int              `json:"failures"`
-	Warnings       int              `json:"warnings"`
-	Score          int              `json:"score"`
-	Messages       []LintMessageDTO `json:"messages"`
-	CreatedAt      time.Time        `json:"createdAt"`
-	RulesetVersion string           `json:"rulesetVersion"`
-}
+type LintResultDTO = models.LintResultDTO
 
 // LintGet calls the tools API to lint the given OAS input and returns the result DTO.
 func LintGet(ctx context.Context, input OASInput) (*LintResultDTO, error) {

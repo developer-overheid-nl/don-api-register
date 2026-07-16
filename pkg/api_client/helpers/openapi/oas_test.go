@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
 
@@ -167,5 +168,15 @@ components:
 	}
 	if got := res.Spec.Info.Title; got != "Recursive Raw" {
 		t.Fatalf("expected fallback to raw spec, got title %q", got)
+	}
+}
+
+func TestShouldRetryRawFetchAfterBundleParseError(t *testing.T) {
+	err := errors.New("failed to decode yaml to json: anchor X contains itself")
+	if !shouldRetryRawFetchAfterBundleParseError(err) {
+		t.Fatalf("expected recursive YAML anchor error to be retried")
+	}
+	if shouldRetryRawFetchAfterBundleParseError(errors.New("different parse error")) {
+		t.Fatalf("expected unrelated error not to be retried")
 	}
 }

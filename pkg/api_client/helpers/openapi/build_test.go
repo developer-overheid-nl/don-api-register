@@ -154,7 +154,7 @@ func TestBuildApiFallsBackToRequestContact(t *testing.T) {
 }
 
 func TestValidateApi(t *testing.T) {
-	invalids := ValidateApi(&models.Api{})
+	invalids := ValidateApi(&models.Api{}, models.ApiPost{})
 
 	require.Len(t, invalids, 5)
 	assert.Equal(t, "contact.name", invalids[0].Name)
@@ -170,6 +170,6 @@ func TestValidateApi(t *testing.T) {
 		ContactUrl:     "https://example.org/contact",
 		OasUri:         "https://example.org/openapi.json",
 		OrganisationID: &orgID,
-	})
+	}, models.ApiPost{})
 	assert.Empty(t, valids)
 }

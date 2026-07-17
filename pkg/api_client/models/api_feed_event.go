@@ -19,3 +19,8 @@ type ApiFeedEvent struct {
 	NewValue    string    `gorm:"column:new_value"`
 	CreatedAt   time.Time `gorm:"column:created_at;index"`
 }
+
+type ApiFeedEventText struct {
+	Title       string
+	Description string
+}

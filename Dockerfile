@@ -1,4 +1,4 @@
-FROM golang:latest
+FROM golang:1.26.5-bookworm
 
 RUN apt-get update && \
     apt-get install -y nodejs npm && \

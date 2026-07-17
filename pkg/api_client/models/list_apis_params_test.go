@@ -39,3 +39,40 @@ func TestListApisParams_FilterIDs(t *testing.T) {
 		})
 	}
 }
+
+func TestListApisParams_ApiFilters(t *testing.T) {
+	org := "https://example.org/org"
+	ids := " api-1, api-2 "
+	params := &ListApisParams{
+		Organisation: &org,
+		Query:        "search",
+		Ids:          &ids,
+		Status:       []string{"active"},
+		OasVersion:   []string{"3.1.0"},
+		Version:      []string{"1.0.0"},
+		AdrScore:     []string{"unknown"},
+		Auth:         []string{"oauth2"},
+	}
+
+	got := params.ApiFilters()
+
+	if got.Organisation == nil || *got.Organisation != org {
+		t.Fatalf("expected organisation %q, got %#v", org, got.Organisation)
+	}
+	if got.Ids == nil || *got.Ids != "api-1, api-2" {
+		t.Fatalf("expected trimmed ids, got %#v", got.Ids)
+	}
+	if got.Query != "search" || got.Status[0] != "active" || got.Auth[0] != "oauth2" {
+		t.Fatalf("unexpected filters: %#v", got)
+	}
+
+	params.Status[0] = "mutated"
+	if got.Status[0] != "active" {
+		t.Fatalf("expected defensive copy, got %q", got.Status[0])
+	}
+
+	empty := (*ListApisParams)(nil).ApiFilters()
+	if empty == nil {
+		t.Fatal("expected empty filters for nil params")
+	}
+}

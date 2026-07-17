@@ -1607,8 +1607,7 @@
             "format": "date",
             "description": "Manual override for the sunset date (YYYY-MM-DD). Send null to clear the value.",
             "examples": [
-              "2027-11-11",
-              null
+              "2027-11-11"
             ]
           },
           "deprecated": {
@@ -1619,8 +1618,7 @@
             "format": "date",
             "description": "Manual override for the deprecated date (YYYY-MM-DD). Send null to clear the value.",
             "examples": [
-              "2025-10-10",
-              null
+              "2025-10-10"
             ]
           }
         },

@@ -1,5 +1,7 @@
 package models
 
+import "encoding/json"
+
 type HarvestSource struct {
 	Name            string  `json:"name,omitempty"`
 	IndexURL        string  `json:"indexUrl"`
@@ -7,4 +9,16 @@ type HarvestSource struct {
 	Contact         Contact `json:"contact"`
 	UISuffix        string  `json:"uiSuffix,omitempty"`
 	OASPath         string  `json:"oasPath,omitempty"`
+}
+
+type HarvestIndexLink struct {
+	Href string `json:"href"`
+}
+
+type HarvestIndexAPIEntry struct {
+	Links json.RawMessage `json:"links"`
+}
+
+type HarvestIndexRoot struct {
+	Apis []HarvestIndexAPIEntry `json:"apis"`
 }

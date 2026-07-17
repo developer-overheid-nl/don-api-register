@@ -191,8 +191,8 @@ func UpdateApiFromSpec(api *models.Api, spec *v3.Document, requestBody models.Ap
 	populateApiFromSpec(api, spec, requestBody, label)
 }
 
-// ValidateApi fills missing fields from the request body and collects missing errors.
-func ValidateApi(api *models.Api) []problem.InvalidParam {
+// ValidateApi checks fields needed to persist an API.
+func ValidateApi(api *models.Api, requestBody models.ApiPost) []problem.InvalidParam {
 	var invalids []problem.InvalidParam
 
 	if strings.TrimSpace(api.ContactName) == "" {
@@ -213,7 +213,7 @@ func ValidateApi(api *models.Api) []problem.InvalidParam {
 			Reason: "contact.url is verplicht",
 		})
 	}
-	if strings.TrimSpace(api.OasUri) == "" {
+	if strings.TrimSpace(api.OasUri) == "" && strings.TrimSpace(requestBody.OasBody) == "" {
 		invalids = append(invalids, problem.InvalidParam{
 			Name:   "oasUrl",
 			Reason: "oasUrl is verplicht",

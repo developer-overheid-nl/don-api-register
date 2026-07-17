@@ -2,7 +2,9 @@ package services_test
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -44,6 +46,9 @@ func (s *stubRepo) FindByOasUrl(ctx context.Context, url string) (*models.Api, e
 	return s.findByOas(ctx, url)
 }
 func (s *stubRepo) FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error) {
+	if s.findOrg == nil {
+		return nil, nil
+	}
 	return s.findOrg(ctx, uri)
 }
 func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, error) {
@@ -1147,6 +1152,123 @@ func TestCreateOrganisation_Service(t *testing.T) {
 	assert.Equal(t, saved.Uri, res.Uri)
 }
 
+func TestCreateOrganisation_UsesTOOILabelWhenAvailable(t *testing.T) {
+	tooi := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/ld+json")
+		_, _ = w.Write([]byte(`[{"@graph":[{"@id":"https://identifier.overheid.nl/tooi/id/org/1","http://www.w3.org/2000/01/rdf-schema#label":[{"@value":"TOOI label","@language":"nl"}]}]}]`))
+	}))
+	prevClient := httpclient.HTTPClient
+	httpclient.HTTPClient = &http.Client{Transport: rewriteHostTransport(tooi.URL)}
+	t.Cleanup(func() { httpclient.HTTPClient = prevClient })
+
+	var saved models.Organisation
+	repo := &stubRepo{
+		saveOrg: func(org *models.Organisation) error { saved = *org; return nil },
+	}
+	service := services.NewAPIsAPIService(repo)
+
+	res, err := service.CreateOrganisation(context.Background(), &models.Organisation{
+		Uri:   "https://identifier.overheid.nl/tooi/id/org/1",
+		Label: "Request label",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "TOOI label", res.Label)
+	assert.Equal(t, "TOOI label", saved.Label)
+}
+
+func TestCreateOrganisation_FallsBackToRequestLabelWhenTOOILabelUnavailable(t *testing.T) {
+	var calls int
+	tooi := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	prevClient := httpclient.HTTPClient
+	httpclient.HTTPClient = &http.Client{Transport: rewriteHostTransport(tooi.URL)}
+	t.Cleanup(func() { httpclient.HTTPClient = prevClient })
+
+	var saved models.Organisation
+	repo := &stubRepo{
+		saveOrg: func(org *models.Organisation) error { saved = *org; return nil },
+	}
+	service := services.NewAPIsAPIService(repo)
+
+	res, err := service.CreateOrganisation(context.Background(), &models.Organisation{
+		Uri:   "https://identifier.overheid.nl/tooi/id/org/1",
+		Label: "Request label",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, "Request label", res.Label)
+	assert.Equal(t, "Request label", saved.Label)
+}
+
+func TestCreateOrganisation_FallsBackToRequestLabelWhenTOOILabelIsEmpty(t *testing.T) {
+	tooi := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/ld+json")
+		_, _ = w.Write([]byte(`[{"@graph":[{"@id":"https://identifier.overheid.nl/tooi/id/org/1","http://www.w3.org/2000/01/rdf-schema#label":[{"@value":" ","@language":"nl"}]}]}]`))
+	}))
+	prevClient := httpclient.HTTPClient
+	httpclient.HTTPClient = &http.Client{Transport: rewriteHostTransport(tooi.URL)}
+	t.Cleanup(func() { httpclient.HTTPClient = prevClient })
+
+	var saved models.Organisation
+	repo := &stubRepo{
+		saveOrg: func(org *models.Organisation) error { saved = *org; return nil },
+	}
+	service := services.NewAPIsAPIService(repo)
+
+	res, err := service.CreateOrganisation(context.Background(), &models.Organisation{
+		Uri:   "https://identifier.overheid.nl/tooi/id/org/1",
+		Label: "Request label",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "Request label", res.Label)
+	assert.Equal(t, "Request label", saved.Label)
+}
+
+func TestCreateOrganisation_ReturnsConflictWhenOrganisationExists(t *testing.T) {
+	repo := &stubRepo{
+		findOrg: func(ctx context.Context, uri string) (*models.Organisation, error) {
+			return &models.Organisation{Uri: uri, Label: "Bestaand"}, nil
+		},
+		saveOrg: func(org *models.Organisation) error {
+			t.Fatalf("SaveOrganisatie should not be called for existing organisation")
+			return nil
+		},
+	}
+	service := services.NewAPIsAPIService(repo)
+
+	res, err := service.CreateOrganisation(context.Background(), &models.Organisation{
+		Uri:   "https://example.org",
+		Label: "Nieuw",
+	})
+
+	require.Error(t, err)
+	assert.Nil(t, res)
+	assert.Contains(t, err.Error(), "Organisation already exists")
+}
+
+func TestCreateOrganisation_ReturnsFindOrganisationError(t *testing.T) {
+	findErr := errors.New("database offline")
+	repo := &stubRepo{
+		findOrg: func(ctx context.Context, uri string) (*models.Organisation, error) {
+			return nil, findErr
+		},
+	}
+	service := services.NewAPIsAPIService(repo)
+
+	res, err := service.CreateOrganisation(context.Background(), &models.Organisation{
+		Uri:   "https://example.org",
+		Label: "Org",
+	})
+
+	require.ErrorIs(t, err, findErr)
+	assert.Nil(t, res)
+}
+
 func TestPublishAllApisToTypesense_Disabled(t *testing.T) {
 	t.Setenv("ENABLE_TYPESENSE", "false")
 	repo := &stubRepo{
@@ -1186,3 +1308,16 @@ func TestPublishAllApisToTypesense_SendsDocuments(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, calls)
 }
+
+func rewriteHostTransport(targetBase string) http.RoundTripper {
+	return roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		u, _ := url.Parse(targetBase)
+		req.URL.Scheme = u.Scheme
+		req.URL.Host = u.Host
+		return http.DefaultTransport.RoundTrip(req)
+	})
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }

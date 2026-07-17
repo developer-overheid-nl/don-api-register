@@ -8,6 +8,10 @@ type ErrorDetail = commonproblem.ErrorDetail
 // APIError implementeert error + Problem Details (RFC 7807)
 type APIError = commonproblem.Problem
 
+func New(status int, title string, details ...ErrorDetail) APIError {
+	return commonproblem.New(status, title, details...)
+}
+
 func NewBadRequest(oasUri, detail string, params ...InvalidParam) APIError {
 	return APIError{
 		Title:  "Request validation failed",

@@ -4,13 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-)
 
-type OpenAPIInfo struct {
-	Info struct {
-		Version string `json:"version"`
-	} `json:"info"`
-}
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+)
 
 func LoadOASVersion(path string) (version string, err error) {
 	f, err := os.Open(path)
@@ -23,7 +19,7 @@ func LoadOASVersion(path string) (version string, err error) {
 		}
 	}()
 
-	var oas OpenAPIInfo
+	var oas models.OpenAPIInfo
 	if err := json.NewDecoder(f).Decode(&oas); err != nil {
 		return "", fmt.Errorf("could not parse OAS: %w", err)
 	}

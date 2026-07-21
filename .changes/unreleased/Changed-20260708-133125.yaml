@@ -1,3 +1,0 @@
-kind: Changed
-body: Update Go tooling to 1.26.5 and enforce 80% test coverage in CI.
-time: 2026-07-08T13:31:25.69862+02:00

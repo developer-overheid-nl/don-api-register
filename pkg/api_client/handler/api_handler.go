@@ -96,7 +96,7 @@ func (c *APIsAPIController) ListLintResults(ctx *gin.Context) ([]models.LintResu
 
 // CreateApiFromOas handles POST /apis
 func (c *APIsAPIController) CreateApiFromOas(ctx *gin.Context, body *models.ApiPost) (*models.ApiSummary, error) {
-	created, err := c.Service.CreateApiFromOas(*body)
+	created, err := c.Service.CreateApiFromOas(ctx.Request.Context(), *body)
 	if err != nil {
 		return nil, err
 	}

@@ -43,9 +43,15 @@ type stubRepo struct {
 }
 
 func (s *stubRepo) FindByOasUrl(ctx context.Context, url string) (*models.Api, error) {
+	if s.findByOas == nil {
+		return nil, nil
+	}
 	return s.findByOas(ctx, url)
 }
 func (s *stubRepo) FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error) {
+	if s.findOrg == nil {
+		return nil, nil
+	}
 	return s.findOrg(ctx, uri)
 }
 func (s *stubRepo) GetApiByID(ctx context.Context, id string) (*models.Api, error) {
@@ -442,7 +448,7 @@ func TestCreateApiFromOas_UsesSpecContactOverBody(t *testing.T) {
 		},
 	}
 
-	summary, err := service.CreateApiFromOas(input)
+	summary, err := service.CreateApiFromOas(context.Background(), input)
 	assert.NoError(t, err)
 	assert.NotNil(t, summary)
 
@@ -1108,7 +1114,7 @@ func TestCreateApiFromOas_Success(t *testing.T) {
 		OasUrl:          server.URL,
 		OrganisationUri: "https://example.com",
 	}
-	resp, err := service.CreateApiFromOas(apiReq)
+	resp, err := service.CreateApiFromOas(context.Background(), apiReq)
 	assert.NoError(t, err)
 	assert.Equal(t, saved.Id, resp.Id)
 	assert.Equal(t, "T", resp.Title)

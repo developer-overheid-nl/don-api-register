@@ -34,6 +34,8 @@ var ErrNeedsPost = errors.New(
 	"oasUri niet gevonden of aangepast; registreer een nieuwe API via POST en markeer de oude als deprecated",
 )
 
+const asyncToolsTimeout = 10 * time.Minute
+
 // APIsAPIService implementeert APIsAPIServicer met de benodigde repository
 type APIsAPIService struct {
 	repo    repositories.ApiRepository
@@ -151,7 +153,7 @@ func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, re
 		return s.runToolsAndPersist(runCtx, api.Id, oasInput, arazzoInput, res)
 	}
 	if asyncTools {
-		toolslint.Dispatch(context.Background(), "tools", run)
+		s.dispatchTools(run)
 	} else {
 		if err := run(ctx); err != nil {
 			log.Printf("[tools] sync run failed for api=%s: %v", api.Id, err)
@@ -303,8 +305,10 @@ func (s *APIsAPIService) UpdateApi(ctx context.Context, api models.Api) error {
 	return s.repo.UpdateApi(ctx, api)
 }
 
-func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.ApiSummary, error) {
-	ctx := context.Background()
+func (s *APIsAPIService) CreateApiFromOas(ctx context.Context, requestBody models.ApiPost) (*models.ApiSummary, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
 	// 1) Strict validate + hash
 	oasInput := toolslint.OASInput{
@@ -322,7 +326,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 	// 3) Build & validate.
 	var label string
 	var shouldSaveOrg bool
-	if org, err := s.repo.FindOrganisationByURI(context.Background(), requestBody.OrganisationUri); err != nil {
+	if org, err := s.repo.FindOrganisationByURI(ctx, requestBody.OrganisationUri); err != nil {
 		return nil, problem.NewInternalServerError("kan organisatie niet ophalen: " + err.Error())
 	} else if org != nil {
 		label = org.Label
@@ -334,7 +338,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 				problem.InvalidParam{Name: "organisationUri", Reason: "Moet een geldige URL zijn"},
 			)
 		}
-		lbl, err := httpclient.FetchOrganisationLabel(context.Background(), requestBody.OrganisationUri)
+		lbl, err := httpclient.FetchOrganisationLabel(ctx, requestBody.OrganisationUri)
 		if err != nil {
 			return nil, problem.NewBadRequest(requestBody.OrganisationUri, fmt.Sprintf("fout bij ophalen organisatie: %s", err))
 		}
@@ -376,7 +380,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 		return nil, problem.NewInternalServerError("kan API hash niet opslaan: " + err.Error())
 	}
 
-	toolslint.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
+	s.dispatchTools(func(ctx context.Context) error {
 		return s.runToolsAndPersist(ctx, api.Id, oasInput, arazzoInput, resp)
 	})
 
@@ -385,6 +389,14 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 
 	created := util.ToApiSummary(api)
 	return &created, nil
+}
+
+func (s *APIsAPIService) dispatchTools(run toolslint.ToolFunc) {
+	toolslint.Dispatch(context.Background(), "tools", func(context.Context) error {
+		ctx, cancel := context.WithTimeout(context.Background(), asyncToolsTimeout)
+		defer cancel()
+		return run(ctx)
+	})
 }
 
 // RefreshChangedApis haalt alle geregistreerde APIs op, vergelijkt de OAS-hash en

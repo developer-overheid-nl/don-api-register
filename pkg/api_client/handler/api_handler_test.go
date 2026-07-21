@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -57,9 +58,15 @@ func (s *stubRepo) ListLintResults(ctx context.Context) ([]models.LintResult, er
 	return []models.LintResult{}, nil
 }
 func (s *stubRepo) FindByOasUrl(ctx context.Context, oasUrl string) (*models.Api, error) {
+	if s.findOasFunc == nil {
+		return nil, nil
+	}
 	return s.findOasFunc(ctx, oasUrl)
 }
 func (s *stubRepo) FindOrganisationByURI(ctx context.Context, uri string) (*models.Organisation, error) {
+	if s.findOrg == nil {
+		return nil, nil
+	}
 	return s.findOrg(ctx, uri)
 }
 func (s *stubRepo) SaveOrganisatie(org *models.Organisation) error {
@@ -386,10 +393,55 @@ func TestCreateApiFromOas_Handler(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request = httptest.NewRequest("POST", "/v1/apis", nil)
 	body := &models.ApiPost{OasUrl: "u", OrganisationUri: "https://example.org"}
 	resp, err := ctrl.CreateApiFromOas(ctx, body)
 	assert.Nil(t, resp)
 	assert.Error(t, err)
+}
+
+func TestCreateApiFromOas_HandlerUsesRequestContext(t *testing.T) {
+	spec := `{
+  "openapi": "3.0.0",
+ "info": {"title": "Cancelable API", "version": "1.0.0"},
+  "paths": {"/ping": {"get": {"responses": {"200": {"description": "ok"}}}}}
+}`
+	var hits int32
+	oasSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&hits, 1)
+		select {
+		case <-r.Context().Done():
+			return
+		case <-time.After(50 * time.Millisecond):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(spec))
+		}
+	}))
+	defer oasSrv.Close()
+
+	repo := &stubRepo{
+		findOrg: func(ctx context.Context, uri string) (*models.Organisation, error) {
+			return &models.Organisation{Uri: uri, Label: "Org"}, nil
+		},
+	}
+	svc := services.NewAPIsAPIService(repo)
+	ctrl := NewAPIsAPIController(svc)
+
+	reqCtx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request = httptest.NewRequest("POST", "/v1/apis", nil).WithContext(reqCtx)
+
+	resp, err := ctrl.CreateApiFromOas(ctx, &models.ApiPost{
+		OasUrl:          oasSrv.URL,
+		OrganisationUri: "https://example.org",
+	})
+
+	assert.Nil(t, resp)
+	assert.Error(t, err)
+	assert.Zero(t, atomic.LoadInt32(&hits))
 }
 
 func TestUpdateApi_Handler(t *testing.T) {

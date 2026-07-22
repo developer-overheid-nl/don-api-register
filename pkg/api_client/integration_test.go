@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"strings"
 	"sync"
@@ -17,6 +18,7 @@ import (
 
 	api_client "github.com/developer-overheid-nl/don-api-register/pkg/api_client"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/handler"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
@@ -391,10 +393,9 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		require.Equal(t, "uri", prob.Errors[0].Code)
 	})
 
-	t.Run("create organisation missing label", func(t *testing.T) {
+	t.Run("create organisation unresolvable uri", func(t *testing.T) {
 		resp := env.doJSONRequest(t, http.MethodPost, "/v1/organisations", map[string]string{
-			"uri":   "https://voorbeelden.example.com/organisaties/ongeldig",
-			"label": " ",
+			"uri": "https://voorbeelden.example.com/organisaties/ongeldig",
 		})
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
@@ -781,18 +782,67 @@ func TestApiFeedEndpoint(t *testing.T) {
 }
 
 func TestCreateOrganisationEndpoint_Success(t *testing.T) {
+	tooi := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/ld+json")
+		_, _ = w.Write([]byte(`[{"@graph":[{"@id":"https://identifier.overheid.nl/tooi/id/org/nieuw","http://www.w3.org/2000/01/rdf-schema#label":[{"@value":"Nieuwe Org","@language":"nl"}]}]}]`))
+	}))
+	prevClient := httpclient.HTTPClient
+	httpclient.HTTPClient = &http.Client{Transport: rewriteHostTransport(tooi.URL)}
+	t.Cleanup(func() { httpclient.HTTPClient = prevClient })
+
 	env := newIntegrationEnv(t)
 
 	resp := env.doJSONRequest(t, http.MethodPost, "/v1/organisations", map[string]string{
-		"uri":   "https://voorbeelden.example.com/organisaties/nieuw",
-		"label": "Nieuwe Org",
+		"uri": "https://identifier.overheid.nl/tooi/id/org/nieuw",
 	})
 	require.Equal(t, http.StatusCreated, resp.StatusCode)
 	require.Equal(t, "test-version", resp.Header.Get("API-Version"))
 
 	org := decodeBody[models.Organisation](t, resp)
-	require.Equal(t, "https://voorbeelden.example.com/organisaties/nieuw", org.Uri)
+	require.Equal(t, "https://identifier.overheid.nl/tooi/id/org/nieuw", org.Uri)
 	require.Equal(t, "Nieuwe Org", org.Label)
+}
+
+func TestCreateOrganisationEndpoint_FillsLabelFromTOOI(t *testing.T) {
+	tooi := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/ld+json")
+		_, _ = w.Write([]byte(`[{"@graph":[{"@id":"https://identifier.overheid.nl/tooi/id/gemeente/gm0142","http://www.w3.org/2000/01/rdf-schema#label":[{"@value":"Sluis","@language":"nl"}]}]}]`))
+	}))
+	prevClient := httpclient.HTTPClient
+	httpclient.HTTPClient = &http.Client{Transport: rewriteHostTransport(tooi.URL)}
+	t.Cleanup(func() { httpclient.HTTPClient = prevClient })
+
+	env := newIntegrationEnv(t)
+
+	resp := env.doJSONRequest(t, http.MethodPost, "/v1/organisations", map[string]string{
+		"uri": "https://identifier.overheid.nl/tooi/id/gemeente/gm0142",
+	})
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+
+	org := decodeBody[models.Organisation](t, resp)
+	require.Equal(t, "https://identifier.overheid.nl/tooi/id/gemeente/gm0142", org.Uri)
+	require.Equal(t, "Sluis", org.Label)
+}
+
+func TestCreateOrganisationEndpoint_FallsBackToRequestLabelWhenTOOIUnavailable(t *testing.T) {
+	tooi := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	prevClient := httpclient.HTTPClient
+	httpclient.HTTPClient = &http.Client{Transport: rewriteHostTransport(tooi.URL)}
+	t.Cleanup(func() { httpclient.HTTPClient = prevClient })
+
+	env := newIntegrationEnv(t)
+
+	resp := env.doJSONRequest(t, http.MethodPost, "/v1/organisations", map[string]string{
+		"uri":   "https://identifier.overheid.nl/tooi/id/gemeente/gm9999",
+		"label": "Fallback label",
+	})
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+
+	org := decodeBody[models.Organisation](t, resp)
+	require.Equal(t, "https://identifier.overheid.nl/tooi/id/gemeente/gm9999", org.Uri)
+	require.Equal(t, "Fallback label", org.Label)
 }
 
 func TestCreateApiEndpoint_SuccessAndErrors(t *testing.T) {
@@ -1007,3 +1057,16 @@ func TestListAndSearchEndpoints_InvalidPagination(t *testing.T) {
 		require.Equal(t, 400, prob.Status)
 	})
 }
+
+func rewriteHostTransport(targetBase string) http.RoundTripper {
+	return roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		u, _ := url.Parse(targetBase)
+		req.URL.Scheme = u.Scheme
+		req.URL.Host = u.Host
+		return http.DefaultTransport.RoundTrip(req)
+	})
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }

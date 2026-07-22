@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
@@ -495,12 +497,26 @@ func TestCreateOrganisation_Handler(t *testing.T) {
 	repo := &stubRepo{saveOrg: func(org *models.Organisation) error { saved = *org; return nil }}
 	svc := services.NewAPIsAPIService(repo)
 	ctrl := NewAPIsAPIController(svc)
+	prevClient := httpclient.HTTPClient
+	httpclient.HTTPClient = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{"Content-Type": []string{"application/ld+json"}},
+			Body:       io.NopCloser(strings.NewReader(`[{"@graph":[{"@id":"https://identifier.overheid.nl/tooi/id/org/handler","http://www.w3.org/2000/01/rdf-schema#label":[{"@value":"Org","@language":"nl"}]}]}]`)),
+			Request:    req,
+		}, nil
+	})}
+	t.Cleanup(func() { httpclient.HTTPClient = prevClient })
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request = httptest.NewRequest("POST", "/v1/organisations", nil)
-	body := &models.Organisation{Uri: "https://example.org", Label: "Org"}
+	body := &models.OrganisationInput{Uri: "https://identifier.overheid.nl/tooi/id/org/handler"}
 	res, err := ctrl.CreateOrganisation(ctx, body)
 	assert.NoError(t, err)
 	assert.Equal(t, saved.Uri, res.Uri)
 }
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }

@@ -761,8 +761,8 @@ func (s *APIsAPIService) CreateOrganisation(ctx context.Context, org *models.Org
 		org.Label = lbl
 	}
 	if strings.TrimSpace(org.Label) == "" {
-		return nil, problem.NewBadRequest(org.Uri, "label is verplicht",
-			problem.InvalidParam{Name: "label", Reason: "label is verplicht"})
+		return nil, problem.NewBadRequest(org.Uri, "label is verplicht wanneer TOOI geen label levert",
+			problem.InvalidParam{Name: "label", Reason: "Vul label in wanneer TOOI geen label oplevert"})
 	}
 	existing, err := s.repo.FindOrganisationByURI(ctx, org.Uri)
 	if err != nil {

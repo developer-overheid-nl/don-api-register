@@ -32,6 +32,28 @@ func TestOpenAPIExamplesDoNotContainNull(t *testing.T) {
 	assert.Empty(t, nullExamplePaths, "null examples crash Super-Linter's Spectral OpenAPI summary")
 }
 
+func TestCreateOrganisationRequestOnlyRequiresURI(t *testing.T) {
+	var spec map[string]any
+	require.NoError(t, json.Unmarshal(OpenAPIJSON(), &spec))
+
+	paths := spec["paths"].(map[string]any)
+	organisations := paths["/organisations"].(map[string]any)
+	post := organisations["post"].(map[string]any)
+	requestBody := post["requestBody"].(map[string]any)
+	content := requestBody["content"].(map[string]any)
+	jsonContent := content["application/json"].(map[string]any)
+	schema := jsonContent["schema"].(map[string]any)
+	assert.Equal(t, "#/components/schemas/OrganisationInput", schema["$ref"])
+
+	components := spec["components"].(map[string]any)
+	schemas := components["schemas"].(map[string]any)
+	require.Contains(t, schemas, "OrganisationInput")
+	input := schemas["OrganisationInput"].(map[string]any)
+	assert.Equal(t, []any{"uri"}, input["required"])
+	properties := input["properties"].(map[string]any)
+	assert.Contains(t, properties, "label")
+}
+
 func collectNullExamples(value any, path string, found *[]string) {
 	switch typed := value.(type) {
 	case map[string]any:

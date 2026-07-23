@@ -302,3 +302,8 @@ type OrganisationSummary struct {
 	Label string `json:"label"`
 	Links *Links `json:"_links,omitempty"`
 }
+
+type OrganisationInput struct {
+	Uri   string `json:"uri" binding:"required"`
+	Label string `json:"label,omitempty"`
+}

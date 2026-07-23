@@ -852,7 +852,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OrganisationSummary"
+                "$ref": "#/components/schemas/OrganisationInput"
               }
             }
           }
@@ -1097,6 +1097,32 @@
           "email",
           "name",
           "url"
+        ]
+      },
+      "OrganisationInput": {
+        "title": "Organisation input",
+        "description": "An organisation to add to the catalog. The label is resolved from TOOI.",
+        "type": "object",
+        "properties": {
+          "uri": {
+            "title": "Organisation URI",
+            "description": "The unique identifier for an organisation",
+            "type": "string",
+            "format": "uri",
+            "examples": [
+              "https://identifier.overheid.nl/tooi/id/gemeente/gm0142"
+            ]
+          },
+          "label": {
+            "description": "Fallback label when TOOI does not provide one",
+            "type": "string",
+            "examples": [
+              "gemeente Ambt Delden"
+            ]
+          }
+        },
+        "required": [
+          "uri"
         ]
       },
       "OrganisationSummary": {

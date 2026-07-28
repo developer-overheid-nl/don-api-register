@@ -16,7 +16,7 @@ import (
 )
 
 type ApiRepository interface {
-	GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error)
+	GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error)
 	SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
 	GetApiByID(ctx context.Context, oasUrl string) (*models.Api, error)
 	Save(api *models.Api) error
@@ -74,7 +74,7 @@ func (r *apiRepository) Save(api *models.Api) error {
 	return r.db.Create(api).Error
 }
 
-func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
+func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, _ models.ApiSort) ([]models.Api, models.Pagination, error) {
 	if page < 1 {
 		page = 1
 	}

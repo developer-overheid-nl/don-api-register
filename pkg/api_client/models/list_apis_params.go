@@ -13,6 +13,8 @@ type ListApisParams struct {
 	Version      []string `query:"version"`
 	AdrScore     []string `query:"adrScore"`
 	Auth         []string `query:"auth"`
+	SortBy       string   `query:"sortBy"`
+	SortOrder    string   `query:"sortOrder"`
 	BaseURL      string
 }
 

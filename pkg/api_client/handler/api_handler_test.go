@@ -34,7 +34,7 @@ type stubRepo struct {
 	listFeed     func(ctx context.Context, apiID string, limit int) ([]models.ApiFeedEvent, error)
 }
 
-func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
+func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error) {
 	return s.listFunc(ctx, page, perPage, p)
 }
 func (s *stubRepo) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {

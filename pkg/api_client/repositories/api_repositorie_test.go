@@ -132,7 +132,7 @@ func TestApiRepository_GetApisAppliesFilters(t *testing.T) {
 		OasVersion: []string{"3.0.0"},
 		Auth:       []string{"oauth2"},
 		AdrScore:   []string{"unknown"},
-	})
+	}, models.ApiSort{Field: models.ApiSortTitle, Order: models.ApiSortAscending})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	assert.Equal(t, "deprecated-api", results[0].Id)
@@ -143,7 +143,7 @@ func TestApiRepository_GetApisAppliesFilters(t *testing.T) {
 		Status:     []string{"deprecated"},
 		OasVersion: []string{"3.0.0"},
 		Auth:       []string{"oauth2"},
-	})
+	}, models.ApiSort{Field: models.ApiSortTitle, Order: models.ApiSortAscending})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	assert.Equal(t, "deprecated-api", results[0].Id)
@@ -169,7 +169,7 @@ func TestApiRepository_GetApisSearchTreatsLikeWildcardsAsLiterals(t *testing.T) 
 	}
 	require.NoError(t, db.Create(&apis).Error)
 
-	results, pagination, err := repo.GetApis(ctx, 1, 10, &models.ApiFiltersParams{Query: "100%"})
+	results, pagination, err := repo.GetApis(ctx, 1, 10, &models.ApiFiltersParams{Query: "100%"}, models.ApiSort{Field: models.ApiSortTitle, Order: models.ApiSortAscending})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	assert.Equal(t, "literal-percent-api", results[0].Id)

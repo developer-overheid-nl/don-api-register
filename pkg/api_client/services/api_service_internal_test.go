@@ -182,7 +182,7 @@ func (r *recordingRepo) SaveApiFeedEvent(ctx context.Context, event *models.ApiF
 	return nil
 }
 
-func (r *recordingRepo) GetApis(context.Context, int, int, *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
+func (r *recordingRepo) GetApis(context.Context, int, int, *models.ApiFiltersParams, models.ApiSort) ([]models.Api, models.Pagination, error) {
 	return nil, models.Pagination{}, nil
 }
 func (r *recordingRepo) SearchApis(context.Context, int, int, *string, string) ([]models.Api, models.Pagination, error) {

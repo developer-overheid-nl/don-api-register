@@ -241,7 +241,21 @@ func (s *APIsAPIService) ListApis(ctx context.Context, p *models.ListApisParams)
 	if p == nil {
 		p = &models.ListApisParams{}
 	}
-	apis, pagination, err := s.repo.GetApis(ctx, p.Page, p.PerPage, p.ApiFilters())
+	sorting, err := models.ParseApiSort(p.SortBy, p.SortOrder)
+	if err != nil {
+		var invalid models.InvalidApiSortError
+		if errors.As(err, &invalid) {
+			return nil, models.Pagination{}, problem.New(http.StatusBadRequest, "Request validation failed", problem.ErrorDetail{
+				In:       "query",
+				Location: invalid.Parameter,
+				Code:     invalid.Parameter,
+				Detail:   invalid.Error(),
+			})
+		}
+		return nil, models.Pagination{}, err
+	}
+
+	apis, pagination, err := s.repo.GetApis(ctx, p.Page, p.PerPage, p.ApiFilters(), sorting)
 	if err != nil {
 		return nil, models.Pagination{}, err
 	}

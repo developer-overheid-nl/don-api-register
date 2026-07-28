@@ -74,7 +74,7 @@ func (r *apiRepository) Save(api *models.Api) error {
 	return r.db.Create(api).Error
 }
 
-func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, _ models.ApiSort) ([]models.Api, models.Pagination, error) {
+func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -85,7 +85,7 @@ func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, p *model
 	dbMatcher := matcher.withoutSQLFilters()
 
 	var apis []models.Api
-	if err := applyApiOrdering(applyApiSQLFilters(r.db.WithContext(ctx), matcher)).
+	if err := applyApiSQLFilters(r.db.WithContext(ctx), matcher).
 		Preload("Servers").
 		Preload("Organisation").
 		Find(&apis).Error; err != nil {
@@ -98,6 +98,7 @@ func (r *apiRepository) GetApis(ctx context.Context, page, perPage int, p *model
 			filtered = append(filtered, api)
 		}
 	}
+	sortApis(filtered, sorting)
 
 	totalRecords := len(filtered)
 	pagination := commonpagination.New(page, perPage, totalRecords)

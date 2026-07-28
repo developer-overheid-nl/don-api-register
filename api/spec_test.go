@@ -54,6 +54,38 @@ func TestCreateOrganisationRequestOnlyRequiresURI(t *testing.T) {
 	assert.Contains(t, properties, "label")
 }
 
+func TestListApisDocumentsSorting(t *testing.T) {
+	var spec map[string]any
+	require.NoError(t, json.Unmarshal(OpenAPIJSON(), &spec))
+
+	paths := spec["paths"].(map[string]any)
+	listApis := paths["/apis"].(map[string]any)["get"].(map[string]any)
+	parameters := listApis["parameters"].([]any)
+	refs := make([]string, 0, len(parameters))
+	for _, parameter := range parameters {
+		refs = append(refs, parameter.(map[string]any)["$ref"].(string))
+	}
+	require.Contains(t, refs, "#/components/parameters/SortBy")
+	require.Contains(t, refs, "#/components/parameters/SortOrder")
+
+	components := spec["components"].(map[string]any)
+	parameterDefinitions := components["parameters"].(map[string]any)
+
+	sortBy := parameterDefinitions["SortBy"].(map[string]any)
+	assert.Equal(t, "sortBy", sortBy["name"])
+	assert.Equal(t, "query", sortBy["in"])
+	sortBySchema := sortBy["schema"].(map[string]any)
+	assert.Equal(t, []any{"title", "adrScore", "version"}, sortBySchema["enum"])
+	assert.Equal(t, "title", sortBySchema["default"])
+
+	sortOrder := parameterDefinitions["SortOrder"].(map[string]any)
+	assert.Equal(t, "sortOrder", sortOrder["name"])
+	assert.Equal(t, "query", sortOrder["in"])
+	sortOrderSchema := sortOrder["schema"].(map[string]any)
+	assert.Equal(t, []any{"asc", "desc"}, sortOrderSchema["enum"])
+	assert.Equal(t, "asc", sortOrderSchema["default"])
+}
+
 func collectNullExamples(value any, path string, found *[]string) {
 	switch typed := value.(type) {
 	case map[string]any:

@@ -58,7 +58,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		[]fizz.OperationOption{
 			fizz.ID("listApis"),
 			fizz.Summary("List APIs"),
-			fizz.Description("Returns a list of APIs included in the register. Supports the same filter query parameters as the filters endpoint and combines them with the optional q search term."),
+			fizz.Description("Returns a list of APIs included in the register. Supports filtering, searching, and sorting before pagination."),
 			fizz.WithOptionalSecurity(),
 			fizz.Security(&openapi.SecurityRequirement{
 				"apiKey": []string{},

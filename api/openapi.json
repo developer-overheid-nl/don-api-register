@@ -62,7 +62,7 @@
           "APIs"
         ],
         "summary": "List APIs",
-        "description": "Returns a list of APIs included in the register. Supports the same filter query parameters as the filters endpoint and combines them with the optional q search term.",
+        "description": "Returns a list of APIs included in the register. Supports the same filter query parameters as the filters endpoint, combines them with the optional q search term, and sorts the filtered result before pagination.",
         "operationId": "listApis",
         "parameters": [
           {
@@ -70,6 +70,12 @@
           },
           {
             "$ref": "#/components/parameters/PerPage"
+          },
+          {
+            "$ref": "#/components/parameters/SortBy"
+          },
+          {
+            "$ref": "#/components/parameters/SortOrder"
           },
           {
             "$ref": "#/components/parameters/Search"
@@ -963,6 +969,41 @@
           "minimum": 1,
           "maximum": 100,
           "default": 20
+        }
+      },
+      "SortBy": {
+        "name": "sortBy",
+        "in": "query",
+        "required": false,
+        "description": "Property used to sort the filtered API collection. Version values are compared semantically; APIs without a sortable ADR score or version are placed last.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "title",
+            "adrScore",
+            "version"
+          ],
+          "default": "title",
+          "examples": [
+            "version"
+          ]
+        }
+      },
+      "SortOrder": {
+        "name": "sortOrder",
+        "in": "query",
+        "required": false,
+        "description": "Direction used to sort the filtered API collection.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "asc",
+            "desc"
+          ],
+          "default": "asc",
+          "examples": [
+            "desc"
+          ]
         }
       },
       "Search": {

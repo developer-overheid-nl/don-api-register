@@ -1058,6 +1058,62 @@ func TestListAndSearchEndpoints_InvalidPagination(t *testing.T) {
 	})
 }
 
+func TestListApis_SortsVersionsAndPreservesSortingInPaginationLinks(t *testing.T) {
+	env := newIntegrationEnv(t)
+	ctx := context.Background()
+
+	org, err := env.service.CreateOrganisation(ctx, &models.Organisation{
+		Uri:   "https://voorbeeld.example.com/organisaties/sortering",
+		Label: "Sorteerorganisatie",
+	})
+	require.NoError(t, err)
+
+	apis := []*models.Api{
+		{Id: uuid.NewString(), OasUri: "https://voorbeeld.example.com/apis/1.8/openapi.yaml", Title: "Alpha API", Version: "1.8", OrganisationID: &org.Uri},
+		{Id: uuid.NewString(), OasUri: "https://voorbeeld.example.com/apis/1.9/openapi.yaml", Title: "Bravo API", Version: "1.9", OrganisationID: &org.Uri},
+		{Id: uuid.NewString(), OasUri: "https://voorbeeld.example.com/apis/1.10/openapi.yaml", Title: "Zulu API", Version: "1.10", OrganisationID: &org.Uri},
+	}
+	for _, api := range apis {
+		require.NoError(t, env.repo.Save(api))
+	}
+
+	resp := env.doRequest(t, http.MethodGet, "/v1/apis?organisation="+url.QueryEscape(org.Uri)+"&sortBy=version&sortOrder=desc&page=1&perPage=2")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	link := resp.Header.Get("Link")
+	require.Contains(t, link, "sortBy=version")
+	require.Contains(t, link, "sortOrder=desc")
+
+	results := decodeBody[[]models.ApiSummary](t, resp)
+	require.Len(t, results, 2)
+	require.Equal(t, "1.10", results[0].Lifecycle.Version)
+	require.Equal(t, "1.9", results[1].Lifecycle.Version)
+}
+
+func TestListApis_RejectsInvalidSortingAsQueryProblem(t *testing.T) {
+	env := newIntegrationEnv(t)
+	tests := []struct {
+		name     string
+		path     string
+		location string
+	}{
+		{name: "sort field", path: "/v1/apis?sortBy=createdAt", location: "sortBy"},
+		{name: "sort order", path: "/v1/apis?sortOrder=sideways", location: "sortOrder"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp := env.doRequest(t, http.MethodGet, tt.path)
+			require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			require.Contains(t, resp.Header.Get("Content-Type"), "application/problem+json")
+
+			prob := decodeBody[problem.APIError](t, resp)
+			require.Len(t, prob.Errors, 1)
+			require.Equal(t, "query", prob.Errors[0].In)
+			require.Equal(t, tt.location, prob.Errors[0].Location)
+		})
+	}
+}
+
 func rewriteHostTransport(targetBase string) http.RoundTripper {
 	return roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		u, _ := url.Parse(targetBase)

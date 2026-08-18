@@ -27,7 +27,7 @@ type stubRepo struct {
 	getByID      func(ctx context.Context, id string) (*models.Api, error)
 	getLintRes   func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	listLintRes  func(ctx context.Context) ([]models.LintResult, error)
-	getApis      func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error)
+	getApis      func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error)
 	searchApis   func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
 	saveServer   func(server models.Server) error
 	saveApi      func(api *models.Api) error
@@ -69,8 +69,8 @@ func (s *stubRepo) ListLintResults(ctx context.Context) ([]models.LintResult, er
 	}
 	return []models.LintResult{}, nil
 }
-func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
-	return s.getApis(ctx, page, perPage, p)
+func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error) {
+	return s.getApis(ctx, page, perPage, p, sorting)
 }
 func (s *stubRepo) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
 	if s.searchApis != nil {
@@ -863,7 +863,7 @@ func TestListApis_Pagination(t *testing.T) {
 
 	pagination := models.Pagination{CurrentPage: 1, RecordsPerPage: 2, TotalPages: 1, TotalRecords: 2}
 	repo := &stubRepo{
-		getApis: func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
+		getApis: func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error) {
 			return apis, pagination, nil
 		},
 	}
@@ -878,7 +878,7 @@ func TestListApis_Pagination(t *testing.T) {
 
 func TestListApis_UsesApisFilter(t *testing.T) {
 	repo := &stubRepo{
-		getApis: func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
+		getApis: func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error) {
 			if p == nil || p.Ids == nil {
 				t.Fatal("expected ids filter to be passed")
 			}
@@ -899,7 +899,7 @@ func TestListApis_ForwardsAllFilters(t *testing.T) {
 	orgURI := "https://org.example.com"
 	query := "digid"
 	repo := &stubRepo{
-		getApis: func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error) {
+		getApis: func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error) {
 			if assert.NotNil(t, p.Organisation) {
 				assert.Equal(t, orgURI, *p.Organisation)
 			}
@@ -927,6 +927,45 @@ func TestListApis_ForwardsAllFilters(t *testing.T) {
 	}
 	_, _, err := service.ListApis(context.Background(), params)
 	assert.NoError(t, err)
+}
+
+func TestListApis_ForwardsParsedSort(t *testing.T) {
+	repo := &stubRepo{
+		getApis: func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error) {
+			assert.Equal(t, models.ApiSortVersion, sorting.Field)
+			assert.Equal(t, models.ApiSortDescending, sorting.Order)
+			return []models.Api{}, models.Pagination{}, nil
+		},
+	}
+	service := services.NewAPIsAPIService(repo)
+
+	_, _, err := service.ListApis(context.Background(), &models.ListApisParams{
+		SortBy:    "version",
+		SortOrder: "desc",
+	})
+
+	require.NoError(t, err)
+}
+
+func TestListApis_RejectsInvalidSortBeforeCallingRepository(t *testing.T) {
+	repositoryCalled := false
+	repo := &stubRepo{
+		getApis: func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error) {
+			repositoryCalled = true
+			return []models.Api{}, models.Pagination{}, nil
+		},
+	}
+	service := services.NewAPIsAPIService(repo)
+
+	_, _, err := service.ListApis(context.Background(), &models.ListApisParams{SortBy: "unknown"})
+
+	var apiErr problem.APIError
+	require.ErrorAs(t, err, &apiErr)
+	assert.Equal(t, 400, apiErr.Status)
+	require.Len(t, apiErr.Errors, 1)
+	assert.Equal(t, "query", apiErr.Errors[0].In)
+	assert.Equal(t, "sortBy", apiErr.Errors[0].Location)
+	assert.False(t, repositoryCalled)
 }
 
 func TestSearchApis_TrimsQueryAndAppliesDefaultLimit(t *testing.T) {

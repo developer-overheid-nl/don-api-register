@@ -132,7 +132,7 @@ func TestApiRepository_GetApisAppliesFilters(t *testing.T) {
 		OasVersion: []string{"3.0.0"},
 		Auth:       []string{"oauth2"},
 		AdrScore:   []string{"unknown"},
-	})
+	}, models.ApiSort{Field: models.ApiSortTitle, Order: models.ApiSortAscending})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	assert.Equal(t, "deprecated-api", results[0].Id)
@@ -143,7 +143,7 @@ func TestApiRepository_GetApisAppliesFilters(t *testing.T) {
 		Status:     []string{"deprecated"},
 		OasVersion: []string{"3.0.0"},
 		Auth:       []string{"oauth2"},
-	})
+	}, models.ApiSort{Field: models.ApiSortTitle, Order: models.ApiSortAscending})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	assert.Equal(t, "deprecated-api", results[0].Id)
@@ -169,11 +169,65 @@ func TestApiRepository_GetApisSearchTreatsLikeWildcardsAsLiterals(t *testing.T) 
 	}
 	require.NoError(t, db.Create(&apis).Error)
 
-	results, pagination, err := repo.GetApis(ctx, 1, 10, &models.ApiFiltersParams{Query: "100%"})
+	results, pagination, err := repo.GetApis(ctx, 1, 10, &models.ApiFiltersParams{Query: "100%"}, models.ApiSort{Field: models.ApiSortTitle, Order: models.ApiSortAscending})
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	assert.Equal(t, "literal-percent-api", results[0].Id)
 	assert.Equal(t, 1, pagination.TotalRecords)
+}
+
+func TestApiRepository_GetApisSortsFilteredResultsBeforePagination(t *testing.T) {
+	db := setupDB(t)
+	repo := repositories.NewApiRepository(db)
+	ctx := context.Background()
+
+	apis := []models.Api{
+		{Id: "version-1-8", OasUri: "https://example.com/1.8.yaml", Title: "Alpha API", Version: "1.8", Auth: "oauth2"},
+		{Id: "version-1-9", OasUri: "https://example.com/1.9.yaml", Title: "Bravo API", Version: "1.9", Auth: "oauth2"},
+		{Id: "version-1-10", OasUri: "https://example.com/1.10.yaml", Title: "Zulu API", Version: "1.10", Auth: "oauth2"},
+		{Id: "excluded", OasUri: "https://example.com/9.yaml", Title: "Excluded API", Version: "9", Auth: "api_key"},
+	}
+	require.NoError(t, db.Create(&apis).Error)
+
+	results, pagination, err := repo.GetApis(
+		ctx,
+		1,
+		2,
+		&models.ApiFiltersParams{Auth: []string{"oauth2"}},
+		models.ApiSort{Field: models.ApiSortVersion, Order: models.ApiSortDescending},
+	)
+
+	require.NoError(t, err)
+	require.Len(t, results, 2)
+	assert.Equal(t, "version-1-10", results[0].Id)
+	assert.Equal(t, "version-1-9", results[1].Id)
+	assert.Equal(t, 3, pagination.TotalRecords)
+	assert.Equal(t, 2, pagination.TotalPages)
+}
+
+func TestApiRepository_GetApisDefaultsToTitleAscending(t *testing.T) {
+	db := setupDB(t)
+	repo := repositories.NewApiRepository(db)
+	ctx := context.Background()
+
+	apis := []models.Api{
+		{Id: "zulu", OasUri: "https://example.com/zulu.yaml", Title: "Zulu API"},
+		{Id: "alpha", OasUri: "https://example.com/alpha.yaml", Title: "alpha API"},
+	}
+	require.NoError(t, db.Create(&apis).Error)
+
+	results, _, err := repo.GetApis(
+		ctx,
+		1,
+		10,
+		&models.ApiFiltersParams{},
+		models.ApiSort{Field: models.ApiSortTitle, Order: models.ApiSortAscending},
+	)
+
+	require.NoError(t, err)
+	require.Len(t, results, 2)
+	assert.Equal(t, "alpha", results[0].Id)
+	assert.Equal(t, "zulu", results[1].Id)
 }
 
 func TestApiRepository_SearchApisFiltersByTitleAndOrganisation(t *testing.T) {

@@ -22,10 +22,17 @@ jobs:
         with:
           node-version: 22
 
+      - name: Update npm
+        run: npm install --global npm@11.12.1
+
+      - name: Install DON Checker
+        run: npm install --global @developer-overheid-nl/don-checker@1.1.0
+
       - name: Validate OpenAPI against DON ADR
         run: |
-          npx -y @developer-overheid-nl/don-checker@latest validate \
-            --ruleset adr-21 \
+          don-checker validate \
+            --standard adr \
+            --version 2.1.0 \
             --input api/openapi.json \
             --format table \
             --fail-on error

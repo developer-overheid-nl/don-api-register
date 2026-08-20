@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+const appName = "api-register"
+
 // NewJSONLogger creates a structured logger that Loki can assign a detected
 // level to. An empty configuredLevel defaults to info.
 func NewJSONLogger(output io.Writer, configuredLevel string) (*slog.Logger, error) {
@@ -15,7 +17,8 @@ func NewJSONLogger(output io.Writer, configuredLevel string) (*slog.Logger, erro
 	if err != nil {
 		return nil, err
 	}
-	return slog.New(slog.NewJSONHandler(output, &slog.HandlerOptions{Level: level})), nil
+	logger := slog.New(slog.NewJSONHandler(output, &slog.HandlerOptions{Level: level}))
+	return logger.With("app", appName), nil
 }
 
 func parseLevel(configuredLevel string) (slog.Level, error) {

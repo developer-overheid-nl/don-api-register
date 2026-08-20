@@ -33,6 +33,8 @@ te passen.
 
 Iedere applicatielog bevat vaste zoekvelden:
 
+- `app`: altijd `api-register`, zodat iedere regel direct naar deze applicatie
+  te herleiden is;
 - `level`: de severity (`DEBUG`, `INFO`, `WARN` of `ERROR`);
 - `component`: het functionele onderdeel, zoals `oas_refresh`, `tools` of
   `typesense`;

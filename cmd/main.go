@@ -118,6 +118,7 @@ func main() {
 		os.Exit(1)
 	}
 	slog.SetDefault(logger)
+	database.ConfigureDefaultLogging(logger)
 	gin.DisableConsoleColor()
 	gin.DefaultWriter = io.Discard
 	gin.DefaultErrorWriter = appLogging.NewSlogWriter(logger, slog.LevelError, "http_server", "recovery")

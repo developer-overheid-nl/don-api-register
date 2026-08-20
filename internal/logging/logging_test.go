@@ -37,6 +37,18 @@ func TestNewJSONLoggerDefaultsToInfoForLoki(t *testing.T) {
 	assert.Equal(t, "api-123", event["api_id"])
 }
 
+func TestNewJSONLoggerAddsApplicationIdentity(t *testing.T) {
+	var output bytes.Buffer
+	logger, err := NewJSONLogger(&output, "info")
+	require.NoError(t, err)
+
+	logger.Info("application event")
+
+	var event map[string]any
+	require.NoError(t, json.Unmarshal(output.Bytes(), &event))
+	assert.Equal(t, "api-register", event["app"])
+}
+
 func TestNewJSONLoggerHonoursConfiguredMinimumLevel(t *testing.T) {
 	var output bytes.Buffer
 	logger, err := NewJSONLogger(&output, "warn")

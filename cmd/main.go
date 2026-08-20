@@ -11,11 +11,12 @@ import (
 	"reflect"
 	"strings"
 
-	appLogging "github.com/developer-overheid-nl/don-api-register/internal/logging"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/handler"
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	util "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/util"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	commondatabase "github.com/developer-overheid-nl/don-register-common/database"
+	commonlogging "github.com/developer-overheid-nl/don-register-common/logging"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/loopfz/gadgeto/tonic"
@@ -29,6 +30,12 @@ import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 )
+
+const appName = "api-register"
+
+func newApplicationLogger(output io.Writer, configuredLevel string) (*slog.Logger, error) {
+	return commonlogging.NewJSONLogger(output, appName, configuredLevel)
+}
 
 func invalidParamsFromBinding(err error, sample any) []problem.InvalidParam {
 	// Probeer direct op validator.ValidationErrors te matchen.
@@ -106,9 +113,9 @@ func isValidationErr(err error) bool {
 
 func main() {
 	envErr := godotenv.Load()
-	logger, err := appLogging.NewJSONLogger(os.Stdout, os.Getenv("LOG_LEVEL"))
+	logger, err := newApplicationLogger(os.Stdout, os.Getenv("LOG_LEVEL"))
 	if err != nil {
-		fallbackLogger, _ := appLogging.NewJSONLogger(os.Stdout, "info")
+		fallbackLogger, _ := newApplicationLogger(os.Stdout, "info")
 		fallbackLogger.Error(
 			"invalid logging configuration",
 			"component", "application",
@@ -118,10 +125,10 @@ func main() {
 		os.Exit(1)
 	}
 	slog.SetDefault(logger)
-	database.ConfigureDefaultLogging(logger)
+	commondatabase.ConfigureDefaultLogging(logger)
 	gin.DisableConsoleColor()
 	gin.DefaultWriter = io.Discard
-	gin.DefaultErrorWriter = appLogging.NewSlogWriter(logger, slog.LevelError, "http_server", "recovery")
+	gin.DefaultErrorWriter = commonlogging.NewSlogWriter(logger, slog.LevelError, "http_server", "recovery")
 
 	if envErr != nil {
 		slog.Error(
@@ -175,7 +182,7 @@ func main() {
 		os.Exit(1)
 		return
 	}
-	database.ConfigureLogging(db, slog.Default())
+	commondatabase.ConfigureLogging(db, slog.Default())
 	apiRepo := repositories.NewApiRepository(db)
 	APIsAPIService := services.NewAPIsAPIService(apiRepo)
 	APIsAPIController := handler.NewAPIsAPIController(APIsAPIService)

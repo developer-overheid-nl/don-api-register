@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	appLogging "github.com/developer-overheid-nl/don-api-register/internal/logging"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	commonlogging "github.com/developer-overheid-nl/don-register-common/logging"
 	"github.com/robfig/cron/v3"
 )
 
@@ -21,7 +21,7 @@ func ScheduleHarvest(ctx context.Context, svc Harvester, sources []models.Harves
 	}
 
 	spec := "0 6 * * *"
-	cronLogger := appLogging.NewCronLogger(slog.Default(), "harvest")
+	cronLogger := commonlogging.NewCronLogger(slog.Default(), "harvest")
 	c := cron.New(cron.WithChain(
 		cron.Recover(cronLogger),
 		cron.SkipIfStillRunning(cronLogger),

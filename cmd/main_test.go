@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"reflect"
 	"testing"
@@ -10,6 +12,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestNewApplicationLoggerAddsApplicationIdentity(t *testing.T) {
+	var output bytes.Buffer
+	logger, err := newApplicationLogger(&output, "info")
+	require.NoError(t, err)
+
+	logger.Info("application started", "component", "test", "operation", "emit")
+
+	var event map[string]any
+	require.NoError(t, json.Unmarshal(output.Bytes(), &event))
+	assert.Equal(t, "api-register", event["app"])
+}
 
 func TestInvalidParamsFromBindingMapsJSONTags(t *testing.T) {
 	type commandInput struct {

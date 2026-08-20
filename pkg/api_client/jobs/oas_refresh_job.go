@@ -3,7 +3,7 @@ package jobs
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"time"
 )
 
@@ -76,14 +76,31 @@ func (j *OASRefreshJob) runOnce() {
 
 	count, err := j.refresher.RefreshChangedApis(runCtx)
 	if err != nil {
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-			log.Printf("[oas-refresh] run afgebroken: %v", err)
+		if errors.Is(err, context.Canceled) {
+			slog.DebugContext(
+				runCtx,
+				"OAS refresh canceled",
+				"component", "oas_refresh",
+				"operation", "run",
+			)
 		} else {
-			log.Printf("[oas-refresh] run mislukt: %v", err)
+			slog.ErrorContext(
+				runCtx,
+				"OAS refresh failed",
+				"component", "oas_refresh",
+				"operation", "run",
+				"error", err,
+			)
 		}
 		return
 	}
-	log.Printf("[oas-refresh] run gereed; %d APIs bijgewerkt", count)
+	slog.InfoContext(
+		runCtx,
+		"OAS refresh completed",
+		"component", "oas_refresh",
+		"operation", "run",
+		"updated_count", count,
+	)
 }
 
 func nextRunAt(now time.Time, hour, minute int) time.Time {

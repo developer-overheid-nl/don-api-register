@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -73,7 +73,14 @@ func (s *HarvesterService) RunOnce(ctx context.Context, src models.HarvestSource
 	if err != nil {
 		return err
 	}
-	log.Printf("[harvest %s] gevonden in index: %d", src.Name, len(hrefs))
+	slog.DebugContext(
+		ctx,
+		"harvest index loaded",
+		"component", "harvest",
+		"operation", "load_index",
+		"source", src.Name,
+		"candidate_count", len(hrefs),
+	)
 	if len(hrefs) == 0 {
 		return nil
 	}
@@ -111,11 +118,18 @@ func (s *HarvesterService) RunOnce(ctx context.Context, src models.HarvestSource
 		successCount++
 	}
 
-	log.Printf("[harvest %s] afgerond: candidates=%d success=%d failures=%d", src.Name, len(hrefs), successCount, len(aggErrs))
-
 	if len(aggErrs) > 0 {
 		return fmt.Errorf("%d failures; first: %s", len(aggErrs), aggErrs[0])
 	}
+	slog.InfoContext(
+		ctx,
+		"harvest completed",
+		"component", "harvest",
+		"operation", "run",
+		"source", src.Name,
+		"candidate_count", len(hrefs),
+		"success_count", successCount,
+	)
 	return nil
 }
 

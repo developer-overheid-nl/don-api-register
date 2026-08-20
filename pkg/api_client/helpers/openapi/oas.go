@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -48,7 +48,13 @@ func FetchParseValidateAndHash(ctx context.Context, input tools.OASInput, opts F
 
 	raw, contentType, err = bundleOAS(ctx, input)
 	if err != nil {
-		log.Printf("[oas] bundle failed (%v), fallback naar directe fetch", err)
+		slog.WarnContext(
+			ctx,
+			"OAS bundling failed; falling back to source document",
+			"component", "openapi",
+			"operation", "bundle",
+			"error", err,
+		)
 		raw, contentType, err = fetchRawOAS(ctx, input, opts)
 		if err != nil {
 			return nil, err
@@ -58,7 +64,12 @@ func FetchParseValidateAndHash(ctx context.Context, input tools.OASInput, opts F
 	}
 
 	if fromBundle && hasRecursiveYAMLAlias(raw, contentType) {
-		log.Printf("[oas] bundled YAML contains recursive aliases, retrying raw fetch for %s", input.OasUrl)
+		slog.DebugContext(
+			ctx,
+			"bundled OAS contains recursive YAML aliases; retrying source document",
+			"component", "openapi",
+			"operation", "parse",
+		)
 		raw, contentType, err = fetchRawOAS(ctx, input, opts)
 		if err != nil {
 			return nil, err
@@ -71,7 +82,12 @@ func FetchParseValidateAndHash(ctx context.Context, input tools.OASInput, opts F
 		return res, nil
 	}
 	if fromBundle && shouldRetryRawFetchAfterBundleParseError(err) {
-		log.Printf("[oas] bundled parse failed with recursive YAML anchors, retrying raw fetch for %s", input.OasUrl)
+		slog.DebugContext(
+			ctx,
+			"bundled OAS parse failed on recursive YAML anchors; retrying source document",
+			"component", "openapi",
+			"operation", "parse",
+		)
 		raw, contentType, retryErr := fetchRawOAS(ctx, input, opts)
 		if retryErr != nil {
 			return nil, retryErr
@@ -155,7 +171,12 @@ func parseValidateAndHash(raw []byte, contentType string) (*OASResult, error) {
 	//    RenderJSON levert een deterministische representatie.
 	rendered, err := model.Model.RenderJSON("  ")
 	if err != nil || len(rendered) == 0 {
-		log.Printf("[oas] RenderJSON failed (err=%v), fallback to raw bytes for hashing", err)
+		slog.Warn(
+			"canonical OAS rendering failed; hashing source bytes",
+			"component", "openapi",
+			"operation", "hash",
+			"error", err,
+		)
 		rendered = raw
 	}
 	sum := sha256.Sum256(rendered)
@@ -197,14 +218,28 @@ func bundleOAS(ctx context.Context, input tools.OASInput) ([]byte, string, error
 	if err != nil {
 		return nil, "", err
 	}
-	log.Printf("[oas] bundle succeeded url=%s body=%t len=%d ct=%s", input.OasUrl, input.OasBody != "", len(data), contentType)
+	slog.DebugContext(
+		ctx,
+		"OAS bundled",
+		"component", "openapi",
+		"operation", "bundle",
+		"inline_body", strings.TrimSpace(input.OasBody) != "",
+		"byte_count", len(data),
+		"content_type", contentType,
+	)
 	return data, contentType, nil
 }
 
 func fetchRawOAS(ctx context.Context, input tools.OASInput, opts FetchOpts) ([]byte, string, error) {
 	if body := strings.TrimSpace(input.OasBody); body != "" {
 		raw := []byte(body)
-		log.Printf("[oas] using inline body (%d bytes) for hashing", len(raw))
+		slog.DebugContext(
+			ctx,
+			"using inline OAS document",
+			"component", "openapi",
+			"operation", "fetch",
+			"byte_count", len(raw),
+		)
 		return raw, "", nil
 	}
 	oasURL := strings.TrimSpace(input.OasUrl)
@@ -246,22 +281,35 @@ func fetchRawOAS(ctx context.Context, input tools.OASInput, opts FetchOpts) ([]b
 			}
 		}
 		contentType := resp.Header.Get("Content-Type")
-		originLabel := "zonder Origin"
-		if origin != "" {
-			originLabel = "met Origin"
-		}
 		if n := len(body); n == 0 {
-			log.Printf("[oas] fetched empty body %s from %s (status %d)", originLabel, oasURL, resp.StatusCode)
+			slog.DebugContext(
+				ctx,
+				"received empty OAS response",
+				"component", "openapi",
+				"operation", "fetch",
+				"origin_header", origin != "",
+				"status_code", resp.StatusCode,
+			)
 			if origin != "" && i == 0 {
-				log.Printf("[oas] retrying fetch without Origin header for %s", oasURL)
+				slog.DebugContext(
+					ctx,
+					"retrying OAS fetch without Origin header",
+					"component", "openapi",
+					"operation", "fetch",
+				)
 				continue
 			}
 		} else {
-			preview := body
-			if n > 128 {
-				preview = body[:128]
-			}
-			log.Printf("[oas] fetched %d bytes %s from %s (status %d): %.128q", n, originLabel, oasURL, resp.StatusCode, preview)
+			slog.DebugContext(
+				ctx,
+				"OAS fetched",
+				"component", "openapi",
+				"operation", "fetch",
+				"origin_header", origin != "",
+				"status_code", resp.StatusCode,
+				"byte_count", n,
+				"content_type", contentType,
+			)
 		}
 		return body, contentType, nil
 	}

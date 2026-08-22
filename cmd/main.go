@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,6 +15,8 @@ import (
 	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	util "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/util"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	commondatabase "github.com/developer-overheid-nl/don-register-common/database"
+	commonlogging "github.com/developer-overheid-nl/don-register-common/logging"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/loopfz/gadgeto/tonic"
@@ -27,6 +30,12 @@ import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/services"
 )
+
+const appName = "api-register"
+
+func newApplicationLogger(output io.Writer, configuredLevel string) (*slog.Logger, error) {
+	return commonlogging.NewJSONLogger(output, appName, configuredLevel)
+}
 
 func invalidParamsFromBinding(err error, sample any) []problem.InvalidParam {
 	// Probeer direct op validator.ValidationErrors te matchen.
@@ -103,14 +112,45 @@ func isValidationErr(err error) bool {
 }
 
 func main() {
-	err := godotenv.Load()
+	envErr := godotenv.Load()
+	logger, err := newApplicationLogger(os.Stdout, os.Getenv("LOG_LEVEL"))
 	if err != nil {
-		log.Fatal("Error loading .env file ", err)
+		fallbackLogger, _ := newApplicationLogger(os.Stdout, "info")
+		fallbackLogger.Error(
+			"invalid logging configuration",
+			"component", "application",
+			"operation", "configure_logging",
+			"error", err,
+		)
+		os.Exit(1)
+	}
+	slog.SetDefault(logger)
+	commondatabase.ConfigureDefaultLogging(logger)
+	gin.DisableConsoleColor()
+	gin.DefaultWriter = io.Discard
+	gin.DefaultErrorWriter = commonlogging.NewSlogWriter(logger, slog.LevelError, "http_server", "recovery")
+
+	if envErr != nil {
+		slog.Error(
+			"failed to load environment file",
+			"component", "application",
+			"operation", "load_environment",
+			"error", envErr,
+		)
+		os.Exit(1)
+		return
 	}
 
 	version, err := util.LoadOASVersion("./api/openapi.json")
 	if err != nil {
-		log.Fatalf("failed to load OAS version: %v", err)
+		slog.Error(
+			"failed to load OAS version",
+			"component", "application",
+			"operation", "load_oas_version",
+			"error", err,
+		)
+		os.Exit(1)
+		return
 	}
 	host := os.Getenv("DB_HOSTNAME")
 	user := os.Getenv("DB_USERNAME")
@@ -133,13 +173,28 @@ func main() {
 	dbcon := u.String()
 	db, err := database.Connect(dbcon)
 	if err != nil {
-		log.Fatalf("Geen databaseverbinding: %v", err)
+		slog.Error(
+			"database connection failed",
+			"component", "database",
+			"operation", "connect",
+			"error", err,
+		)
+		os.Exit(1)
+		return
 	}
+	commondatabase.ConfigureLogging(db, slog.Default())
 	apiRepo := repositories.NewApiRepository(db)
 	APIsAPIService := services.NewAPIsAPIService(apiRepo)
 	APIsAPIController := handler.NewAPIsAPIController(APIsAPIService)
 	if err := APIsAPIService.PublishAllApisToTypesense(context.Background()); err != nil {
-		log.Fatalf("[typesense-sync] bulk publish failed: %v", err)
+		slog.Error(
+			"initial Typesense synchronization failed",
+			"component", "typesense",
+			"operation", "bulk_index",
+			"error", err,
+		)
+		os.Exit(1)
+		return
 	}
 
 	refreshJob := jobs.NewOASRefreshJob(APIsAPIService, context.Background())
@@ -154,6 +209,19 @@ func main() {
 	// Start server
 	router := api.NewRouter(version, APIsAPIController)
 
-	log.Println("Server is running on port 1337")
-	log.Fatal(http.ListenAndServe(":1337", router))
+	slog.Info(
+		"server started",
+		"component", "http_server",
+		"operation", "listen",
+		"address", ":1337",
+	)
+	if err := http.ListenAndServe(":1337", router); err != nil {
+		slog.Error(
+			"HTTP server stopped",
+			"component", "http_server",
+			"operation", "listen",
+			"error", err,
+		)
+		os.Exit(1)
+	}
 }

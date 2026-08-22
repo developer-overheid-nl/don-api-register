@@ -1,11 +1,13 @@
 package api_client
 
 import (
+	"log/slog"
 	"net/http"
 
 	apispec "github.com/developer-overheid-nl/don-api-register/api"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/handler"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
+	commonlogging "github.com/developer-overheid-nl/don-register-common/logging"
 	commonrouter "github.com/developer-overheid-nl/don-register-common/router"
 	"github.com/gin-gonic/gin"
 	"github.com/loopfz/gadgeto/tonic"
@@ -49,6 +51,7 @@ func NewRouter(apiVersion string, controller *handler.APIsAPIController) *fizz.F
 		AllowHeaders:  []string{"Origin", "Content-Length", "Content-Type", "Authorization", "API-Version"},
 		ExposeHeaders: []string{"API-Version"},
 	})
+	g.Use(commonlogging.NewGinMiddleware(slog.Default()))
 	f := fizz.NewFromEngine(g)
 
 	apiGroup := f.Group("/v1", "APIs", "Endpoints for listing and managing APIs.")

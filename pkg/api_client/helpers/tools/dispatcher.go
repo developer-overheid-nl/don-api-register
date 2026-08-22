@@ -2,7 +2,7 @@ package tools
 
 import (
 	"context"
-	"log"
+	"log/slog"
 )
 
 // ToolFunc defines a function executed asynchronously.
@@ -13,14 +13,26 @@ func Dispatch(ctx context.Context, name string, fn ToolFunc) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("[tool:%s] panic: %v", name, r)
+				slog.ErrorContext(
+					ctx,
+					"asynchronous tool panicked",
+					"component", "tools",
+					"operation", name,
+					"panic", r,
+				)
 			}
 		}()
-		log.Printf("[tool:%s] start", name)
+		slog.DebugContext(ctx, "asynchronous tool started", "component", "tools", "operation", name)
 		if err := fn(ctx); err != nil {
-			log.Printf("[tool:%s] error: %v", name, err)
+			slog.ErrorContext(
+				ctx,
+				"asynchronous tool failed",
+				"component", "tools",
+				"operation", name,
+				"error", err,
+			)
 		} else {
-			log.Printf("[tool:%s] done", name)
+			slog.DebugContext(ctx, "asynchronous tool completed", "component", "tools", "operation", name)
 		}
 	}()
 }

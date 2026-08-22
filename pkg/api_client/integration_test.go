@@ -119,10 +119,14 @@ func newIntegrationEnv(t *testing.T) *integrationEnv {
 	gin.SetMode(gin.TestMode)
 	setupErrorHook()
 
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
+
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
 
 	require.NoError(t, db.AutoMigrate(
 		&models.Organisation{},
@@ -141,7 +145,10 @@ func newIntegrationEnv(t *testing.T) *integrationEnv {
 	router := api_client.NewRouter("test-version", controller)
 
 	server := httptest.NewServer(router)
-	t.Cleanup(func() { server.Close() })
+	t.Cleanup(func() {
+		server.Close()
+		require.NoError(t, sqlDB.Close())
+	})
 
 	return &integrationEnv{
 		server:  server,

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"testing"
@@ -121,7 +120,7 @@ func TestPublishApi_SendsDocument(t *testing.T) {
 		t.Fatalf("unexpected lvl1: %v", got)
 	}
 	if got := doc["hierarchy.lvl2"]; got != "Ministerie van Test" {
-		log.Println("debug:", got)
+		t.Logf("unexpected hierarchy.lvl2 value: %v", got)
 		t.Fatalf("unexpected lvl2: %v", got)
 	}
 	if got := doc["hierarchy.lvl3"]; got != "Jane Doe" {

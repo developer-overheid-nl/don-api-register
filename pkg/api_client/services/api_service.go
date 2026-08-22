@@ -7,7 +7,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -154,7 +154,14 @@ func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, re
 		toolslint.Dispatch(context.Background(), "tools", run)
 	} else {
 		if err := run(ctx); err != nil {
-			log.Printf("[tools] sync run failed for api=%s: %v", api.Id, err)
+			slog.ErrorContext(
+				ctx,
+				"synchronous API tooling failed",
+				"component", "tools",
+				"operation", "process_api",
+				"api_id", api.Id,
+				"error", err,
+			)
 		}
 	}
 
@@ -423,7 +430,14 @@ func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
 			if openapi.IsHTTPStatus(err, http.StatusNotFound) {
 				retired, retireErr := s.retireAPIForUnavailableOAS(ctx, candidate)
 				if retireErr != nil {
-					log.Printf("[oas-refresh] kon api=%s niet retired zetten na 404: %v", candidate.Id, retireErr)
+					slog.ErrorContext(
+						ctx,
+						"failed to retire API after missing OAS",
+						"component", "oas_refresh",
+						"operation", "retire_api",
+						"api_id", candidate.Id,
+						"error", retireErr,
+					)
 				} else if retired {
 					updated++
 				}
@@ -435,16 +449,37 @@ func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
 				Auth:    currentOASAuth(candidate),
 			}
 			if updateErr := s.updateOASMetadataSnapshot(ctx, candidate.Id, candidate.OAS, nextSnapshot); updateErr != nil {
-				log.Printf("[oas-refresh] kon oas status niet opslaan api=%s: %v", candidate.Id, updateErr)
+				slog.ErrorContext(
+					ctx,
+					"failed to store unavailable OAS status",
+					"component", "oas_refresh",
+					"operation", "update_status",
+					"api_id", candidate.Id,
+					"error", updateErr,
+				)
 			} else {
 				s.recordOASUnavailable(ctx, candidate.Id, candidate.OAS, nextSnapshot)
 			}
-			log.Printf("[oas-refresh] skip api=%s url=%s: %v", candidate.Id, candidate.OasUri, err)
+			slog.WarnContext(
+				ctx,
+				"skipping API with unavailable OAS",
+				"component", "oas_refresh",
+				"operation", "fetch_oas",
+				"api_id", candidate.Id,
+				"error", err,
+			)
 			continue
 		}
 
 		if err := s.updateOASMetadataSnapshot(ctx, candidate.Id, candidate.OAS, deriveOASSnapshot(candidate.OAS, res)); err != nil {
-			log.Printf("[oas-refresh] kon oas snapshot niet bijwerken api=%s: %v", candidate.Id, err)
+			slog.ErrorContext(
+				ctx,
+				"failed to update OAS metadata",
+				"component", "oas_refresh",
+				"operation", "update_metadata",
+				"api_id", candidate.Id,
+				"error", err,
+			)
 		}
 
 		if res.Hash == candidate.OasHash {
@@ -453,13 +488,26 @@ func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
 
 		full, err := s.repo.GetApiByID(ctx, candidate.Id)
 		if err != nil || full == nil {
-			log.Printf("[oas-refresh] kan api=%s niet laden: %v", candidate.Id, err)
+			slog.ErrorContext(
+				ctx,
+				"API detail unavailable during OAS refresh",
+				"component", "oas_refresh",
+				"operation", "load_api",
+				"api_id", candidate.Id,
+				"error", err,
+			)
 			continue
 		}
 
 		orgURI := deriveOrganisationURI(full)
 		if orgURI == "" {
-			log.Printf("[oas-refresh] sla api=%s over: organisationUri ontbreekt", candidate.Id)
+			slog.WarnContext(
+				ctx,
+				"skipping API without organisation URI",
+				"component", "oas_refresh",
+				"operation", "validate_api",
+				"api_id", candidate.Id,
+			)
 			continue
 		}
 
@@ -474,7 +522,14 @@ func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
 		}
 
 		if _, err := s.applyOASUpdate(ctx, full, req, nil, res, false); err != nil {
-			log.Printf("[oas-refresh] update van api=%s mislukt: %v", full.Id, err)
+			slog.ErrorContext(
+				ctx,
+				"failed to update API from refreshed OAS",
+				"component", "oas_refresh",
+				"operation", "update_api",
+				"api_id", full.Id,
+				"error", err,
+			)
 			continue
 		}
 		updated++
@@ -502,10 +557,24 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 		if err != nil {
 			if openapi.IsHTTPStatus(err, http.StatusNotFound) {
 				if _, retireErr := s.retireAPIForUnavailableOAS(ctx, api); retireErr != nil {
-					log.Printf("[lint] kon api=%s niet retired zetten na 404: %v", api.Id, retireErr)
+					slog.ErrorContext(
+						ctx,
+						"failed to retire API after missing OAS",
+						"component", "lint",
+						"operation", "retire_api",
+						"api_id", api.Id,
+						"error", retireErr,
+					)
 				}
 			}
-			log.Printf("[lint] skip api=%s: hash fetch failed: %v", api.Id, err)
+			slog.WarnContext(
+				ctx,
+				"skipping lint for unavailable OAS",
+				"component", "lint",
+				"operation", "fetch_oas",
+				"api_id", api.Id,
+				"error", err,
+			)
 		} else {
 			if err := sem.Acquire(ctx, 1); err != nil {
 				return err
@@ -533,7 +602,15 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID string, input
 		return err
 	}
 
-	log.Printf("[lint] api=%s expectedHash=%s currentHash=%s", apiID, expectedHash, current.OasHash)
+	slog.DebugContext(
+		ctx,
+		"evaluating OAS lint state",
+		"component", "lint",
+		"operation", "compare_hash",
+		"api_id", apiID,
+		"expected_hash", expectedHash,
+		"current_hash", current.OasHash,
+	)
 	// Call external tools API for linting of the OAS URL
 	if err := s.withRateLimit(ctx); err != nil {
 		return err
@@ -541,12 +618,15 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID string, input
 	if current.OasHash != expectedHash || current.AdrScore == nil {
 		previousHash := current.OasHash
 		previousScore := current.AdrScore
-		log.Printf("[lint] calling tools lint for api=%s", apiID)
+		slog.DebugContext(
+			ctx,
+			"requesting OAS lint",
+			"component", "lint",
+			"operation", "lint",
+			"api_id", apiID,
+		)
 		dto, lintErr := toolslint.LintGet(ctx, input)
 		if dto == nil {
-			if lintErr != nil {
-				log.Printf("[lint] tools lint error: %v", lintErr)
-			}
 			return lintErr
 		}
 
@@ -577,7 +657,17 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID string, input
 			})
 		}
 		score := dto.Score
-		log.Printf("[lint] messages=%d errors=%d warnings=%d score=%d", len(msgs), errCount, warnCount, score)
+		slog.DebugContext(
+			ctx,
+			"OAS lint result prepared",
+			"component", "lint",
+			"operation", "persist_result",
+			"api_id", apiID,
+			"message_count", len(msgs),
+			"error_count", errCount,
+			"warning_count", warnCount,
+			"score", score,
+		)
 
 		rid := dto.ID
 		if strings.TrimSpace(rid) == "" {
@@ -593,21 +683,34 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID string, input
 			CreatedAt: dto.CreatedAt,
 		}
 		if err := s.repo.SaveLintResult(ctx, res); err != nil {
-			log.Printf("[lint] save result failed: %v", err)
 			return err
 		}
-		log.Printf("[lint] saved lint result id=%s", res.ID)
+		slog.DebugContext(
+			ctx,
+			"OAS lint result stored",
+			"component", "lint",
+			"operation", "persist_result",
+			"api_id", apiID,
+			"result_id", res.ID,
+		)
 
 		// ✅ Hash en score wegschrijven
 		current.AdrScore = &score
 		current.OasHash = expectedHash
 		if err := s.repo.UpdateApi(ctx, *current); err != nil {
-			log.Printf("[lint] update api failed: %v", err)
 			return err
 		}
 		s.recordADRScoreChange(ctx, previousScore, current.AdrScore, apiID)
 		s.recordOASHashChange(ctx, apiID, previousHash, expectedHash)
-		log.Printf("[lint] updated AdrScore=%d & OasHash=%s api=%s", score, expectedHash, apiID)
+		slog.DebugContext(
+			ctx,
+			"API lint state updated",
+			"component", "lint",
+			"operation", "update_api",
+			"api_id", apiID,
+			"score", score,
+			"oas_hash", expectedHash,
+		)
 	}
 	return nil
 }
@@ -617,11 +720,25 @@ func (s *APIsAPIService) lintAndPersist(ctx context.Context, apiID string, input
 // Postman artifacts are stored as blobs linked to the API.
 func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, oasInput toolslint.OASInput, arazzoInput toolslint.ArazzoInput, result *openapi.OASResult) error {
 	if err := s.lintAndPersist(ctx, apiID, oasInput, result.Hash); err != nil {
-		log.Printf("[tools] lint failed: %v", err)
+		slog.ErrorContext(
+			ctx,
+			"OAS lint processing failed",
+			"component", "tools",
+			"operation", "lint",
+			"api_id", apiID,
+			"error", err,
+		)
 	}
 
 	if err := s.persistOASArtifacts(ctx, apiID, result); err != nil {
-		log.Printf("[tools] persist oas artifacts failed: %v", err)
+		slog.ErrorContext(
+			ctx,
+			"failed to persist OAS artifacts",
+			"component", "tools",
+			"operation", "persist_oas_artifacts",
+			"api_id", apiID,
+			"error", err,
+		)
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -632,7 +749,14 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, o
 		}
 		data, name, ct, err := toolslint.PostmanPost(ctx, oasInput)
 		if err != nil {
-			log.Printf("[tools] postman generation failed: %v", err)
+			slog.ErrorContext(
+				ctx,
+				"Postman generation failed",
+				"component", "tools",
+				"operation", "generate_postman",
+				"api_id", apiID,
+				"error", err,
+			)
 			return nil
 		}
 		art := &models.ApiArtifact{
@@ -645,11 +769,32 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, o
 			CreatedAt:   time.Now(),
 		}
 		if err := s.repo.SaveArtifact(ctx, art); err != nil {
-			log.Printf("[tools] save postman artifact failed: %v", err)
+			slog.ErrorContext(
+				ctx,
+				"failed to store Postman artifact",
+				"component", "tools",
+				"operation", "persist_postman",
+				"api_id", apiID,
+				"error", err,
+			)
 		} else {
-			log.Printf("[tools] saved postman artifact id=%s api=%s", art.ID, apiID)
+			slog.DebugContext(
+				ctx,
+				"Postman artifact stored",
+				"component", "tools",
+				"operation", "persist_postman",
+				"api_id", apiID,
+				"artifact_id", art.ID,
+			)
 			if err := s.repo.DeleteArtifactsByKind(ctx, apiID, "postman", []string{art.ID}); err != nil {
-				log.Printf("[tools] cleanup oude postman artifacts mislukt api=%s: %v", apiID, err)
+				slog.WarnContext(
+					ctx,
+					"failed to clean up old Postman artifacts",
+					"component", "tools",
+					"operation", "cleanup_postman",
+					"api_id", apiID,
+					"error", err,
+				)
 			}
 		}
 		return nil
@@ -663,7 +808,14 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, o
 			}
 			data, ct, err := toolslint.ArazzoMarkdown(ctx, arazzoInput)
 			if err != nil {
-				log.Printf("[tools] arazzo markdown failed: %v", err)
+				slog.ErrorContext(
+					ctx,
+					"Arazzo Markdown generation failed",
+					"component", "tools",
+					"operation", "generate_arazzo_markdown",
+					"api_id", apiID,
+					"error", err,
+				)
 				return nil
 			}
 			art := &models.ApiArtifact{
@@ -678,9 +830,23 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, o
 				CreatedAt:   time.Now(),
 			}
 			if err := s.repo.SaveArtifact(ctx, art); err != nil {
-				log.Printf("[tools] save arazzo markdown failed: %v", err)
+				slog.ErrorContext(
+					ctx,
+					"failed to store Arazzo Markdown artifact",
+					"component", "tools",
+					"operation", "persist_arazzo_markdown",
+					"api_id", apiID,
+					"error", err,
+				)
 			} else {
-				log.Printf("[tools] saved arazzo markdown artifact id=%s api=%s", art.ID, apiID)
+				slog.DebugContext(
+					ctx,
+					"Arazzo Markdown artifact stored",
+					"component", "tools",
+					"operation", "persist_arazzo_markdown",
+					"api_id", apiID,
+					"artifact_id", art.ID,
+				)
 			}
 			return nil
 		})
@@ -691,7 +857,14 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, o
 			}
 			data, ct, err := toolslint.ArazzoMermaid(ctx, arazzoInput)
 			if err != nil {
-				log.Printf("[tools] arazzo mermaid failed: %v", err)
+				slog.ErrorContext(
+					ctx,
+					"Arazzo Mermaid generation failed",
+					"component", "tools",
+					"operation", "generate_arazzo_mermaid",
+					"api_id", apiID,
+					"error", err,
+				)
 				return nil
 			}
 			art := &models.ApiArtifact{
@@ -706,9 +879,23 @@ func (s *APIsAPIService) runToolsAndPersist(ctx context.Context, apiID string, o
 				CreatedAt:   time.Now(),
 			}
 			if err := s.repo.SaveArtifact(ctx, art); err != nil {
-				log.Printf("[tools] save arazzo mermaid failed: %v", err)
+				slog.ErrorContext(
+					ctx,
+					"failed to store Arazzo Mermaid artifact",
+					"component", "tools",
+					"operation", "persist_arazzo_mermaid",
+					"api_id", apiID,
+					"error", err,
+				)
 			} else {
-				log.Printf("[tools] saved arazzo mermaid artifact id=%s api=%s", art.ID, apiID)
+				slog.DebugContext(
+					ctx,
+					"Arazzo Mermaid artifact stored",
+					"component", "tools",
+					"operation", "persist_arazzo_mermaid",
+					"api_id", apiID,
+					"artifact_id", art.ID,
+				)
 			}
 			return nil
 		})
@@ -726,7 +913,14 @@ func (s *APIsAPIService) publishToTypesense(api models.Api) {
 		if errors.Is(err, typesense.ErrDisabled) {
 			return
 		}
-		log.Printf("[typesense] indexing failed for api=%s: %v", api.Id, err)
+		slog.ErrorContext(
+			ctx,
+			"Typesense indexing failed",
+			"component", "typesense",
+			"operation", "index_api",
+			"api_id", api.Id,
+			"error", err,
+		)
 	}
 }
 
@@ -737,7 +931,12 @@ func (s *APIsAPIService) ListOrganisations(ctx context.Context) ([]models.Organi
 // PublishAllApisToTypesense pushes every stored API to Typesense. Intended as a one-off helper.
 func (s *APIsAPIService) PublishAllApisToTypesense(ctx context.Context) error {
 	if !typesense.Enabled() {
-		log.Printf("[typesense] indexing disabled; skip bulk publish")
+		slog.InfoContext(
+			ctx,
+			"Typesense indexing disabled; skipping bulk publish",
+			"component", "typesense",
+			"operation", "bulk_index",
+		)
 		return nil
 	}
 
@@ -756,10 +955,22 @@ func (s *APIsAPIService) PublishAllApisToTypesense(ctx context.Context) error {
 		cancel()
 		if err != nil {
 			if errors.Is(err, typesense.ErrDisabled) {
-				log.Printf("[typesense] indexing disabled tijdens bulk run; stop")
+				slog.InfoContext(
+					ctx,
+					"Typesense indexing disabled during bulk publish",
+					"component", "typesense",
+					"operation", "bulk_index",
+				)
 				return nil
 			}
-			log.Printf("[typesense] bulk indexing failed for api=%s: %v", apiCopy.Id, err)
+			slog.ErrorContext(
+				ctx,
+				"Typesense bulk indexing failed for API",
+				"component", "typesense",
+				"operation", "bulk_index",
+				"api_id", apiCopy.Id,
+				"error", err,
+			)
 		}
 	}
 	return nil
@@ -893,7 +1104,14 @@ func (s *APIsAPIService) persistOASArtifacts(ctx context.Context, apiID string, 
 			}
 		}
 	} else {
-		log.Printf("[oas] skip conversie: versie %s niet ondersteund voor automatische omzetting", res.Version)
+		slog.DebugContext(
+			ctx,
+			"automatic OAS conversion not supported for version",
+			"component", "openapi",
+			"operation", "convert",
+			"api_id", apiID,
+			"oas_version", res.Version,
+		)
 	}
 
 	if len(errs) == 0 && len(keep) > 0 {
@@ -928,7 +1146,17 @@ func (s *APIsAPIService) saveOASArtifact(ctx context.Context, apiID, version, fo
 	if err := s.repo.SaveArtifact(ctx, art); err != nil {
 		return "", fmt.Errorf("kan artifact %s opslaan: %w", art.Filename, err)
 	}
-	log.Printf("[oas] saved artifact id=%s api=%s version=%s format=%s source=%s", art.ID, apiID, version, format, source)
+	slog.DebugContext(
+		ctx,
+		"OAS artifact stored",
+		"component", "openapi",
+		"operation", "persist_artifact",
+		"api_id", apiID,
+		"artifact_id", art.ID,
+		"oas_version", version,
+		"format", format,
+		"source", source,
+	)
 	return art.ID, nil
 }
 
@@ -963,18 +1191,39 @@ func (s *APIsAPIService) BackfillOASArtifacts(ctx context.Context) error {
 			Origin: "https://developer.overheid.nl",
 		})
 		if err != nil {
-			log.Printf("[backfill] skip api=%s uri=%s: %v", api.Id, api.OasUri, err)
+			slog.WarnContext(
+				ctx,
+				"skipping OAS artifact backfill for unavailable OAS",
+				"component", "oas_backfill",
+				"operation", "fetch_oas",
+				"api_id", api.Id,
+				"error", err,
+			)
 			continue
 		}
 		if err := s.persistOASArtifacts(ctx, api.Id, res); err != nil {
-			log.Printf("[backfill] persist failed api=%s: %v", api.Id, err)
+			slog.ErrorContext(
+				ctx,
+				"failed to persist backfilled OAS artifacts",
+				"component", "oas_backfill",
+				"operation", "persist_artifacts",
+				"api_id", api.Id,
+				"error", err,
+			)
 		}
 		applyOASSnapshot(&api, res)
 		if api.OasHash != res.Hash {
 			api.OasHash = res.Hash
 		}
 		if err := s.repo.UpdateApi(ctx, api); err != nil {
-			log.Printf("[backfill] update hash/oas snapshot failed api=%s: %v", api.Id, err)
+			slog.ErrorContext(
+				ctx,
+				"failed to update API after OAS artifact backfill",
+				"component", "oas_backfill",
+				"operation", "update_api",
+				"api_id", api.Id,
+				"error", err,
+			)
 		}
 	}
 
@@ -1161,7 +1410,15 @@ func (s *APIsAPIService) saveFeedEvent(ctx context.Context, apiID, eventType, ol
 		CreatedAt:   time.Now(),
 	}
 	if err := s.repo.SaveApiFeedEvent(ctx, event); err != nil {
-		log.Printf("[feed] save event failed api=%s type=%s: %v", apiID, eventType, err)
+		slog.ErrorContext(
+			ctx,
+			"failed to store API feed event",
+			"component", "api_feed",
+			"operation", "persist_event",
+			"api_id", apiID,
+			"event_type", eventType,
+			"error", err,
+		)
 	}
 }
 

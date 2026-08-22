@@ -24,6 +24,33 @@ API van het API register (apis.developer.overheid.nl)
 
    De API luistert standaard op poort **1337**.
 
+## Logging in Loki en Grafana
+
+De applicatie schrijft gestructureerde JSON-logs naar stdout. Loki kan daardoor
+het veld `level` als `detected_level` herkennen. Het standaardniveau is `info`;
+stel `LOG_LEVEL` in op `debug`, `info`, `warn` of `error` om de ondergrens aan
+te passen.
+
+Iedere applicatielog bevat vaste zoekvelden:
+
+- `app`: altijd `api-register`, zodat iedere regel direct naar deze applicatie
+  te herleiden is;
+- `level`: de severity (`DEBUG`, `INFO`, `WARN` of `ERROR`);
+- `component`: het functionele onderdeel, zoals `oas_refresh`, `tools` of
+  `typesense`;
+- `operation`: de handeling binnen het onderdeel;
+- waar relevant `api_id`, `source`, `artifact_id`, aantallen en `error`.
+
+Velden met veel verschillende waarden, zoals `api_id`, horen niet als
+permanente Loki-labels te worden ingericht. Parse ze tijdens de query om hoge
+cardinaliteit te voorkomen. Voorbeelden:
+
+```logql
+{app="api-register"} | detected_level="error" | json
+{app="api-register"} | json | component="oas_refresh" | api_id="<api-id>"
+{app="api-register"} | json | component="harvest" | source="pdok"
+```
+
 ## Typesense integratie
 
 Nieuwe APIs worden na een succesvolle POST ook naar Typesense gestuurd, zodat ze vindbaar zijn in de zoekfunctie. Stel hiervoor de volgende omgevingsvariabelen in:

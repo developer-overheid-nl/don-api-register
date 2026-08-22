@@ -2,10 +2,11 @@ package jobs
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	commonlogging "github.com/developer-overheid-nl/don-register-common/logging"
 	"github.com/robfig/cron/v3"
 )
 
@@ -20,9 +21,10 @@ func ScheduleHarvest(ctx context.Context, svc Harvester, sources []models.Harves
 	}
 
 	spec := "0 6 * * *"
+	cronLogger := commonlogging.NewCronLogger(slog.Default(), "harvest")
 	c := cron.New(cron.WithChain(
-		cron.Recover(cron.DefaultLogger),
-		cron.SkipIfStillRunning(cron.DefaultLogger),
+		cron.Recover(cronLogger),
+		cron.SkipIfStillRunning(cronLogger),
 	))
 
 	// cron job
@@ -31,12 +33,25 @@ func ScheduleHarvest(ctx context.Context, svc Harvester, sources []models.Harves
 		defer cancel()
 		for _, src := range sources {
 			if err := svc.RunOnce(jobCtx, src); err != nil {
-				fmt.Printf("[harvest %s] failed: %v\n", src.Name, err)
+				slog.ErrorContext(
+					jobCtx,
+					"scheduled harvest failed",
+					"component", "harvest",
+					"operation", "run",
+					"source", src.Name,
+					"error", err,
+				)
 			}
 		}
 	})
 	if err != nil {
-		fmt.Printf("failed to schedule harvest: %v\n", err)
+		slog.ErrorContext(
+			ctx,
+			"failed to schedule harvest",
+			"component", "harvest",
+			"operation", "schedule",
+			"error", err,
+		)
 		return c
 	}
 
@@ -49,7 +64,14 @@ func ScheduleHarvest(ctx context.Context, svc Harvester, sources []models.Harves
 		defer cancel()
 		for _, src := range sources {
 			if err := svc.RunOnce(jobCtx, src); err != nil {
-				fmt.Printf("[initial harvest %s] failed: %v\n", src.Name, err)
+				slog.ErrorContext(
+					jobCtx,
+					"initial harvest failed",
+					"component", "harvest",
+					"operation", "run_initial",
+					"source", src.Name,
+					"error", err,
+				)
 			}
 		}
 	}()

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
+	"log/slog"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 )
@@ -23,14 +23,21 @@ func LintGet(ctx context.Context, input OASInput) (*LintResultDTO, error) {
 	}
 	data, _, err := doToolsJSONRequest(ctx, "oas/validate", input, "application/json")
 	if err != nil {
-		log.Printf("[LintGet] request failed: %v", err)
 		return nil, err
 	}
 	var out LintResultDTO
 	if err := json.Unmarshal(data, &out); err != nil {
-		log.Printf("[LintGet] decode response failed: %v", err)
 		return nil, err
 	}
-	log.Printf("[LintGet] lint result id=%s messages=%d failures=%d warnings=%d score=%d", out.ID, len(out.Messages), out.Failures, out.Warnings, out.Score)
+	slog.DebugContext(
+		ctx,
+		"OAS lint completed",
+		"component", "tools",
+		"operation", "lint",
+		"message_count", len(out.Messages),
+		"failure_count", out.Failures,
+		"warning_count", out.Warnings,
+		"score", out.Score,
+	)
 	return &out, nil
 }

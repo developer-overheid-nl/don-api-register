@@ -1,3 +1,0 @@
-kind: Added
-body: Voeg sortering op titel, ADR-score en API-versie in oplopende en aflopende volgorde toe aan GET /apis.
-time: 2026-07-29T09:00:20.660563+02:00

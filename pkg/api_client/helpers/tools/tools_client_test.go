@@ -124,7 +124,7 @@ func TestPostmanPostAndOasConverterPost(t *testing.T) {
 	_, filename, _, err = OasConverterPost(context.Background(), OASInput{OasBody: "{}"})
 	require.NoError(t, err)
 	assert.Equal(t, "artifact.json", filename)
-	assert.Equal(t, []string{"/api/postman/convert", "/api/oas/convert"}, requests)
+	assert.Equal(t, []string{"/api/oas/postman", "/api/oas/convert"}, requests)
 }
 
 func TestPostmanPostUsesDefaultFilename(t *testing.T) {

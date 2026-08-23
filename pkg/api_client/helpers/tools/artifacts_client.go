@@ -7,10 +7,10 @@ import (
 	"strings"
 )
 
-// PostmanPost calls the tools API /postman endpoint with the provided OAS input
+// PostmanPost calls the tools API /oas/postman endpoint with the provided OAS input
 // and returns the raw bytes, filename (if any), and content type.
 func PostmanPost(ctx context.Context, input OASInput) ([]byte, string, string, error) {
-	return postBinary(ctx, input, "postman/convert", "application/json", "postman-collection.json")
+	return postBinary(ctx, input, "oas/postman", "application/json", "postman-collection.json")
 }
 
 func OasConverterPost(ctx context.Context, input OASInput) ([]byte, string, string, error) {

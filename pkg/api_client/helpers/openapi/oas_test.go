@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -20,6 +22,35 @@ const lifecycleTestSpec = `{
   "info": {"title": "Lifecycle", "version": "1.0.0"},
   "paths": {}
 }`
+
+type repeatedByteReader struct{}
+
+func (repeatedByteReader) Read(p []byte) (int, error) {
+	for index := range p {
+		p[index] = 'x'
+	}
+	return len(p), nil
+}
+
+func TestFetchParseValidateAndHashRejectsOversizedSourceResponse(t *testing.T) {
+	t.Setenv("TOOLS_API_ENDPOINT", "")
+	server := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.CopyN(w, repeatedByteReader{}, maxOASResponseBytes+1)
+	}))
+
+	_, err := FetchParseValidateAndHash(
+		context.Background(),
+		toolslint.OASInput{OasUrl: server.URL},
+		FetchOpts{},
+	)
+	if err == nil {
+		t.Fatal("expected oversized OAS response to fail")
+	}
+	if !strings.Contains(err.Error(), "OAS response exceeds 20 MiB") {
+		t.Fatalf("expected concrete size error, got %v", err)
+	}
+}
 
 func TestProcessOASSerializesDocumentConsumers(t *testing.T) {
 	t.Setenv("TOOLS_API_ENDPOINT", "")

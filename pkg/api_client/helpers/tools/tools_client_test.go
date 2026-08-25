@@ -84,6 +84,26 @@ func TestDoToolsJSONRequestReturnsResponseBodyOnError(t *testing.T) {
 	assert.Contains(t, err.Error(), "upstream unavailable")
 }
 
+type repeatedToolByteReader struct{}
+
+func (repeatedToolByteReader) Read(p []byte) (int, error) {
+	for index := range p {
+		p[index] = 'x'
+	}
+	return len(p), nil
+}
+
+func TestDoToolsJSONRequestRejectsOversizedResponse(t *testing.T) {
+	withToolsServer(t, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.CopyN(w, repeatedToolByteReader{}, maxToolsResponseBytes+1)
+	})
+
+	_, _, err := doToolsJSONRequest(context.Background(), "oas/bundle", OASInput{OasBody: "{}"}, "")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "tools response exceeds 20 MiB")
+}
+
 func TestBundleOAS(t *testing.T) {
 	withToolsServer(t, func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/api/oas/bundle", r.URL.Path)

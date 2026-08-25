@@ -15,6 +15,8 @@ import (
 	httpclient "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/httpclient"
 )
 
+const maxToolsResponseBytes int64 = 20 << 20
+
 func buildToolsURL(endpoint string) (*url.URL, error) {
 	base := strings.TrimSpace(os.Getenv("TOOLS_API_ENDPOINT"))
 	if base == "" {
@@ -61,9 +63,12 @@ func doToolsJSONRequest(ctx context.Context, endpoint string, payload any, accep
 		}
 	}()
 
-	data, err = io.ReadAll(resp.Body)
+	data, err = io.ReadAll(io.LimitReader(resp.Body, maxToolsResponseBytes+1))
 	if err != nil {
 		return nil, nil, err
+	}
+	if int64(len(data)) > maxToolsResponseBytes {
+		return nil, nil, fmt.Errorf("tools response exceeds 20 MiB: %s", endpoint)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, nil, fmt.Errorf("tools %s request failed: %s body=%s", endpoint, resp.Status, string(data))

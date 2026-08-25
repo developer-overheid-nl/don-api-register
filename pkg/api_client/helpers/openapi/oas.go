@@ -34,6 +34,8 @@ func IsHTTPStatus(err error, statusCode int) bool {
 
 var versionPrefixPattern = regexp.MustCompile(`^(\d+)\.(\d+)`)
 
+const maxOASResponseBytes int64 = 20 << 20
+
 var oasLifecycleMu sync.Mutex
 
 // ProcessOAS owns one complete libopenapi document lifecycle. libopenapi uses
@@ -302,10 +304,13 @@ func fetchRawOAS(ctx context.Context, input tools.OASInput, opts FetchOpts) ([]b
 		if err != nil {
 			return nil, "", fmt.Errorf("kan OAS niet ophalen: %w", err)
 		}
-		body, readErr := io.ReadAll(resp.Body)
+		body, readErr := io.ReadAll(io.LimitReader(resp.Body, maxOASResponseBytes+1))
 		closeErr := resp.Body.Close()
 		if readErr != nil {
 			return nil, "", fmt.Errorf("kan OAS niet lezen: %w", readErr)
+		}
+		if int64(len(body)) > maxOASResponseBytes {
+			return nil, "", fmt.Errorf("OAS response exceeds 20 MiB: %s", oasURL)
 		}
 		if closeErr != nil {
 			return nil, "", fmt.Errorf("kan OAS response body niet sluiten: %w", closeErr)

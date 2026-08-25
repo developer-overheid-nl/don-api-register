@@ -80,10 +80,28 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 		OasUrl:  body.OasUrl,
 		OasBody: body.OasBody,
 	}
-	res, err := openapi.FetchParseValidateAndHash(ctx, oasInput, openapi.FetchOpts{
+	var updated *models.ApiSummary
+	parsed := false
+	err = openapi.ProcessOAS(ctx, oasInput, openapi.FetchOpts{
 		Origin: "https://developer.overheid.nl",
+	}, func(res *openapi.OASResult) error {
+		parsed = true
+		var applyErr error
+		updated, applyErr = s.applyOASUpdate(ctx, api, models.ApiPost{
+			Id:              body.Id,
+			OasUrl:          body.OasUrl,
+			OasBody:         body.OasBody,
+			ArazzoUrl:       body.ArazzoUrl,
+			ArazzoBody:      body.ArazzoBody,
+			OrganisationUri: body.OrganisationUri,
+			Contact:         body.Contact,
+		}, body, res, true)
+		return applyErr
 	})
 	if err != nil {
+		if parsed {
+			return nil, err
+		}
 		if openapi.IsHTTPStatus(err, http.StatusNotFound) && !hasOASDocumentChange(api, body) {
 			if _, retireErr := s.retireAPIForUnavailableOAS(ctx, *api); retireErr != nil {
 				return nil, retireErr
@@ -98,15 +116,7 @@ func (s *APIsAPIService) UpdateOasUri(ctx context.Context, body *models.UpdateAp
 		return nil, problem.NewBadRequest(body.OasUrl, err.Error())
 	}
 
-	return s.applyOASUpdate(ctx, api, models.ApiPost{
-		Id:              body.Id,
-		OasUrl:          body.OasUrl,
-		OasBody:         body.OasBody,
-		ArazzoUrl:       body.ArazzoUrl,
-		ArazzoBody:      body.ArazzoBody,
-		OrganisationUri: body.OrganisationUri,
-		Contact:         body.Contact,
-	}, body, res, true)
+	return updated, nil
 }
 
 func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, request models.ApiPost, overrides *models.UpdateApiInput, res *openapi.OASResult, asyncTools bool) (*models.ApiSummary, error) {
@@ -147,8 +157,9 @@ func (s *APIsAPIService) applyOASUpdate(ctx context.Context, api *models.Api, re
 
 	oasInput := toOASInput(request)
 	arazzoInput := toArazzoInput(request)
+	toolResult := detachedOASResult(res)
 	run := func(runCtx context.Context) error {
-		return s.runToolsAndPersist(runCtx, api.Id, oasInput, arazzoInput, res)
+		return s.runToolsAndPersist(runCtx, api.Id, oasInput, arazzoInput, toolResult)
 	}
 	if asyncTools {
 		toolslint.Dispatch(context.Background(), "tools", run)
@@ -326,24 +337,57 @@ func (s *APIsAPIService) UpdateApi(ctx context.Context, api models.Api) error {
 
 func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.ApiSummary, error) {
 	ctx := context.Background()
-
-	// 1) Strict validate + hash
 	oasInput := toolslint.OASInput{
 		OasUrl:  requestBody.OasUrl,
 		OasBody: requestBody.OasBody,
 	}
 	arazzoInput := toArazzoInput(requestBody)
-	resp, err := openapi.FetchParseValidateAndHash(ctx, oasInput, openapi.FetchOpts{
+
+	var (
+		created    *models.ApiSummary
+		createdAPI *models.Api
+		toolResult *openapi.OASResult
+		parsed     bool
+	)
+	err := openapi.ProcessOAS(ctx, oasInput, openapi.FetchOpts{
 		Origin: "https://developer.overheid.nl",
+	}, func(resp *openapi.OASResult) error {
+		parsed = true
+		api, err := s.createAPIFromParsedOAS(ctx, requestBody, resp)
+		if err != nil {
+			return err
+		}
+		createdAPI = api
+		toolResult = detachedOASResult(resp)
+		summary := util.ToApiSummary(api)
+		created = &summary
+		return nil
 	})
 	if err != nil {
+		if parsed {
+			return nil, err
+		}
 		return nil, problem.NewBadRequest(requestBody.OasUrl, err.Error())
 	}
 
-	// 3) Build & validate.
+	toolslint.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
+		return s.runToolsAndPersist(ctx, createdAPI.Id, oasInput, arazzoInput, toolResult)
+	})
+
+	apiCopy := *createdAPI
+	go s.publishToTypesense(apiCopy)
+
+	return created, nil
+}
+
+func (s *APIsAPIService) createAPIFromParsedOAS(
+	ctx context.Context,
+	requestBody models.ApiPost,
+	resp *openapi.OASResult,
+) (*models.Api, error) {
 	var label string
 	var shouldSaveOrg bool
-	if org, err := s.repo.FindOrganisationByURI(context.Background(), requestBody.OrganisationUri); err != nil {
+	if org, err := s.repo.FindOrganisationByURI(ctx, requestBody.OrganisationUri); err != nil {
 		return nil, problem.NewInternalServerError("kan organisatie niet ophalen: " + err.Error())
 	} else if org != nil {
 		label = org.Label
@@ -355,7 +399,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 				problem.InvalidParam{Name: "organisationUri", Reason: "Moet een geldige URL zijn"},
 			)
 		}
-		lbl, err := httpclient.FetchOrganisationLabel(context.Background(), requestBody.OrganisationUri)
+		lbl, err := httpclient.FetchOrganisationLabel(ctx, requestBody.OrganisationUri)
 		if err != nil {
 			return nil, problem.NewBadRequest(requestBody.OrganisationUri, fmt.Sprintf("fout bij ophalen organisatie: %s", err))
 		}
@@ -378,7 +422,6 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 		)
 	}
 
-	// 4) Sla op in DB
 	for _, server := range api.Servers {
 		if err := s.repo.SaveServer(server); err != nil {
 			return nil, problem.NewInternalServerError("Probleem bij het opslaan van het server object: " + err.Error())
@@ -396,16 +439,7 @@ func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.A
 	if err := s.repo.UpdateApi(ctx, *api); err != nil {
 		return nil, problem.NewInternalServerError("kan API hash niet opslaan: " + err.Error())
 	}
-
-	toolslint.Dispatch(context.Background(), "tools", func(ctx context.Context) error {
-		return s.runToolsAndPersist(ctx, api.Id, oasInput, arazzoInput, resp)
-	})
-
-	apiCopy := *api
-	go s.publishToTypesense(apiCopy)
-
-	created := util.ToApiSummary(api)
-	return &created, nil
+	return api, nil
 }
 
 // RefreshChangedApis haalt alle geregistreerde APIs op, vergelijkt de OAS-hash en
@@ -423,119 +457,131 @@ func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
 		}
 
 		oasInput := toolslint.OASInput{OasUrl: candidate.OasUri}
-		res, err := openapi.FetchParseValidateAndHash(ctx, oasInput, openapi.FetchOpts{
+		processErr := openapi.ProcessOAS(ctx, oasInput, openapi.FetchOpts{
 			Origin: "https://developer.overheid.nl",
+		}, func(res *openapi.OASResult) error {
+			if s.applyRefreshedOAS(ctx, candidate, res) {
+				updated++
+			}
+			return nil
 		})
-		if err != nil {
-			if openapi.IsHTTPStatus(err, http.StatusNotFound) {
-				retired, retireErr := s.retireAPIForUnavailableOAS(ctx, candidate)
-				if retireErr != nil {
-					slog.ErrorContext(
-						ctx,
-						"failed to retire API after missing OAS",
-						"component", "oas_refresh",
-						"operation", "retire_api",
-						"api_id", candidate.Id,
-						"error", retireErr,
-					)
-				} else if retired {
-					updated++
-				}
-				continue
+		if processErr != nil {
+			if s.handleOASRefreshFetchError(ctx, candidate, processErr) {
+				updated++
 			}
-			nextSnapshot := models.OASMetadata{
-				Version: candidate.OAS.Version,
-				Status:  classifyOASStatus(err),
-				Auth:    currentOASAuth(candidate),
-			}
-			if updateErr := s.updateOASMetadataSnapshot(ctx, candidate.Id, candidate.OAS, nextSnapshot); updateErr != nil {
-				slog.ErrorContext(
-					ctx,
-					"failed to store unavailable OAS status",
-					"component", "oas_refresh",
-					"operation", "update_status",
-					"api_id", candidate.Id,
-					"error", updateErr,
-				)
-			} else {
-				s.recordOASUnavailable(ctx, candidate.Id, candidate.OAS, nextSnapshot)
-			}
-			slog.WarnContext(
-				ctx,
-				"skipping API with unavailable OAS",
-				"component", "oas_refresh",
-				"operation", "fetch_oas",
-				"api_id", candidate.Id,
-				"error", err,
-			)
-			continue
 		}
-
-		if err := s.updateOASMetadataSnapshot(ctx, candidate.Id, candidate.OAS, deriveOASSnapshot(candidate.OAS, res)); err != nil {
-			slog.ErrorContext(
-				ctx,
-				"failed to update OAS metadata",
-				"component", "oas_refresh",
-				"operation", "update_metadata",
-				"api_id", candidate.Id,
-				"error", err,
-			)
-		}
-
-		if res.Hash == candidate.OasHash {
-			continue
-		}
-
-		full, err := s.repo.GetApiByID(ctx, candidate.Id)
-		if err != nil || full == nil {
-			slog.ErrorContext(
-				ctx,
-				"API detail unavailable during OAS refresh",
-				"component", "oas_refresh",
-				"operation", "load_api",
-				"api_id", candidate.Id,
-				"error", err,
-			)
-			continue
-		}
-
-		orgURI := deriveOrganisationURI(full)
-		if orgURI == "" {
-			slog.WarnContext(
-				ctx,
-				"skipping API without organisation URI",
-				"component", "oas_refresh",
-				"operation", "validate_api",
-				"api_id", candidate.Id,
-			)
-			continue
-		}
-
-		req := models.ApiPost{
-			OasUrl:          full.OasUri,
-			OrganisationUri: orgURI,
-			Contact: models.Contact{
-				Name:  full.ContactName,
-				Email: full.ContactEmail,
-				URL:   full.ContactUrl,
-			},
-		}
-
-		if _, err := s.applyOASUpdate(ctx, full, req, nil, res, false); err != nil {
-			slog.ErrorContext(
-				ctx,
-				"failed to update API from refreshed OAS",
-				"component", "oas_refresh",
-				"operation", "update_api",
-				"api_id", full.Id,
-				"error", err,
-			)
-			continue
-		}
-		updated++
 	}
 
 	return updated, nil
+}
+
+func (s *APIsAPIService) handleOASRefreshFetchError(ctx context.Context, candidate models.Api, fetchErr error) bool {
+	if openapi.IsHTTPStatus(fetchErr, http.StatusNotFound) {
+		retired, retireErr := s.retireAPIForUnavailableOAS(ctx, candidate)
+		if retireErr != nil {
+			slog.ErrorContext(
+				ctx,
+				"failed to retire API after missing OAS",
+				"component", "oas_refresh",
+				"operation", "retire_api",
+				"api_id", candidate.Id,
+				"error", retireErr,
+			)
+		}
+		return retired && retireErr == nil
+	}
+
+	nextSnapshot := models.OASMetadata{
+		Version: candidate.OAS.Version,
+		Status:  classifyOASStatus(fetchErr),
+		Auth:    currentOASAuth(candidate),
+	}
+	if updateErr := s.updateOASMetadataSnapshot(ctx, candidate.Id, candidate.OAS, nextSnapshot); updateErr != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to store unavailable OAS status",
+			"component", "oas_refresh",
+			"operation", "update_status",
+			"api_id", candidate.Id,
+			"error", updateErr,
+		)
+	} else {
+		s.recordOASUnavailable(ctx, candidate.Id, candidate.OAS, nextSnapshot)
+	}
+	slog.WarnContext(
+		ctx,
+		"skipping API with unavailable OAS",
+		"component", "oas_refresh",
+		"operation", "fetch_oas",
+		"api_id", candidate.Id,
+		"error", fetchErr,
+	)
+	return false
+}
+
+func (s *APIsAPIService) applyRefreshedOAS(ctx context.Context, candidate models.Api, res *openapi.OASResult) bool {
+	if err := s.updateOASMetadataSnapshot(ctx, candidate.Id, candidate.OAS, deriveOASSnapshot(candidate.OAS, res)); err != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to update OAS metadata",
+			"component", "oas_refresh",
+			"operation", "update_metadata",
+			"api_id", candidate.Id,
+			"error", err,
+		)
+	}
+
+	if res.Hash == candidate.OasHash {
+		return false
+	}
+
+	full, err := s.repo.GetApiByID(ctx, candidate.Id)
+	if err != nil || full == nil {
+		slog.ErrorContext(
+			ctx,
+			"API detail unavailable during OAS refresh",
+			"component", "oas_refresh",
+			"operation", "load_api",
+			"api_id", candidate.Id,
+			"error", err,
+		)
+		return false
+	}
+
+	orgURI := deriveOrganisationURI(full)
+	if orgURI == "" {
+		slog.WarnContext(
+			ctx,
+			"skipping API without organisation URI",
+			"component", "oas_refresh",
+			"operation", "validate_api",
+			"api_id", candidate.Id,
+		)
+		return false
+	}
+
+	req := models.ApiPost{
+		OasUrl:          full.OasUri,
+		OrganisationUri: orgURI,
+		Contact: models.Contact{
+			Name:  full.ContactName,
+			Email: full.ContactEmail,
+			URL:   full.ContactUrl,
+		},
+	}
+
+	if _, err := s.applyOASUpdate(ctx, full, req, nil, res, false); err != nil {
+		slog.ErrorContext(
+			ctx,
+			"failed to update API from refreshed OAS",
+			"component", "oas_refresh",
+			"operation", "update_api",
+			"api_id", full.Id,
+			"error", err,
+		)
+		return false
+	}
+	return true
 }
 
 // LintAllApis runs the linter for every registered API and stores
@@ -553,7 +599,11 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 	for _, api := range apis {
 		// Bereken hash alvast (en respecteer job-context)
 		oasInput := toolslint.OASInput{OasUrl: api.OasUri}
-		resp, err := openapi.FetchParseValidateAndHash(ctx, oasInput, openapi.FetchOpts{Origin: "https://developer.overheid.nl"})
+		var expectedHash string
+		err := openapi.ProcessOAS(ctx, oasInput, openapi.FetchOpts{Origin: "https://developer.overheid.nl"}, func(resp *openapi.OASResult) error {
+			expectedHash = resp.Hash
+			return nil
+		})
 		if err != nil {
 			if openapi.IsHTTPStatus(err, http.StatusNotFound) {
 				if _, retireErr := s.retireAPIForUnavailableOAS(ctx, api); retireErr != nil {
@@ -586,7 +636,7 @@ func (s *APIsAPIService) LintAllApis(ctx context.Context) error {
 				lintCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 				defer cancel()
 
-				return s.lintAndPersist(lintCtx, api.Id, toolslint.OASInput{OasUrl: api.OasUri}, resp.Hash)
+				return s.lintAndPersist(lintCtx, api.Id, toolslint.OASInput{OasUrl: api.OasUri}, expectedHash)
 			})
 		}
 	}
@@ -1187,8 +1237,16 @@ func (s *APIsAPIService) BackfillOASArtifacts(ctx context.Context) error {
 			return err
 		}
 		oasInput := toolslint.OASInput{OasUrl: api.OasUri}
-		res, err := openapi.FetchParseValidateAndHash(ctx, oasInput, openapi.FetchOpts{
+		var artifactResult *openapi.OASResult
+		err = openapi.ProcessOAS(ctx, oasInput, openapi.FetchOpts{
 			Origin: "https://developer.overheid.nl",
+		}, func(res *openapi.OASResult) error {
+			applyOASSnapshot(&api, res)
+			if api.OasHash != res.Hash {
+				api.OasHash = res.Hash
+			}
+			artifactResult = detachedOASResult(res)
+			return nil
 		})
 		if err != nil {
 			slog.WarnContext(
@@ -1201,7 +1259,7 @@ func (s *APIsAPIService) BackfillOASArtifacts(ctx context.Context) error {
 			)
 			continue
 		}
-		if err := s.persistOASArtifacts(ctx, api.Id, res); err != nil {
+		if err := s.persistOASArtifacts(ctx, api.Id, artifactResult); err != nil {
 			slog.ErrorContext(
 				ctx,
 				"failed to persist backfilled OAS artifacts",
@@ -1210,10 +1268,6 @@ func (s *APIsAPIService) BackfillOASArtifacts(ctx context.Context) error {
 				"api_id", api.Id,
 				"error", err,
 			)
-		}
-		applyOASSnapshot(&api, res)
-		if api.OasHash != res.Hash {
-			api.OasHash = res.Hash
 		}
 		if err := s.repo.UpdateApi(ctx, api); err != nil {
 			slog.ErrorContext(
@@ -1235,6 +1289,15 @@ func applyOASSnapshot(api *models.Api, res *openapi.OASResult) {
 		return
 	}
 	api.OAS = deriveOASSnapshot(api.OAS, res)
+}
+
+func detachedOASResult(res *openapi.OASResult) *openapi.OASResult {
+	if res == nil {
+		return nil
+	}
+	detached := *res
+	detached.Spec = nil
+	return &detached
 }
 
 func deriveOASSnapshot(current models.OASMetadata, res *openapi.OASResult) models.OASMetadata {
@@ -1591,6 +1654,9 @@ func oasFilename(version, source, format string) string {
 }
 
 func renderCanonicalJSON(res *openapi.OASResult, originalFormat string) ([]byte, error) {
+	if len(res.CanonicalJSON) > 0 {
+		return res.CanonicalJSON, nil
+	}
 	if res.Spec != nil {
 		if rendered, err := res.Spec.RenderJSON("  "); err == nil && len(rendered) > 0 {
 			return rendered, nil

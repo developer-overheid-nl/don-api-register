@@ -13,6 +13,7 @@ import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/testutil"
 	"github.com/pb33f/libopenapi"
+	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -116,6 +117,35 @@ func (a *artifactRepoStub) SaveApiFeedEvent(ctx context.Context, event *models.A
 }
 func (a *artifactRepoStub) ListApiFeedEvents(ctx context.Context, apiID string, limit int) ([]models.ApiFeedEvent, error) {
 	return nil, nil
+}
+
+func TestDetachedOASResultDoesNotRetainParsedSpec(t *testing.T) {
+	spec := &openapihelper.OASResult{
+		Spec:          &v3.Document{},
+		Raw:           []byte(`{"openapi":"3.0.3"}`),
+		CanonicalJSON: []byte(`{"openapi":"3.0.3","paths":{}}`),
+		Hash:          "hash",
+	}
+
+	detached := detachedOASResult(spec)
+
+	require.NotNil(t, detached)
+	assert.Nil(t, detached.Spec)
+	assert.Equal(t, spec.Raw, detached.Raw)
+	assert.Equal(t, spec.CanonicalJSON, detached.CanonicalJSON)
+	assert.Equal(t, "hash", detached.Hash)
+}
+
+func TestRenderCanonicalJSONUsesDetachedCanonicalBytes(t *testing.T) {
+	canonical := []byte(`{"openapi":"3.0.3","info":{"title":"Canonical"},"paths":{}}`)
+	res := &openapihelper.OASResult{
+		Raw:           []byte(`{"openapi":"3.0.3","info":{"title":"Raw"},"paths":{}}`),
+		CanonicalJSON: canonical,
+	}
+
+	got, err := renderCanonicalJSON(res, "json")
+	require.NoError(t, err)
+	assert.JSONEq(t, string(canonical), string(got))
 }
 
 func TestPersistOASArtifacts_StoresOriginalAndConverted(t *testing.T) {

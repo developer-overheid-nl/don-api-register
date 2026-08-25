@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
@@ -32,6 +33,38 @@ func IsHTTPStatus(err error, statusCode int) bool {
 }
 
 var versionPrefixPattern = regexp.MustCompile(`^(\d+)\.(\d+)`)
+
+var oasLifecycleMu sync.Mutex
+
+// ProcessOAS owns one complete libopenapi document lifecycle. libopenapi uses
+// process-global caches and node pools, so model consumers are serialized and
+// the caches are cleared before another document can be processed.
+func ProcessOAS(ctx context.Context, input tools.OASInput, opts FetchOpts, consume func(*OASResult) error) error {
+	return processOASWithCleanup(ctx, input, opts, consume, libopenapi.ClearAllCaches)
+}
+
+func processOASWithCleanup(
+	ctx context.Context,
+	input tools.OASInput,
+	opts FetchOpts,
+	consume func(*OASResult) error,
+	cleanup func(),
+) error {
+	oasLifecycleMu.Lock()
+	defer oasLifecycleMu.Unlock()
+	if cleanup != nil {
+		defer cleanup()
+	}
+
+	res, err := FetchParseValidateAndHash(ctx, input, opts)
+	if err != nil {
+		return err
+	}
+	if consume == nil {
+		return nil
+	}
+	return consume(res)
+}
 
 func FetchParseValidateAndHash(ctx context.Context, input tools.OASInput, opts FetchOpts) (*OASResult, error) {
 	input.Normalize()
@@ -170,6 +203,7 @@ func parseValidateAndHash(raw []byte, contentType string) (*OASResult, error) {
 	// 6) Hash over de genormaliseerde weergave
 	//    RenderJSON levert een deterministische representatie.
 	rendered, err := model.Model.RenderJSON("  ")
+	canonicalJSON := rendered
 	if err != nil || len(rendered) == 0 {
 		slog.Warn(
 			"canonical OAS rendering failed; hashing source bytes",
@@ -178,6 +212,7 @@ func parseValidateAndHash(raw []byte, contentType string) (*OASResult, error) {
 			"error", err,
 		)
 		rendered = raw
+		canonicalJSON = nil
 	}
 	sum := sha256.Sum256(rendered)
 
@@ -202,14 +237,15 @@ func parseValidateAndHash(raw []byte, contentType string) (*OASResult, error) {
 		return nil, fmt.Errorf("invalid OAS: unsupported OpenAPI version %s (alleen 3.0 en 3.1 worden ondersteund)", version)
 	}
 	return &OASResult{
-		Spec:        &spec,
-		Hash:        hex.EncodeToString(sum[:]),
-		Raw:         raw,
-		ContentType: contentType,
-		Version:     version,
-		Major:       major,
-		Minor:       minor,
-		Patch:       patch,
+		Spec:          &spec,
+		Hash:          hex.EncodeToString(sum[:]),
+		Raw:           raw,
+		CanonicalJSON: canonicalJSON,
+		ContentType:   contentType,
+		Version:       version,
+		Major:         major,
+		Minor:         minor,
+		Patch:         patch,
 	}, nil
 }
 

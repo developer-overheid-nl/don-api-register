@@ -1,14 +1,119 @@
 package openapi
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	toolslint "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/testutil"
 )
+
+const lifecycleTestSpec = `{
+  "openapi": "3.0.3",
+  "info": {"title": "Lifecycle", "version": "1.0.0"},
+  "paths": {}
+}`
+
+func TestProcessOASSerializesDocumentConsumers(t *testing.T) {
+	t.Setenv("TOOLS_API_ENDPOINT", "")
+	input := toolslint.OASInput{OasBody: lifecycleTestSpec}
+
+	firstEntered := make(chan struct{})
+	releaseFirst := make(chan struct{})
+	secondEntered := make(chan struct{})
+	errs := make(chan error, 2)
+	var started atomic.Int32
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		errs <- ProcessOAS(context.Background(), input, FetchOpts{}, func(*OASResult) error {
+			started.Add(1)
+			close(firstEntered)
+			<-releaseFirst
+			return nil
+		})
+	}()
+
+	select {
+	case <-firstEntered:
+	case <-time.After(time.Second):
+		t.Fatal("first OAS consumer did not start")
+	}
+
+	go func() {
+		defer wg.Done()
+		errs <- ProcessOAS(context.Background(), input, FetchOpts{}, func(*OASResult) error {
+			started.Add(1)
+			close(secondEntered)
+			return nil
+		})
+	}()
+
+	select {
+	case <-secondEntered:
+		t.Fatal("second OAS consumer entered before the first lifecycle completed")
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	close(releaseFirst)
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("unexpected lifecycle error: %v", err)
+		}
+	}
+	if got := started.Load(); got != 2 {
+		t.Fatalf("expected two consumers, got %d", got)
+	}
+}
+
+func TestProcessOASCleansAfterConsumerError(t *testing.T) {
+	t.Setenv("TOOLS_API_ENDPOINT", "")
+	wantErr := errors.New("consumer failed")
+	var cleanupCalls atomic.Int32
+
+	err := processOASWithCleanup(
+		context.Background(),
+		toolslint.OASInput{OasBody: lifecycleTestSpec},
+		FetchOpts{},
+		func(*OASResult) error { return wantErr },
+		func() { cleanupCalls.Add(1) },
+	)
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("expected consumer error, got %v", err)
+	}
+	if got := cleanupCalls.Load(); got != 1 {
+		t.Fatalf("expected one cache cleanup, got %d", got)
+	}
+}
+
+func TestFetchParseValidateAndHashRetainsCanonicalJSON(t *testing.T) {
+	t.Setenv("TOOLS_API_ENDPOINT", "")
+	res, err := FetchParseValidateAndHash(
+		context.Background(),
+		toolslint.OASInput{OasBody: lifecycleTestSpec},
+		FetchOpts{},
+	)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if !json.Valid(res.CanonicalJSON) {
+		t.Fatalf("expected canonical JSON, got %q", res.CanonicalJSON)
+	}
+	if !bytes.Contains(res.CanonicalJSON, []byte(`"title": "Lifecycle"`)) {
+		t.Fatalf("canonical JSON does not contain the parsed title: %s", res.CanonicalJSON)
+	}
+}
 
 func TestFetchParseValidateAndHash_AllowsOpenAPI31(t *testing.T) {
 	spec := `{

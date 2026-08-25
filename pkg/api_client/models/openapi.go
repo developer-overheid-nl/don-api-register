@@ -14,14 +14,15 @@ type FetchOpts struct {
 }
 
 type OASResult struct {
-	Spec        *v3.Document // high-level v3 model
-	Hash        string       // sha256 van de genormaliseerde spec
-	Raw         []byte       // oorspronkelijke bytes zoals opgehaald
-	ContentType string       // content-type header van de response (kan leeg zijn)
-	Version     string       // volledige openapi versiestring, bv. 3.0.3
-	Major       int
-	Minor       int
-	Patch       int
+	Spec          *v3.Document // high-level v3 model
+	Hash          string       // sha256 van de genormaliseerde spec
+	Raw           []byte       // oorspronkelijke bytes zoals opgehaald
+	CanonicalJSON []byte       // canonieke JSON-weergave van het geparseerde model
+	ContentType   string       // content-type header van de response (kan leeg zijn)
+	Version       string       // volledige openapi versiestring, bv. 3.0.3
+	Major         int
+	Minor         int
+	Patch         int
 }
 
 type HTTPStatusError struct {

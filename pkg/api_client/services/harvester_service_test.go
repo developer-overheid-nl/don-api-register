@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
 	commonlogging "github.com/developer-overheid-nl/don-register-common/logging"
@@ -21,6 +23,33 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
+
+func TestHarvestErrorUsesProblemDetailAndPreservesCause(t *testing.T) {
+	cause := problem.NewBadRequest("https://example.org/openapi.json", "operationId ontbreekt")
+	harvestErr := newHarvestError(
+		models.HarvestResult{CandidateCount: 2, FailedCount: 1},
+		"https://example.org/openapi.json",
+		cause,
+	)
+
+	assert.Equal(t, "operationId ontbreekt", harvestErr.Detail)
+	assert.Equal(
+		t,
+		"1 failures; first: https://example.org/openapi.json: operationId ontbreekt",
+		harvestErr.Error(),
+	)
+	var problemCause problem.APIError
+	assert.True(t, errors.As(harvestErr, &problemCause))
+	assert.Equal(t, cause.Title, problemCause.Title)
+}
+
+func TestHarvestErrorFallsBackToCauseText(t *testing.T) {
+	cause := errors.New("upstream timeout")
+	harvestErr := newHarvestError(models.HarvestResult{FailedCount: 1}, "https://example.org/openapi.json", cause)
+
+	assert.Equal(t, "upstream timeout", harvestErr.Detail)
+	assert.ErrorIs(t, harvestErr, cause)
+}
 
 func newHarvesterTestService(t *testing.T) (*HarvesterService, repositories.ApiRepository) {
 	t.Helper()

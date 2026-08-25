@@ -1,14 +1,20 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/repositories"
+	commonlogging "github.com/developer-overheid-nl/don-register-common/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/time/rate"
@@ -140,7 +146,7 @@ func TestHarvesterRunOnceCreatesApisFromIndex(t *testing.T) {
 	}))
 	t.Cleanup(indexServer.Close)
 
-	err := harvester.RunOnce(ctx, models.HarvestSource{
+	result, err := harvester.RunOnce(ctx, models.HarvestSource{
 		Name:            "example",
 		IndexURL:        indexServer.URL,
 		OrganisationUri: org.Uri,
@@ -148,6 +154,7 @@ func TestHarvesterRunOnceCreatesApisFromIndex(t *testing.T) {
 	})
 
 	require.NoError(t, err)
+	assert.Equal(t, models.HarvestResult{CandidateCount: 1, CreatedCount: 1}, result)
 	apis, err := repo.AllApis(ctx)
 	require.NoError(t, err)
 	require.Len(t, apis, 1)
@@ -158,15 +165,71 @@ func TestHarvesterRunOnceCreatesApisFromIndex(t *testing.T) {
 	assert.Equal(t, models.OASStatusValid, apis[0].OAS.Status)
 }
 
+func TestHarvesterRunOnceSkipsExistingOASAndLogsSummary(t *testing.T) {
+	t.Setenv("TOOLS_API_ENDPOINT", "")
+	t.Setenv("ENABLE_TYPESENSE", "false")
+	harvester, repo := newHarvesterTestService(t)
+	ctx := context.Background()
+
+	var oasCalls atomic.Int32
+	oasServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		oasCalls.Add(1)
+		http.Error(w, "existing OAS must not be fetched", http.StatusInternalServerError)
+	}))
+	t.Cleanup(oasServer.Close)
+	oasURL := oasServer.URL + "/service/openapi.json"
+	require.NoError(t, repo.Save(&models.Api{Id: "existing", OasUri: oasURL, Title: "Existing"}))
+
+	indexServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"apis":[{"links":{"href":"` + oasServer.URL + `/service/ui/"}}]}`))
+	}))
+	t.Cleanup(indexServer.Close)
+
+	var logBuffer bytes.Buffer
+	logger, err := commonlogging.NewJSONLogger(&logBuffer, "api-register", "debug")
+	require.NoError(t, err)
+	previousLogger := slog.Default()
+	slog.SetDefault(logger)
+	t.Cleanup(func() { slog.SetDefault(previousLogger) })
+
+	result, err := harvester.RunOnce(ctx, models.HarvestSource{
+		Name:     "example",
+		IndexURL: indexServer.URL,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, models.HarvestResult{CandidateCount: 1, SkippedCount: 1}, result)
+	assert.Zero(t, oasCalls.Load())
+
+	var completed map[string]any
+	for _, line := range strings.Split(strings.TrimSpace(logBuffer.String()), "\n") {
+		var record map[string]any
+		require.NoError(t, json.Unmarshal([]byte(line), &record))
+		assert.NotEqual(t, "ERROR", record["level"])
+		assert.NotEqual(t, "WARN", record["level"])
+		if record["msg"] == "harvest completed" {
+			completed = record
+		}
+	}
+	require.NotNil(t, completed)
+	assert.Equal(t, "api-register", completed["app"])
+	assert.Equal(t, "harvest", completed["component"])
+	assert.Equal(t, "run", completed["operation"])
+	assert.Equal(t, float64(1), completed["candidate_count"])
+	assert.Equal(t, float64(0), completed["created_count"])
+	assert.Equal(t, float64(1), completed["skipped_count"])
+	assert.Equal(t, float64(0), completed["failed_count"])
+}
+
 func TestHarvesterRunOnceValidatesConfiguration(t *testing.T) {
 	service := &HarvesterService{}
 
-	err := service.RunOnce(context.Background(), models.HarvestSource{IndexURL: "https://example.org/index.json"})
+	_, err := service.RunOnce(context.Background(), models.HarvestSource{IndexURL: "https://example.org/index.json"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "api service is not configured")
 
 	service.apiService = NewAPIsAPIService(nil)
-	err = service.RunOnce(context.Background(), models.HarvestSource{})
+	_, err = service.RunOnce(context.Background(), models.HarvestSource{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "source indexUrl is empty")
 }

@@ -1,14 +1,19 @@
 package jobs_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"log/slog"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/jobs"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	commonlogging "github.com/developer-overheid-nl/don-register-common/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -25,7 +30,7 @@ type harvesterStub struct {
 	callCh chan harvestCall
 }
 
-func (s *harvesterStub) RunOnce(ctx context.Context, src models.HarvestSource) error {
+func (s *harvesterStub) RunOnce(ctx context.Context, src models.HarvestSource) (models.HarvestResult, error) {
 	_, hasDeadline := ctx.Deadline()
 	call := harvestCall{src: src, hasDeadline: hasDeadline}
 
@@ -38,9 +43,9 @@ func (s *harvesterStub) RunOnce(ctx context.Context, src models.HarvestSource) e
 	}
 
 	if err, ok := s.errs[src.Name]; ok {
-		return err
+		return models.HarvestResult{CandidateCount: 1, FailedCount: 1}, err
 	}
-	return nil
+	return models.HarvestResult{CandidateCount: 1, SkippedCount: 1}, nil
 }
 
 func waitForHarvestCall(t *testing.T, ch <-chan harvestCall) harvestCall {
@@ -123,6 +128,34 @@ func TestScheduleHarvest_ContinuesAfterRunOnceError(t *testing.T) {
 
 	assert.Equal(t, "source-a", first.src.Name)
 	assert.Equal(t, "source-b", second.src.Name)
+}
+
+func TestScheduleHarvestDoesNotDuplicateServiceErrorLog(t *testing.T) {
+	stub := &harvesterStub{
+		callCh: make(chan harvestCall, 1),
+		errs:   map[string]error{"source-a": errors.New("already logged by service")},
+	}
+	var logBuffer bytes.Buffer
+	logger, err := commonlogging.NewJSONLogger(&logBuffer, "api-register", "debug")
+	require.NoError(t, err)
+	previousLogger := slog.Default()
+	slog.SetDefault(logger)
+	t.Cleanup(func() { slog.SetDefault(previousLogger) })
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	jobs.ScheduleHarvest(ctx, stub, []models.HarvestSource{{Name: "source-a", IndexURL: "https://example.com/index.json"}})
+	waitForHarvestCall(t, stub.callCh)
+
+	for _, line := range strings.Split(strings.TrimSpace(logBuffer.String()), "\n") {
+		if line == "" {
+			continue
+		}
+		var record map[string]any
+		require.NoError(t, json.Unmarshal([]byte(line), &record))
+		assert.NotEqual(t, "initial harvest failed", record["msg"])
+		assert.NotEqual(t, "scheduled harvest failed", record["msg"])
+	}
 }
 
 func TestSchedulePDOKHarvest_UsesExpectedDefaultSource(t *testing.T) {

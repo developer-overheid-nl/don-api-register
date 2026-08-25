@@ -335,6 +335,20 @@ func (s *APIsAPIService) UpdateApi(ctx context.Context, api models.Api) error {
 	return s.repo.UpdateApi(ctx, api)
 }
 
+func (s *APIsAPIService) HasAPIWithOASURL(ctx context.Context, oasURL string) (bool, error) {
+	if s == nil || s.repo == nil {
+		return false, errors.New("api repository is not configured")
+	}
+	api, err := s.repo.FindByOasUrl(ctx, strings.TrimSpace(oasURL))
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return api != nil, nil
+}
+
 func (s *APIsAPIService) CreateApiFromOas(requestBody models.ApiPost) (*models.ApiSummary, error) {
 	ctx := context.Background()
 	oasInput := toolslint.OASInput{

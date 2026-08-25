@@ -11,7 +11,7 @@ import (
 )
 
 type Harvester interface {
-	RunOnce(ctx context.Context, src models.HarvestSource) error
+	RunOnce(ctx context.Context, src models.HarvestSource) (models.HarvestResult, error)
 }
 
 // ScheduleHarvest zet een cron job op die de opgegeven bronnen harvest
@@ -32,16 +32,7 @@ func ScheduleHarvest(ctx context.Context, svc Harvester, sources []models.Harves
 		jobCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 		for _, src := range sources {
-			if err := svc.RunOnce(jobCtx, src); err != nil {
-				slog.ErrorContext(
-					jobCtx,
-					"scheduled harvest failed",
-					"component", "harvest",
-					"operation", "run",
-					"source", src.Name,
-					"error", err,
-				)
-			}
+			_, _ = svc.RunOnce(jobCtx, src)
 		}
 	})
 	if err != nil {
@@ -63,16 +54,7 @@ func ScheduleHarvest(ctx context.Context, svc Harvester, sources []models.Harves
 		jobCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 		defer cancel()
 		for _, src := range sources {
-			if err := svc.RunOnce(jobCtx, src); err != nil {
-				slog.ErrorContext(
-					jobCtx,
-					"initial harvest failed",
-					"component", "harvest",
-					"operation", "run_initial",
-					"source", src.Name,
-					"error", err,
-				)
-			}
+			_, _ = svc.RunOnce(jobCtx, src)
 		}
 	}()
 

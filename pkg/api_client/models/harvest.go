@@ -11,6 +11,13 @@ type HarvestSource struct {
 	OASPath         string  `json:"oasPath,omitempty"`
 }
 
+type HarvestResult struct {
+	CandidateCount int
+	CreatedCount   int
+	SkippedCount   int
+	FailedCount    int
+}
+
 type HarvestIndexLink struct {
 	Href string `json:"href"`
 }

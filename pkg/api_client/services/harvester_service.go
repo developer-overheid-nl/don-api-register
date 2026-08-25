@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	problem "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"golang.org/x/time/rate"
 )
@@ -27,6 +28,27 @@ type HarvesterService struct {
 	apiService *APIsAPIService
 }
 
+type HarvestError struct {
+	Result models.HarvestResult
+	OASURL string
+	Cause  error
+	Detail string
+}
+
+func (e *HarvestError) Error() string {
+	if e == nil {
+		return "harvest failed"
+	}
+	return fmt.Sprintf("%d failures; first: %s: %s", e.Result.FailedCount, e.OASURL, e.Detail)
+}
+
+func (e *HarvestError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.Cause
+}
+
 // NewHarvesterService maakt een nieuwe service met een verplichte api service
 func NewHarvesterService(apiService *APIsAPIService) *HarvesterService {
 	return &HarvesterService{
@@ -36,22 +58,49 @@ func NewHarvesterService(apiService *APIsAPIService) *HarvesterService {
 }
 
 // RunOnce voert een harvest uit voor één bron
-func (s *HarvesterService) RunOnce(ctx context.Context, src models.HarvestSource) error {
+func (s *HarvesterService) RunOnce(ctx context.Context, src models.HarvestSource) (result models.HarvestResult, err error) {
+	startedAt := time.Now()
+	defer func() {
+		attrs := []any{
+			"component", "harvest",
+			"operation", "run",
+			"source", src.Name,
+			"candidate_count", result.CandidateCount,
+			"created_count", result.CreatedCount,
+			"skipped_count", result.SkippedCount,
+			"failed_count", result.FailedCount,
+			"duration_ms", time.Since(startedAt).Milliseconds(),
+		}
+		if err == nil {
+			slog.InfoContext(ctx, "harvest completed", attrs...)
+			return
+		}
+		var harvestErr *HarvestError
+		if errors.As(err, &harvestErr) {
+			attrs = append(attrs,
+				"first_failure_oas_url", harvestErr.OASURL,
+				"first_failure_error", harvestErr.Detail,
+			)
+		}
+		attrs = append(attrs, "error", err)
+		slog.ErrorContext(ctx, "harvest failed", attrs...)
+	}()
+
 	if s.apiService == nil {
-		return errors.New("api service is not configured")
+		return result, errors.New("api service is not configured")
 	}
 	if strings.TrimSpace(src.IndexURL) == "" {
-		return errors.New("source indexUrl is empty")
+		return result, errors.New("source indexUrl is empty")
 	}
 
 	// Fetch index
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, src.IndexURL, nil)
 	if err != nil {
-		return err
+		return result, err
 	}
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return err
+		return result, err
 	}
 
 	defer func() {
@@ -62,17 +111,26 @@ func (s *HarvesterService) RunOnce(ctx context.Context, src models.HarvestSource
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
-		return fmt.Errorf("unexpected status %d from index: %s", resp.StatusCode, string(b))
+		return result, fmt.Errorf("unexpected status %d from index: %s", resp.StatusCode, string(b))
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return result, err
 	}
 
 	hrefs, err := extractIndexHrefs(body)
 	if err != nil {
-		return err
+		return result, err
 	}
+	result.CandidateCount = len(hrefs)
+	slog.InfoContext(
+		ctx,
+		"harvest started",
+		"component", "harvest",
+		"operation", "run",
+		"source", src.Name,
+		"candidate_count", result.CandidateCount,
+	)
 	slog.DebugContext(
 		ctx,
 		"harvest index loaded",
@@ -82,7 +140,7 @@ func (s *HarvesterService) RunOnce(ctx context.Context, src models.HarvestSource
 		"candidate_count", len(hrefs),
 	)
 	if len(hrefs) == 0 {
-		return nil
+		return result, nil
 	}
 
 	uiSuffix := src.UISuffix
@@ -94,13 +152,25 @@ func (s *HarvesterService) RunOnce(ctx context.Context, src models.HarvestSource
 		oasPath = defaultOASPath
 	}
 
-	var aggErrs []string
-	successCount := 0
+	var firstFailure *HarvestError
 	// (2 requests per seconde, burst van 1)
 	limiter := rate.NewLimiter(rate.Limit(2), 1)
 
 	for _, href := range hrefs {
 		oasURL := deriveOASURLWith(href, uiSuffix, oasPath)
+		exists, lookupErr := s.apiService.HasAPIWithOASURL(ctx, oasURL)
+		if lookupErr != nil {
+			result.FailedCount++
+			if firstFailure == nil {
+				firstFailure = newHarvestError(result, oasURL, lookupErr)
+			}
+			continue
+		}
+		if exists {
+			result.SkippedCount++
+			continue
+		}
+
 		payload := models.ApiPost{
 			OasUrl:          oasURL,
 			OrganisationUri: src.OrganisationUri,
@@ -108,29 +178,45 @@ func (s *HarvesterService) RunOnce(ctx context.Context, src models.HarvestSource
 		}
 
 		if err := limiter.Wait(ctx); err != nil {
-			return fmt.Errorf("limiter error: %w", err)
+			result.FailedCount++
+			return result, newHarvestError(result, oasURL, fmt.Errorf("limiter error: %w", err))
 		}
 
 		if _, err := s.apiService.CreateApiFromOas(payload); err != nil {
-			aggErrs = append(aggErrs, fmt.Sprintf("%s: create api from oas failed: %v", oasURL, err))
+			result.FailedCount++
+			if firstFailure == nil {
+				firstFailure = newHarvestError(result, oasURL, fmt.Errorf("create api from oas failed: %w", err))
+			}
 			continue
 		}
-		successCount++
+		result.CreatedCount++
 	}
 
-	if len(aggErrs) > 0 {
-		return fmt.Errorf("%d failures; first: %s", len(aggErrs), aggErrs[0])
+	if result.FailedCount > 0 {
+		firstFailure.Result = result
+		return result, firstFailure
 	}
-	slog.InfoContext(
-		ctx,
-		"harvest completed",
-		"component", "harvest",
-		"operation", "run",
-		"source", src.Name,
-		"candidate_count", len(hrefs),
-		"success_count", successCount,
-	)
-	return nil
+	return result, nil
+}
+
+func newHarvestError(result models.HarvestResult, oasURL string, cause error) *HarvestError {
+	return &HarvestError{
+		Result: result,
+		OASURL: oasURL,
+		Cause:  cause,
+		Detail: harvestErrorDetail(cause),
+	}
+}
+
+func harvestErrorDetail(err error) string {
+	var apiErr problem.APIError
+	if errors.As(err, &apiErr) && len(apiErr.Errors) > 0 {
+		return apiErr.Errors[0].Detail
+	}
+	if err == nil {
+		return "unknown harvest failure"
+	}
+	return err.Error()
 }
 
 // deriveOASURLWith bepaalt de OAS-URL op basis van href, uiSuffix en oasPath

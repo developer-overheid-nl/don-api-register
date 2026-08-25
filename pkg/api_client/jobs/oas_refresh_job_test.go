@@ -1,11 +1,17 @@
 package jobs
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"log/slog"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
+	commonlogging "github.com/developer-overheid-nl/don-register-common/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,26 +33,26 @@ func TestNextRunAt_AfterTarget(t *testing.T) {
 }
 
 type refreshStub struct {
-	count      int
+	result     models.OASRefreshResult
 	err        error
 	called     chan context.Context
 	cancelSeen bool
 }
 
-func (s *refreshStub) RefreshChangedApis(ctx context.Context) (int, error) {
+func (s *refreshStub) RefreshChangedApis(ctx context.Context) (models.OASRefreshResult, error) {
 	if s.called != nil {
 		s.called <- ctx
 	}
 	if ctx.Err() != nil {
 		s.cancelSeen = true
 	}
-	return s.count, s.err
+	return s.result, s.err
 }
 
 func TestNewOASRefreshJob(t *testing.T) {
 	assert.Nil(t, NewOASRefreshJob(nil, context.Background()))
 
-	stub := &refreshStub{count: 2, called: make(chan context.Context, 1)}
+	stub := &refreshStub{result: models.OASRefreshResult{UpdatedCount: 2}, called: make(chan context.Context, 1)}
 	parent, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -79,6 +85,45 @@ func TestOASRefreshJobRunOnceHandlesErrorsAndCancellation(t *testing.T) {
 	}
 	cancelJob.runOnce()
 	assert.True(t, cancelStub.cancelSeen)
+}
+
+func TestOASRefreshJobErrorLogIncludesCountsAndHeap(t *testing.T) {
+	var logBuffer bytes.Buffer
+	logger, err := commonlogging.NewJSONLogger(&logBuffer, "api-register", "debug")
+	require.NoError(t, err)
+	previousLogger := slog.Default()
+	slog.SetDefault(logger)
+	t.Cleanup(func() { slog.SetDefault(previousLogger) })
+
+	job := &OASRefreshJob{
+		refresher: &refreshStub{
+			result: models.OASRefreshResult{
+				CandidateCount:   30,
+				ProcessedCount:   25,
+				UpdatedCount:     2,
+				UnavailableCount: 1,
+				FailedCount:      1,
+			},
+			err: errors.New("boom"),
+		},
+		ctx: context.Background(),
+	}
+	job.runOnce()
+
+	var failed map[string]any
+	for _, line := range strings.Split(strings.TrimSpace(logBuffer.String()), "\n") {
+		var record map[string]any
+		require.NoError(t, json.Unmarshal([]byte(line), &record))
+		if record["msg"] == "OAS refresh failed" {
+			failed = record
+		}
+	}
+	require.NotNil(t, failed)
+	assert.Equal(t, "api-register", failed["app"])
+	assert.Equal(t, float64(30), failed["candidate_count"])
+	assert.Equal(t, float64(25), failed["processed_count"])
+	assert.Equal(t, float64(1), failed["failed_count"])
+	assert.Greater(t, failed["heap_alloc_bytes"].(float64), float64(0))
 }
 
 func TestOASRefreshJobStop(t *testing.T) {

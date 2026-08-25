@@ -666,9 +666,9 @@ func TestRefreshChangedApis_UpdatesWhenHashDiffers(t *testing.T) {
 	}
 
 	service := services.NewAPIsAPIService(repo)
-	count, err := service.RefreshChangedApis(context.Background())
+	result, err := service.RefreshChangedApis(context.Background())
 	assert.NoError(t, err)
-	assert.Equal(t, 1, count)
+	assert.Equal(t, 1, result.UpdatedCount)
 	assert.Equal(t, srv.URL, updated.OasUri)
 	assert.NotEmpty(t, updated.OasHash)
 	assert.Equal(t, "Dagelijkse refresh", updated.Title)
@@ -713,9 +713,9 @@ func TestRefreshChangedApis_SkipsWhenHashUnchanged(t *testing.T) {
 	}
 
 	service := services.NewAPIsAPIService(repo)
-	count, err := service.RefreshChangedApis(context.Background())
+	result, err := service.RefreshChangedApis(context.Background())
 	assert.NoError(t, err)
-	assert.Equal(t, 0, count)
+	assert.Equal(t, 0, result.UpdatedCount)
 	assert.Equal(t, 1, snapshotUpdates)
 }
 
@@ -752,9 +752,10 @@ func TestRefreshChangedApis_MarksOASUnreachableOnFetchError(t *testing.T) {
 	}
 
 	service := services.NewAPIsAPIService(repo)
-	count, err := service.RefreshChangedApis(context.Background())
+	result, err := service.RefreshChangedApis(context.Background())
 	assert.NoError(t, err)
-	assert.Equal(t, 0, count)
+	assert.Equal(t, 0, result.UpdatedCount)
+	assert.Equal(t, 1, result.UnavailableCount)
 	assert.Equal(t, "3.0.0", captured.Version)
 	assert.Equal(t, "oauth2", captured.Auth)
 	assert.Equal(t, models.OASStatusUnreachable, captured.Status)
@@ -810,9 +811,10 @@ func TestRefreshChangedApis_RetiresAPIWhenOASReturnsNotFound(t *testing.T) {
 	}
 
 	service := services.NewAPIsAPIService(repo)
-	count, err := service.RefreshChangedApis(context.Background())
+	result, err := service.RefreshChangedApis(context.Background())
 	assert.NoError(t, err)
-	assert.Equal(t, 1, count)
+	assert.Equal(t, 1, result.UpdatedCount)
+	assert.Equal(t, 1, result.UnavailableCount)
 	assert.Equal(t, "3.0.0", capturedOAS.Version)
 	assert.Equal(t, "oauth2", capturedOAS.Auth)
 	assert.Equal(t, models.OASStatusUnreachable, capturedOAS.Status)

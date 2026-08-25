@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"runtime"
 	"time"
+
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 )
 
 const (
@@ -15,7 +18,7 @@ const (
 )
 
 type OASRefresher interface {
-	RefreshChangedApis(ctx context.Context) (int, error)
+	RefreshChangedApis(ctx context.Context) (models.OASRefreshResult, error)
 }
 
 // OASRefreshJob draait direct na startup en daarna dagelijks om 07:00 een refresh-run.
@@ -71,10 +74,13 @@ func (j *OASRefreshJob) loop() {
 }
 
 func (j *OASRefreshJob) runOnce() {
+	startedAt := time.Now()
 	runCtx, cancel := context.WithTimeout(j.ctx, runTimeout)
 	defer cancel()
 
-	count, err := j.refresher.RefreshChangedApis(runCtx)
+	result, err := j.refresher.RefreshChangedApis(runCtx)
+	var memory runtime.MemStats
+	runtime.ReadMemStats(&memory)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			slog.DebugContext(
@@ -82,6 +88,13 @@ func (j *OASRefreshJob) runOnce() {
 				"OAS refresh canceled",
 				"component", "oas_refresh",
 				"operation", "run",
+				"candidate_count", result.CandidateCount,
+				"processed_count", result.ProcessedCount,
+				"updated_count", result.UpdatedCount,
+				"unavailable_count", result.UnavailableCount,
+				"failed_count", result.FailedCount,
+				"duration_ms", time.Since(startedAt).Milliseconds(),
+				"heap_alloc_bytes", memory.Alloc,
 			)
 		} else {
 			slog.ErrorContext(
@@ -89,6 +102,13 @@ func (j *OASRefreshJob) runOnce() {
 				"OAS refresh failed",
 				"component", "oas_refresh",
 				"operation", "run",
+				"candidate_count", result.CandidateCount,
+				"processed_count", result.ProcessedCount,
+				"updated_count", result.UpdatedCount,
+				"unavailable_count", result.UnavailableCount,
+				"failed_count", result.FailedCount,
+				"duration_ms", time.Since(startedAt).Milliseconds(),
+				"heap_alloc_bytes", memory.Alloc,
 				"error", err,
 			)
 		}
@@ -99,7 +119,13 @@ func (j *OASRefreshJob) runOnce() {
 		"OAS refresh completed",
 		"component", "oas_refresh",
 		"operation", "run",
-		"updated_count", count,
+		"candidate_count", result.CandidateCount,
+		"processed_count", result.ProcessedCount,
+		"updated_count", result.UpdatedCount,
+		"unavailable_count", result.UnavailableCount,
+		"failed_count", result.FailedCount,
+		"duration_ms", time.Since(startedAt).Milliseconds(),
+		"heap_alloc_bytes", memory.Alloc,
 	)
 }
 

@@ -25,6 +25,14 @@ type OASResult struct {
 	Patch         int
 }
 
+type OASRefreshResult struct {
+	CandidateCount   int
+	ProcessedCount   int
+	UpdatedCount     int
+	UnavailableCount int
+	FailedCount      int
+}
+
 type HTTPStatusError struct {
 	StatusCode int
 	Body       string

@@ -1,17 +1,22 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
+	"strings"
 	"testing"
 
 	openapihelper "github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/openapi"
+	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/tools"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/testutil"
+	commonlogging "github.com/developer-overheid-nl/don-register-common/logging"
 	"github.com/pb33f/libopenapi"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/stretchr/testify/assert"
@@ -146,6 +151,68 @@ func TestRenderCanonicalJSONUsesDetachedCanonicalBytes(t *testing.T) {
 	got, err := renderCanonicalJSON(res, "json")
 	require.NoError(t, err)
 	assert.JSONEq(t, string(canonical), string(got))
+}
+
+func TestRefreshChangedApisLogsStructuredProgress(t *testing.T) {
+	t.Setenv("TOOLS_API_ENDPOINT", "")
+	spec := `{"openapi":"3.0.3","info":{"title":"Progress","version":"1.0.0"},"paths":{}}`
+	server := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(spec))
+	}))
+
+	parsed, err := openapihelper.FetchParseValidateAndHash(
+		context.Background(),
+		tools.OASInput{OasUrl: server.URL},
+		openapihelper.FetchOpts{},
+	)
+	require.NoError(t, err)
+	libopenapi.ClearAllCaches()
+
+	repo := &artifactRepoStub{}
+	for index := 1; index <= 25; index++ {
+		repo.apis = append(repo.apis, models.Api{
+			Id:      fmt.Sprintf("api-%02d", index),
+			OasUri:  server.URL,
+			OasHash: parsed.Hash,
+			OAS:     models.OASMetadata{Version: "3.0.3", Status: models.OASStatusValid},
+		})
+	}
+	service := NewAPIsAPIService(repo)
+
+	var logBuffer bytes.Buffer
+	logger, err := commonlogging.NewJSONLogger(&logBuffer, "api-register", "debug")
+	require.NoError(t, err)
+	previousLogger := slog.Default()
+	slog.SetDefault(logger)
+	t.Cleanup(func() { slog.SetDefault(previousLogger) })
+
+	result, err := service.RefreshChangedApis(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, 25, result.CandidateCount)
+	assert.Equal(t, 25, result.ProcessedCount)
+	assert.Zero(t, result.UpdatedCount)
+	assert.Zero(t, result.FailedCount)
+
+	var startRecord, progressRecord map[string]any
+	for _, line := range strings.Split(strings.TrimSpace(logBuffer.String()), "\n") {
+		var record map[string]any
+		require.NoError(t, json.Unmarshal([]byte(line), &record))
+		switch record["msg"] {
+		case "OAS refresh started":
+			startRecord = record
+		case "OAS refresh progress":
+			progressRecord = record
+		}
+	}
+	require.NotNil(t, startRecord)
+	require.NotNil(t, progressRecord)
+	assert.Equal(t, "api-register", progressRecord["app"])
+	assert.Equal(t, "oas_refresh", progressRecord["component"])
+	assert.Equal(t, "run", progressRecord["operation"])
+	assert.Equal(t, float64(25), progressRecord["candidate_count"])
+	assert.Equal(t, float64(25), progressRecord["processed_count"])
+	assert.Greater(t, progressRecord["heap_alloc_bytes"].(float64), float64(0))
 }
 
 func TestPersistOASArtifacts_StoresOriginalAndConverted(t *testing.T) {

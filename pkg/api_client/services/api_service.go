@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -458,38 +459,69 @@ func (s *APIsAPIService) createAPIFromParsedOAS(
 
 // RefreshChangedApis haalt alle geregistreerde APIs op, vergelijkt de OAS-hash en
 // voert dezelfde stappen uit als een POST wanneer de remote OAS gewijzigd is.
-func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (int, error) {
+func (s *APIsAPIService) RefreshChangedApis(ctx context.Context) (models.OASRefreshResult, error) {
+	startedAt := time.Now()
 	apis, err := s.repo.AllApis(ctx)
 	if err != nil {
-		return 0, err
+		return models.OASRefreshResult{}, err
 	}
+	result := models.OASRefreshResult{CandidateCount: len(apis)}
+	slog.InfoContext(
+		ctx,
+		"OAS refresh started",
+		"component", "oas_refresh",
+		"operation", "run",
+		"candidate_count", result.CandidateCount,
+	)
 
-	var updated int
-	for _, candidate := range apis {
+	for index, candidate := range apis {
 		if err := ctx.Err(); err != nil {
-			return updated, err
+			return result, err
 		}
+		slog.DebugContext(
+			ctx,
+			"OAS refresh candidate",
+			"component", "oas_refresh",
+			"operation", "process_candidate",
+			"candidate_index", index+1,
+			"candidate_count", result.CandidateCount,
+			"api_id", candidate.Id,
+			"oas_url", candidate.OasUri,
+		)
 
 		oasInput := toolslint.OASInput{OasUrl: candidate.OasUri}
 		processErr := openapi.ProcessOAS(ctx, oasInput, openapi.FetchOpts{
 			Origin: "https://developer.overheid.nl",
 		}, func(res *openapi.OASResult) error {
-			if s.applyRefreshedOAS(ctx, candidate, res) {
-				updated++
+			updated, failed := s.applyRefreshedOAS(ctx, candidate, res)
+			if updated {
+				result.UpdatedCount++
+			}
+			if failed {
+				result.FailedCount++
 			}
 			return nil
 		})
 		if processErr != nil {
-			if s.handleOASRefreshFetchError(ctx, candidate, processErr) {
-				updated++
+			result.UnavailableCount++
+			updated, failed := s.handleOASRefreshFetchError(ctx, candidate, processErr)
+			if updated {
+				result.UpdatedCount++
 			}
+			if failed {
+				result.FailedCount++
+			}
+		}
+		result.ProcessedCount++
+		if result.ProcessedCount%25 == 0 {
+			logOASRefreshProgress(ctx, result, time.Since(startedAt))
 		}
 	}
 
-	return updated, nil
+	return result, nil
 }
 
-func (s *APIsAPIService) handleOASRefreshFetchError(ctx context.Context, candidate models.Api, fetchErr error) bool {
+func (s *APIsAPIService) handleOASRefreshFetchError(ctx context.Context, candidate models.Api, fetchErr error) (bool, bool) {
 	if openapi.IsHTTPStatus(fetchErr, http.StatusNotFound) {
 		retired, retireErr := s.retireAPIForUnavailableOAS(ctx, candidate)
 		if retireErr != nil {
@@ -499,10 +531,11 @@ func (s *APIsAPIService) handleOASRefreshFetchError(ctx context.Context, candida
 				"component", "oas_refresh",
 				"operation", "retire_api",
 				"api_id", candidate.Id,
+				"oas_url", candidate.OasUri,
 				"error", retireErr,
 			)
 		}
-		return retired && retireErr == nil
+		return retired && retireErr == nil, retireErr != nil
 	}
 
 	nextSnapshot := models.OASMetadata{
@@ -510,13 +543,16 @@ func (s *APIsAPIService) handleOASRefreshFetchError(ctx context.Context, candida
 		Status:  classifyOASStatus(fetchErr),
 		Auth:    currentOASAuth(candidate),
 	}
+	statusUpdateFailed := false
 	if updateErr := s.updateOASMetadataSnapshot(ctx, candidate.Id, candidate.OAS, nextSnapshot); updateErr != nil {
+		statusUpdateFailed = true
 		slog.ErrorContext(
 			ctx,
 			"failed to store unavailable OAS status",
 			"component", "oas_refresh",
 			"operation", "update_status",
 			"api_id", candidate.Id,
+			"oas_url", candidate.OasUri,
 			"error", updateErr,
 		)
 	} else {
@@ -528,25 +564,29 @@ func (s *APIsAPIService) handleOASRefreshFetchError(ctx context.Context, candida
 		"component", "oas_refresh",
 		"operation", "fetch_oas",
 		"api_id", candidate.Id,
+		"oas_url", candidate.OasUri,
 		"error", fetchErr,
 	)
-	return false
+	return false, statusUpdateFailed
 }
 
-func (s *APIsAPIService) applyRefreshedOAS(ctx context.Context, candidate models.Api, res *openapi.OASResult) bool {
+func (s *APIsAPIService) applyRefreshedOAS(ctx context.Context, candidate models.Api, res *openapi.OASResult) (bool, bool) {
+	failed := false
 	if err := s.updateOASMetadataSnapshot(ctx, candidate.Id, candidate.OAS, deriveOASSnapshot(candidate.OAS, res)); err != nil {
+		failed = true
 		slog.ErrorContext(
 			ctx,
 			"failed to update OAS metadata",
 			"component", "oas_refresh",
 			"operation", "update_metadata",
 			"api_id", candidate.Id,
+			"oas_url", candidate.OasUri,
 			"error", err,
 		)
 	}
 
 	if res.Hash == candidate.OasHash {
-		return false
+		return false, failed
 	}
 
 	full, err := s.repo.GetApiByID(ctx, candidate.Id)
@@ -557,9 +597,10 @@ func (s *APIsAPIService) applyRefreshedOAS(ctx context.Context, candidate models
 			"component", "oas_refresh",
 			"operation", "load_api",
 			"api_id", candidate.Id,
+			"oas_url", candidate.OasUri,
 			"error", err,
 		)
-		return false
+		return false, true
 	}
 
 	orgURI := deriveOrganisationURI(full)
@@ -570,8 +611,9 @@ func (s *APIsAPIService) applyRefreshedOAS(ctx context.Context, candidate models
 			"component", "oas_refresh",
 			"operation", "validate_api",
 			"api_id", candidate.Id,
+			"oas_url", candidate.OasUri,
 		)
-		return false
+		return false, true
 	}
 
 	req := models.ApiPost{
@@ -591,11 +633,30 @@ func (s *APIsAPIService) applyRefreshedOAS(ctx context.Context, candidate models
 			"component", "oas_refresh",
 			"operation", "update_api",
 			"api_id", full.Id,
+			"oas_url", candidate.OasUri,
 			"error", err,
 		)
-		return false
+		return false, true
 	}
-	return true
+	return true, failed
+}
+
+func logOASRefreshProgress(ctx context.Context, result models.OASRefreshResult, elapsed time.Duration) {
+	var memory runtime.MemStats
+	runtime.ReadMemStats(&memory)
+	slog.InfoContext(
+		ctx,
+		"OAS refresh progress",
+		"component", "oas_refresh",
+		"operation", "run",
+		"candidate_count", result.CandidateCount,
+		"processed_count", result.ProcessedCount,
+		"updated_count", result.UpdatedCount,
+		"unavailable_count", result.UnavailableCount,
+		"failed_count", result.FailedCount,
+		"duration_ms", elapsed.Milliseconds(),
+		"heap_alloc_bytes", memory.Alloc,
+	)
 }
 
 // LintAllApis runs the linter for every registered API and stores

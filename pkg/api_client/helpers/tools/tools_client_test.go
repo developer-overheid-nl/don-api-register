@@ -104,6 +104,17 @@ func TestDoToolsJSONRequestRejectsOversizedResponse(t *testing.T) {
 	assert.Contains(t, err.Error(), "tools response exceeds 20 MiB")
 }
 
+func TestDoToolsJSONRequestAcceptsResponseAtSizeLimit(t *testing.T) {
+	withToolsServer(t, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.CopyN(w, repeatedToolByteReader{}, maxToolsResponseBytes)
+	})
+
+	data, _, err := doToolsJSONRequest(context.Background(), "oas/bundle", OASInput{OasBody: "{}"}, "")
+
+	require.NoError(t, err)
+	assert.Len(t, data, int(maxToolsResponseBytes))
+}
+
 func TestBundleOAS(t *testing.T) {
 	withToolsServer(t, func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/api/oas/bundle", r.URL.Path)

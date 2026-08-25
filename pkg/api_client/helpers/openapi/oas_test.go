@@ -52,6 +52,29 @@ func TestFetchParseValidateAndHashRejectsOversizedSourceResponse(t *testing.T) {
 	}
 }
 
+func TestFetchRawOASAcceptsResponseAtSizeLimit(t *testing.T) {
+	server := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.CopyN(w, repeatedByteReader{}, maxOASResponseBytes)
+	}))
+
+	body, contentType, err := fetchRawOAS(
+		context.Background(),
+		toolslint.OASInput{OasUrl: server.URL},
+		FetchOpts{},
+	)
+
+	if err != nil {
+		t.Fatalf("expected response at size limit to succeed, got %v", err)
+	}
+	if int64(len(body)) != maxOASResponseBytes {
+		t.Fatalf("expected %d response bytes, got %d", maxOASResponseBytes, len(body))
+	}
+	if contentType != "application/json" {
+		t.Fatalf("expected application/json content type, got %q", contentType)
+	}
+}
+
 func TestProcessOASSerializesDocumentConsumers(t *testing.T) {
 	t.Setenv("TOOLS_API_ENDPOINT", "")
 	input := toolslint.OASInput{OasBody: lifecycleTestSpec}

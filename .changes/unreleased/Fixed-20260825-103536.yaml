@@ -1,3 +1,0 @@
-kind: Fixed
-body: Voorkom oplopend geheugengebruik bij OAS-verwerking en maak harvest- en refreshlogging bruikbaar in Loki en Grafana.
-time: 2026-08-25T10:35:36+02:00

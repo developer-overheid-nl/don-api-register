@@ -570,6 +570,7 @@ func (r *apiRepository) GetLintResults(ctx context.Context, apiID string) ([]mod
 		Preload("Messages.Infos").
 		Where("api_id = ?", apiID).
 		Order("created_at desc").
+		Limit(1).
 		Find(&results).Error
 	if err != nil {
 		return nil, err

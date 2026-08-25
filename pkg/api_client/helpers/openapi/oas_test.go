@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -166,6 +167,81 @@ func TestFetchParseValidateAndHashRetainsCanonicalJSON(t *testing.T) {
 	}
 	if !bytes.Contains(res.CanonicalJSON, []byte(`"title": "Lifecycle"`)) {
 		t.Fatalf("canonical JSON does not contain the parsed title: %s", res.CanonicalJSON)
+	}
+}
+
+func TestFetchParseValidateAndHashLogsSuccessfulBundleFallbackAtDebug(t *testing.T) {
+	t.Setenv("TOOLS_API_ENDPOINT", "")
+
+	var logBuffer bytes.Buffer
+	previousLogger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&logBuffer, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	t.Cleanup(func() { slog.SetDefault(previousLogger) })
+
+	_, err := FetchParseValidateAndHash(
+		context.Background(),
+		toolslint.OASInput{OasBody: lifecycleTestSpec},
+		FetchOpts{},
+	)
+	if err != nil {
+		t.Fatalf("expected source fallback to succeed, got %v", err)
+	}
+
+	var fallbackRecord map[string]any
+	for _, line := range strings.Split(strings.TrimSpace(logBuffer.String()), "\n") {
+		var record map[string]any
+		if err := json.Unmarshal([]byte(line), &record); err != nil {
+			t.Fatalf("decode log record: %v", err)
+		}
+		if record["msg"] == "OAS bundling failed; falling back to source document" {
+			fallbackRecord = record
+		}
+	}
+	if fallbackRecord == nil {
+		t.Fatal("expected a bundle fallback log record")
+	}
+	if got := fallbackRecord["level"]; got != "DEBUG" {
+		t.Fatalf("expected bundle fallback at DEBUG, got %v", got)
+	}
+}
+
+func TestFetchParseValidateAndHashPreservesBundleAndSourceErrors(t *testing.T) {
+	toolsServer := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/oas/bundle" {
+			t.Fatalf("expected /oas/bundle path, got %s", r.URL.Path)
+		}
+		http.Error(w, "bundle failed", http.StatusUnprocessableEntity)
+	}))
+	sourceServer := testutil.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "source missing", http.StatusNotFound)
+	}))
+	t.Setenv("TOOLS_API_ENDPOINT", toolsServer.URL)
+	t.Setenv("X_API_KEY", "")
+
+	_, err := FetchParseValidateAndHash(
+		context.Background(),
+		toolslint.OASInput{OasUrl: sourceServer.URL},
+		FetchOpts{},
+	)
+	if err == nil {
+		t.Fatal("expected bundle and source fetch to fail")
+	}
+	if !strings.Contains(err.Error(), "422 Unprocessable Entity") {
+		t.Fatalf("expected bundle failure in error, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "status 404: source missing") {
+		t.Fatalf("expected source failure in error, got %v", err)
+	}
+	combined, ok := err.(interface{ Unwrap() []error })
+	if !ok {
+		t.Fatalf("expected both failures in the error chain, got %T", err)
+	}
+	if got := len(combined.Unwrap()); got != 2 {
+		t.Fatalf("expected two wrapped failures, got %d", got)
+	}
+	var sourceErr *HTTPStatusError
+	if !errors.As(err, &sourceErr) || sourceErr.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected wrapped source 404, got %v", err)
 	}
 }
 

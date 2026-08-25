@@ -83,17 +83,18 @@ func FetchParseValidateAndHash(ctx context.Context, input tools.OASInput, opts F
 
 	raw, contentType, err = bundleOAS(ctx, input)
 	if err != nil {
-		slog.WarnContext(
+		bundleErr := err
+		raw, contentType, err = fetchRawOAS(ctx, input, opts)
+		if err != nil {
+			return nil, fmt.Errorf("OAS bundling failed: %w; source document fetch failed: %w", bundleErr, err)
+		}
+		slog.DebugContext(
 			ctx,
 			"OAS bundling failed; falling back to source document",
 			"component", "openapi",
 			"operation", "bundle",
-			"error", err,
+			"error", bundleErr,
 		)
-		raw, contentType, err = fetchRawOAS(ctx, input, opts)
-		if err != nil {
-			return nil, err
-		}
 	} else {
 		fromBundle = true
 	}

@@ -418,6 +418,59 @@ func TestApiRepository_SaveLintResult_PersistsMessageRulesetVersion(t *testing.T
 	assert.Equal(t, "2026.04", stored[0].Messages[0].RulesetVersion)
 }
 
+func TestApiRepository_GetLintResultsReturnsOnlyLatestResult(t *testing.T) {
+	db := setupDB(t)
+	repo := repositories.NewApiRepository(db)
+	ctx := context.Background()
+
+	older := &models.LintResult{
+		ID:        "lint-result-older",
+		ApiID:     "api-1",
+		CreatedAt: time.Date(2026, 8, 24, 10, 0, 0, 0, time.UTC),
+		Messages: []models.LintMessage{
+			{
+				ID:   "lint-message-older",
+				Code: "old-rule",
+				Infos: []models.LintMessageInfo{
+					{ID: "lint-info-older", LintMessageID: "lint-message-older", Message: "old-info"},
+				},
+			},
+		},
+	}
+	newer := &models.LintResult{
+		ID:        "lint-result-newer",
+		ApiID:     "api-1",
+		CreatedAt: time.Date(2026, 8, 25, 10, 0, 0, 0, time.UTC),
+		Messages: []models.LintMessage{
+			{
+				ID:   "lint-message-newer",
+				Code: "new-rule",
+				Infos: []models.LintMessageInfo{
+					{ID: "lint-info-newer", LintMessageID: "lint-message-newer", Message: "new-info"},
+				},
+			},
+		},
+	}
+
+	require.NoError(t, repo.SaveLintResult(ctx, older))
+	require.NoError(t, repo.SaveLintResult(ctx, newer))
+
+	stored, err := repo.GetLintResults(ctx, "api-1")
+	require.NoError(t, err)
+	require.Len(t, stored, 1)
+	assert.Equal(t, newer.ID, stored[0].ID)
+	require.Len(t, stored[0].Messages, 1)
+	assert.Equal(t, "new-rule", stored[0].Messages[0].Code)
+	require.Len(t, stored[0].Messages[0].Infos, 1)
+	assert.Equal(t, "new-info", stored[0].Messages[0].Infos[0].Message)
+
+	history, err := repo.ListLintResults(ctx)
+	require.NoError(t, err)
+	require.Len(t, history, 2)
+	assert.Equal(t, newer.ID, history[0].ID)
+	assert.Equal(t, older.ID, history[1].ID)
+}
+
 func TestApiRepository_UpdateOASMetadataAndAllApis(t *testing.T) {
 	db := setupDB(t)
 	repo := repositories.NewApiRepository(db)

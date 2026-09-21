@@ -285,6 +285,93 @@ func TestFetchParseValidateAndHash_AllowsOpenAPI31(t *testing.T) {
 	}
 }
 
+func TestFetchParseValidateAndHash_AllowsArrayCircularReference(t *testing.T) {
+	t.Setenv("TOOLS_API_ENDPOINT", "")
+	spec := `{
+	  "openapi": "3.0.3",
+	  "info": {
+	    "title": "Tree",
+	    "version": "1.0.0"
+	  },
+	  "paths": {
+	    "/tree": {
+	      "get": {
+	        "responses": {
+	          "200": {
+	            "description": "ok",
+	            "content": {
+	              "application/json": {
+	                "schema": {
+	                  "$ref": "#/components/schemas/Tree"
+	                }
+	              }
+	            }
+	          }
+	        }
+	      }
+	    }
+	  },
+	  "components": {
+	    "schemas": {
+	      "Tree": {
+	        "type": "object",
+	        "required": ["_embedded"],
+	        "properties": {
+	          "_embedded": {
+	            "type": "object",
+	            "required": ["nodes"],
+	            "properties": {
+	              "nodes": {
+	                "type": "array",
+	                "items": {
+	                  "$ref": "#/components/schemas/Node"
+	                }
+	              }
+	            }
+	          }
+	        }
+	      },
+	      "Node": {
+	        "type": "object",
+	        "required": ["id"],
+	        "properties": {
+	          "id": {
+	            "type": "string"
+	          },
+	          "_embedded": {
+	            "type": "object",
+	            "required": ["children"],
+	            "properties": {
+	              "children": {
+	                "type": "array",
+	                "items": {
+	                  "$ref": "#/components/schemas/Node"
+	                }
+	              }
+	            }
+	          }
+	        }
+	      }
+	    }
+	  }
+	}`
+
+	res, err := FetchParseValidateAndHash(
+		context.Background(),
+		toolslint.OASInput{OasBody: spec},
+		FetchOpts{},
+	)
+	if err != nil {
+		t.Fatalf("expected array-recursive schema to be accepted, got %v", err)
+	}
+	if res == nil || res.Spec == nil {
+		t.Fatalf("expected parsed spec, got %#v", res)
+	}
+	if got := res.Spec.Info.Title; got != "Tree" {
+		t.Fatalf("expected title Tree, got %q", got)
+	}
+}
+
 func TestFetchParseValidateAndHash_RetriesWithoutOriginOnEmptyBody(t *testing.T) {
 	spec := `{
 	  "openapi": "3.0.1",

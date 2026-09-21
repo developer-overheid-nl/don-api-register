@@ -183,8 +183,9 @@ func yamlNodeHasCycle(node *yaml.Node, visiting, visited map[*yaml.Node]bool) bo
 func parseValidateAndHash(raw []byte, contentType string) (*OASResult, error) {
 	// 2) libopenapi config voor (remote) refs
 	cfg := datamodel.DocumentConfiguration{
-		AllowRemoteReferences: true,
-		AllowFileReferences:   true,
+		AllowRemoteReferences:         true,
+		AllowFileReferences:           true,
+		IgnoreArrayCircularReferences: true,
 	}
 
 	// 3) Parse document met config

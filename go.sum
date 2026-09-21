@@ -16,8 +16,8 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/developer-overheid-nl/don-register-common v0.2.0 h1:MHJ4waVfVG+uwNKifIWDQE1rTKtaHIq/G5G0sIg06gc=
-github.com/developer-overheid-nl/don-register-common v0.2.0/go.mod h1:AsetBCNq/YCen52xkWxSNcfi9FbYqEwwgOrqJysw4lg=
+github.com/developer-overheid-nl/don-register-common v0.3.0 h1:yD6NC2aaZTM3O6xIVPco6ZAZCn4q5LeTqVfDXmuIObk=
+github.com/developer-overheid-nl/don-register-common v0.3.0/go.mod h1:AaEVxN+YgEuwh81aB3QmVqJ2F4P9VcF2LA9Zw7XPWXc=
 github.com/gabriel-vasile/mimetype v1.4.15 h1:05iP/CYtZ/w455R/KZM6rZ5ieAdh99UPtd+d3YzLmaI=
 github.com/gabriel-vasile/mimetype v1.4.15/go.mod h1:azpTcoLcDZRNgFou5j+APrqQx9HqVPWa6ijYQIIVswQ=
 github.com/gin-contrib/cors v1.3.0/go.mod h1:artPvLlhkF7oG06nK8v3U8TNz6IeX+w1uzCSEId5/Vc=

@@ -67,6 +67,7 @@ func TestProblemAlwaysContainsStatusTitleAndDetail(t *testing.T) {
 	}{
 		{"bad request with detail", NewBadRequest("body", "Invalid input"), 400, "Invalid input"},
 		{"bad request from params", NewBadRequest("body", "", InvalidParam{Name: "uri", Reason: "is verplicht"}), 400, "is verplicht"},
+		{"bad request joins param reasons", NewBadRequest("body", "", InvalidParam{Name: "uri", Reason: "is verplicht"}, InvalidParam{Name: "label", Reason: "is te lang"}), 400, "is verplicht; is te lang"},
 		{"not found", NewNotFound("/apis/1", "API not found"), 404, "API not found"},
 		{"internal", NewInternalServerError("boom"), 500, "boom"},
 		{"forbidden", NewForbidden("", "no access"), 403, "no access"},

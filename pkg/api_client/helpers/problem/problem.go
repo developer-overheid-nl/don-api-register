@@ -5,42 +5,55 @@ import commonproblem "github.com/developer-overheid-nl/don-register-common/probl
 type InvalidParam = commonproblem.InvalidParam
 type ErrorDetail = commonproblem.ErrorDetail
 
-// APIError implementeert error + Problem Details (RFC 7807)
-type APIError = commonproblem.Problem
+// APIError implementeert error + Problem Details (RFC 9457) met de door de
+// NL GOV API Design Rules verplichte velden status, title en detail.
+type APIError struct {
+	Title  string        `json:"title"`
+	Status int           `json:"status"`
+	Detail string        `json:"detail"`
+	Errors []ErrorDetail `json:"errors,omitempty"`
+}
+
+func (e APIError) Error() string { return e.Title }
 
 func New(status int, title string, details ...ErrorDetail) APIError {
-	return commonproblem.New(status, title, details...)
+	return newAPIError(status, title, "", details)
 }
 
 func NewBadRequest(oasUri, detail string, params ...InvalidParam) APIError {
-	return APIError{
-		Title:  "Request validation failed",
-		Status: 400,
-		Errors: commonproblem.ErrorDetailsFromInvalidParams(params, detail, "body", "body", "bad_request"),
-	}
+	return newAPIError(400, "Request validation failed", detail,
+		commonproblem.ErrorDetailsFromInvalidParams(params, detail, "body", "body", "bad_request"))
 }
 
 func NewNotFound(oasUri, detail string, params ...InvalidParam) APIError {
-	return APIError{
-		Title:  "Resource Not Found",
-		Status: 404,
-		Errors: toErrorDetails(params, detail, "path", oasUri, "not_found"),
-	}
+	return newAPIError(404, "Resource Not Found", detail,
+		toErrorDetails(params, detail, "path", oasUri, "not_found"))
 }
 
 func NewInternalServerError(detail string) APIError {
-	return APIError{
-		Title:  "Internal Server Error",
-		Status: 500,
-		Errors: toErrorDetails(nil, detail, "", "", "internal_error"),
-	}
+	return newAPIError(500, "Internal Server Error", detail,
+		toErrorDetails(nil, detail, "", "", "internal_error"))
 }
 
 func NewForbidden(oasUri, detail string) APIError {
+	return newAPIError(403, "Forbidden", detail,
+		toErrorDetails(nil, detail, "", "", "forbidden"))
+}
+
+// newAPIError vult detail altijd: de expliciete detail, anders de detail van de
+// eerste fout, anders de titel.
+func newAPIError(status int, title, detail string, details []ErrorDetail) APIError {
+	if detail == "" && len(details) > 0 {
+		detail = details[0].Detail
+	}
+	if detail == "" {
+		detail = title
+	}
 	return APIError{
-		Title:  "Forbidden",
-		Status: 403,
-		Errors: toErrorDetails(nil, detail, "", "", "forbidden"),
+		Title:  title,
+		Status: status,
+		Detail: detail,
+		Errors: details,
 	}
 }
 

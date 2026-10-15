@@ -66,7 +66,7 @@ func invalidParamsFromBinding(err error, sample any) []problem.InvalidParam {
 	}
 
 	t := reflect.TypeOf(sample)
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 
@@ -396,6 +396,7 @@ func TestRealtimeApplicationRun(t *testing.T) {
 		prob := decodeBody[problem.APIError](t, resp)
 		require.Equal(t, "Request validation failed", prob.Title)
 		require.Equal(t, 400, prob.Status)
+		require.NotEmpty(t, prob.Detail)
 		require.Len(t, prob.Errors, 1)
 		require.Equal(t, "uri", prob.Errors[0].Code)
 	})

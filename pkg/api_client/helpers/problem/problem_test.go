@@ -1,6 +1,7 @@
 package problem
 
 import (
+	"encoding/json"
 	"net/http"
 	"testing"
 
@@ -55,4 +56,33 @@ func TestProblemConstructors(t *testing.T) {
 		assert.Equal(t, http.StatusConflict, got.Status)
 		assert.Equal(t, "Conflict", got.Title)
 	})
+}
+
+func TestProblemAlwaysContainsStatusTitleAndDetail(t *testing.T) {
+	tests := []struct {
+		name       string
+		problem    APIError
+		wantStatus int
+		wantDetail string
+	}{
+		{"bad request with detail", NewBadRequest("body", "Invalid input"), 400, "Invalid input"},
+		{"bad request from params", NewBadRequest("body", "", InvalidParam{Name: "uri", Reason: "is verplicht"}), 400, "is verplicht"},
+		{"bad request joins param reasons", NewBadRequest("body", "", InvalidParam{Name: "uri", Reason: "is verplicht"}, InvalidParam{Name: "label", Reason: "is te lang"}), 400, "is verplicht; is te lang"},
+		{"not found", NewNotFound("/apis/1", "API not found"), 404, "API not found"},
+		{"internal", NewInternalServerError("boom"), 500, "boom"},
+		{"forbidden", NewForbidden("", "no access"), 403, "no access"},
+		{"new with error detail", New(409, "Organisation already exists", ErrorDetail{Detail: "organisation already exists"}), 409, "organisation already exists"},
+		{"new falls back to title", New(400, "Request validation failed"), 400, "Request validation failed"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			raw, err := json.Marshal(tt.problem)
+			require.NoError(t, err)
+			var body map[string]any
+			require.NoError(t, json.Unmarshal(raw, &body))
+			assert.Equal(t, float64(tt.wantStatus), body["status"])
+			assert.NotEmpty(t, body["title"])
+			assert.Equal(t, tt.wantDetail, body["detail"])
+		})
+	}
 }

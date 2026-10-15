@@ -86,6 +86,19 @@ func TestListApisDocumentsSorting(t *testing.T) {
 	assert.Equal(t, "asc", sortOrderSchema["default"])
 }
 
+func TestProblemJsonRequiresStatusTitleAndDetail(t *testing.T) {
+	var spec map[string]any
+	require.NoError(t, json.Unmarshal(OpenAPIJSON(), &spec))
+
+	schemas := spec["components"].(map[string]any)["schemas"].(map[string]any)
+	problemJSON := schemas["ProblemJson"].(map[string]any)
+	properties := problemJSON["properties"].(map[string]any)
+	for _, field := range []string{"status", "title", "detail"} {
+		assert.Contains(t, properties, field)
+		assert.Contains(t, problemJSON["required"], field)
+	}
+}
+
 func collectNullExamples(value any, path string, found *[]string) {
 	switch typed := value.(type) {
 	case map[string]any:

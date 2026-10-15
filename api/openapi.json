@@ -1730,6 +1730,11 @@
             "description": "A short, human-readable summary of the problem type",
             "example": "Request validation failed"
           },
+          "detail": {
+            "type": "string",
+            "description": "A human-readable explanation specific to this occurrence of the problem",
+            "example": "uri is verplicht"
+          },
           "errors": {
             "type": "array",
             "items": {
@@ -1771,7 +1776,8 @@
         },
         "required": [
           "status",
-          "title"
+          "title",
+          "detail"
         ]
       }
     },

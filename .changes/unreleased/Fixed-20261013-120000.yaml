@@ -1,3 +1,0 @@
-kind: Fixed
-body: Include the required `detail` member in problem+json error responses (using the shared problem type from don-register-common v0.4.0) and in the OpenAPI ProblemJson schema, so the spec scores 100 on ADR 2.2.0; the OAS ADR workflow now uses don-checker 1.3.1 with ADR 2.2.0.
-time: 2026-10-13T12:00:00.000000+02:00

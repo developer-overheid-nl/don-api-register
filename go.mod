@@ -12,7 +12,7 @@ require (
 	github.com/wI2L/fizz v0.23.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.6
 	golang.org/x/mod v0.40.0
-	golang.org/x/time v0.15.0
+	golang.org/x/time v0.16.0
 	gorm.io/driver/sqlite v1.6.0
 	sigs.k8s.io/yaml v1.6.0
 )

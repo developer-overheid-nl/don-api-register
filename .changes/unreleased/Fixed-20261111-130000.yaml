@@ -1,0 +1,3 @@
+kind: Fixed
+body: CI gebruikt de gedeelde workflows uit developer-overheid-nl/.github; test-images krijgen de tag test-<sha> en overschrijven de productie-image niet meer.
+time: 2026-11-11T13:00:00.000000+01:00

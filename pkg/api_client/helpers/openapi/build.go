@@ -7,10 +7,10 @@ import (
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/helpers/problem"
 	"github.com/developer-overheid-nl/don-api-register/pkg/api_client/models"
 	"github.com/google/uuid"
+	yaml "github.com/pb33f/go-yaml"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/teris-io/shortid"
-	"go.yaml.in/yaml/v4"
 )
 
 // CorsGet performs a GET request including an Origin header.

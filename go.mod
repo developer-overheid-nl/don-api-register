@@ -3,7 +3,7 @@ module github.com/developer-overheid-nl/don-api-register
 go 1.26.10
 
 require (
-	github.com/developer-overheid-nl/don-register-common v0.4.1-0.20261117084430-b81ef4efab78
+	github.com/developer-overheid-nl/don-register-common v0.5.0
 	github.com/go-playground/validator/v10 v10.30.6
 	github.com/lib/pq v1.12.3
 	github.com/loopfz/gadgeto v0.11.6

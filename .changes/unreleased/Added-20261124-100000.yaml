@@ -1,3 +1,3 @@
 kind: Added
-body: 'Het organisatiefilter in `GET /v1/apis/filters` is nu een `search-single-select` met `showTop: 10`: de frontend toont de 10 organisaties met de meeste API''s, met een zoekveld voor de rest. De OAS beschrijft de types `search-single-select` en `search-multi-select` en `showTop` (ADR-score blijft 100).'
+body: 'Filter op meerdere organisaties tegelijk: `organisation` mag vaker in de query staan (`GET /v1/apis`, `/v1/apis/_search` en `/v1/apis/filters`), en een resultaat hoort bij een van die organisaties. Een enkele `organisation` werkt zoals voorheen. Het organisatiefilter in `GET /v1/apis/filters` is nu een `search-multi-select` met `showTop: 10`: de frontend toont de 10 organisaties met de meeste API''s, met een zoekveld voor de rest. De OAS beschrijft de types `search-single-select` en `search-multi-select` en `showTop`, en heeft versie 1.1.0 (ADR-score blijft 100).'
 time: 2026-11-24T10:00:00.000000+01:00

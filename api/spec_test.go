@@ -135,3 +135,16 @@ func TestFilterGroupDocumentsSearchSelect(t *testing.T) {
 	assert.Equal(t, "integer", showTop["type"])
 	assert.Equal(t, float64(1), showTop["minimum"])
 }
+
+func TestOrganisationParameterIsRepeatable(t *testing.T) {
+	var spec map[string]any
+	require.NoError(t, json.Unmarshal(OpenAPIJSON(), &spec))
+
+	parameter := spec["components"].(map[string]any)["parameters"].(map[string]any)["Organisation"].(map[string]any)
+	assert.Equal(t, "organisation", parameter["name"])
+	assert.Equal(t, "form", parameter["style"])
+	assert.Equal(t, true, parameter["explode"])
+	schema := parameter["schema"].(map[string]any)
+	assert.Equal(t, "array", schema["type"])
+	assert.Equal(t, "uri", schema["items"].(map[string]any)["format"])
+}

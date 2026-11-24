@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "API register API v1",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "contact": {
       "email": "developer.overheid@geonovum.nl",
       "name": "Team developer.overheid.nl",
@@ -1019,11 +1019,16 @@
         "name": "organisation",
         "in": "query",
         "required": false,
-        "description": "Filter on organisation URI.",
+        "description": "Filter on organisation URI. Repeatable for multiple values; a result matches any of them.",
         "schema": {
-          "type": "string",
-          "format": "uri"
-        }
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "style": "form",
+        "explode": true
       },
       "Ids": {
         "name": "ids",

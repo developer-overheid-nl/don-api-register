@@ -21,7 +21,7 @@ import (
 // stubRepo mocks ApiRepository for controller tests
 type stubRepo struct {
 	listFunc     func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams) ([]models.Api, models.Pagination, error)
-	searchFunc   func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
+	searchFunc   func(ctx context.Context, page, perPage int, organisations []string, query string) ([]models.Api, models.Pagination, error)
 	retrFunc     func(ctx context.Context, id string) (*models.Api, error)
 	lintResFunc  func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	listLint     func(ctx context.Context) ([]models.LintResult, error)
@@ -37,9 +37,9 @@ type stubRepo struct {
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error) {
 	return s.listFunc(ctx, page, perPage, p)
 }
-func (s *stubRepo) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
+func (s *stubRepo) SearchApis(ctx context.Context, page, perPage int, organisations []string, query string) ([]models.Api, models.Pagination, error) {
 	if s.searchFunc != nil {
-		return s.searchFunc(ctx, page, perPage, organisation, query)
+		return s.searchFunc(ctx, page, perPage, organisations, query)
 	}
 	return []models.Api{}, models.Pagination{}, nil
 }
@@ -291,10 +291,10 @@ func TestListApis_Handler(t *testing.T) {
 
 func TestSearchApis_Handler(t *testing.T) {
 	repo := &stubRepo{
-		searchFunc: func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
+		searchFunc: func(ctx context.Context, page, perPage int, organisations []string, query string) ([]models.Api, models.Pagination, error) {
 			assert.Equal(t, 1, page)
 			assert.Equal(t, 10, perPage)
-			assert.Nil(t, organisation)
+			assert.Empty(t, organisations)
 			assert.Equal(t, "title", query)
 			return []models.Api{{
 					Id:           "a1",

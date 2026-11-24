@@ -17,7 +17,7 @@ import (
 
 type ApiRepository interface {
 	GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error)
-	SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
+	SearchApis(ctx context.Context, page, perPage int, organisations []string, query string) ([]models.Api, models.Pagination, error)
 	GetApiByID(ctx context.Context, oasUrl string) (*models.Api, error)
 	Save(api *models.Api) error
 	UpdateApi(ctx context.Context, api models.Api) error
@@ -47,7 +47,7 @@ type apiRepository struct {
 
 type apiFilterMatcher struct {
 	params          *models.ApiFiltersParams
-	organisation    string
+	organisations   map[string]bool
 	query           string
 	ids             map[string]bool
 	status          map[string]bool
@@ -198,7 +198,7 @@ func (r *apiRepository) ListApiFeedEvents(ctx context.Context, apiID string, lim
 	return events, err
 }
 
-func (r *apiRepository) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
+func (r *apiRepository) SearchApis(ctx context.Context, page, perPage int, organisations []string, query string) ([]models.Api, models.Pagination, error) {
 	trimmed := strings.ToLower(strings.TrimSpace(query))
 	if page < 1 {
 		page = 1
@@ -214,8 +214,8 @@ func (r *apiRepository) SearchApis(ctx context.Context, page, perPage int, organ
 	}
 
 	applySearchFilters := func(db *gorm.DB) *gorm.DB {
-		if organisation != nil && strings.TrimSpace(*organisation) != "" {
-			db = db.Where("organisation_id = ?", strings.TrimSpace(*organisation))
+		if selected := sortedKeys(selectedFilterSet(organisations)); len(selected) > 0 {
+			db = db.Where("organisation_id IN ?", selected)
 		}
 		return db.Where("LOWER(title) LIKE ? ESCAPE '\\'", "%"+commonquery.EscapeSQLLike(trimmed)+"%")
 	}
@@ -319,14 +319,12 @@ func compileApiFilters(p *models.ApiFiltersParams) *apiFilterMatcher {
 	}
 
 	matcher := &apiFilterMatcher{
-		params:     p,
-		status:     selectedLowerFilterSet(p.Status),
-		oasVersion: selectedFilterSet(p.OasVersion, p.Version),
-		auth:       selectedFilterSet(normalizeAuthValues(p.Auth)),
-		now:        time.Now(),
-	}
-	if p.Organisation != nil {
-		matcher.organisation = strings.TrimSpace(*p.Organisation)
+		params:        p,
+		organisations: selectedFilterSet(p.Organisation),
+		status:        selectedLowerFilterSet(p.Status),
+		oasVersion:    selectedFilterSet(p.OasVersion, p.Version),
+		auth:          selectedFilterSet(normalizeAuthValues(p.Auth)),
+		now:           time.Now(),
 	}
 	matcher.query = strings.ToLower(strings.TrimSpace(p.Query))
 	if p.Ids != nil {
@@ -350,8 +348,8 @@ func apiMatchesCompiledFilters(api models.Api, matcher *apiFilterMatcher, exclud
 	if matcher == nil || matcher.params == nil {
 		return true
 	}
-	if exclude != "organisation" && matcher.organisation != "" {
-		if api.OrganisationID == nil || *api.OrganisationID != matcher.organisation {
+	if exclude != "organisation" && len(matcher.organisations) > 0 {
+		if api.OrganisationID == nil || !matcher.organisations[*api.OrganisationID] {
 			return false
 		}
 	}
@@ -400,6 +398,16 @@ func apiMatchesQuery(api models.Api, query string) bool {
 		return true
 	}
 	return strings.Contains(strings.ToLower(api.Title), query)
+}
+
+// sortedKeys returns the keys of a set in a stable order, for SQL arguments.
+func sortedKeys(set map[string]bool) []string {
+	keys := make([]string, 0, len(set))
+	for key := range set {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func selectedFilterSet(groups ...[]string) map[string]bool {

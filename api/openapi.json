@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "API register API v1",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "contact": {
       "email": "developer.overheid@geonovum.nl",
       "name": "Team developer.overheid.nl",
@@ -1019,11 +1019,16 @@
         "name": "organisation",
         "in": "query",
         "required": false,
-        "description": "Filter on organisation URI.",
+        "description": "Filter on organisation URI. Repeatable for multiple values; a result matches any of them.",
         "schema": {
-          "type": "string",
-          "format": "uri"
-        }
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "style": "form",
+        "explode": true
       },
       "Ids": {
         "name": "ids",
@@ -1456,10 +1461,12 @@
           },
           "type": {
             "type": "string",
-            "description": "UI control type for the filter.",
+            "description": "UI control type for the filter. search-single-select: one value selectable from a long list, which the client shortens to the first showTop options and makes searchable. search-multi-select: as search-single-select, with multiple values selectable.",
             "enum": [
               "multi-select",
               "single-select",
+              "search-single-select",
+              "search-multi-select",
               "toggle",
               "date"
             ]
@@ -1474,9 +1481,16 @@
           },
           "options": {
             "type": "array",
+            "description": "Available options with counts. For search-single-select and search-multi-select the options with the most matches come first.",
             "items": {
               "$ref": "#/components/schemas/FilterOption"
             }
+          },
+          "showTop": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Only for search-single-select and search-multi-select: how many options to show before the user searches or expands the list.",
+            "example": 10
           }
         },
         "required": [

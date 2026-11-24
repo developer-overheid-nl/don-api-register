@@ -32,7 +32,7 @@ type artifactRepoStub struct {
 func (a *artifactRepoStub) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error) {
 	return nil, models.Pagination{}, nil
 }
-func (a *artifactRepoStub) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
+func (a *artifactRepoStub) SearchApis(ctx context.Context, page, perPage int, organisations []string, query string) ([]models.Api, models.Pagination, error) {
 	return nil, models.Pagination{}, nil
 }
 func (a *artifactRepoStub) GetApiByID(ctx context.Context, id string) (*models.Api, error) {

@@ -5,7 +5,7 @@ import "strings"
 type ListApisParams struct {
 	Page         int      `query:"page"`
 	PerPage      int      `query:"perPage"`
-	Organisation *string  `query:"organisation"`
+	Organisation []string `query:"organisation"`
 	Query        string   `query:"q"`
 	Ids          *string  `query:"ids"`
 	Status       []string `query:"status"`
@@ -31,7 +31,7 @@ func (p *ListApisParams) ApiFilters() *ApiFiltersParams {
 		return &ApiFiltersParams{}
 	}
 	return &ApiFiltersParams{
-		Organisation: p.Organisation,
+		Organisation: append([]string(nil), p.Organisation...),
 		Query:        p.Query,
 		Ids:          p.FilterIDs(),
 		Status:       append([]string(nil), p.Status...),

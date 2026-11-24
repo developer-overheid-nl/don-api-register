@@ -44,7 +44,7 @@ func TestListApisParams_ApiFilters(t *testing.T) {
 	org := "https://example.org/org"
 	ids := " api-1, api-2 "
 	params := &ListApisParams{
-		Organisation: &org,
+		Organisation: []string{org},
 		Query:        "search",
 		Ids:          &ids,
 		Status:       []string{"active"},
@@ -56,7 +56,7 @@ func TestListApisParams_ApiFilters(t *testing.T) {
 
 	got := params.ApiFilters()
 
-	if got.Organisation == nil || *got.Organisation != org {
+	if len(got.Organisation) != 1 || got.Organisation[0] != org {
 		t.Fatalf("expected organisation %q, got %#v", org, got.Organisation)
 	}
 	if got.Ids == nil || *got.Ids != "api-1, api-2" {

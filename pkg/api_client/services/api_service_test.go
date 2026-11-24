@@ -28,7 +28,7 @@ type stubRepo struct {
 	getLintRes   func(ctx context.Context, apiID string) ([]models.LintResult, error)
 	listLintRes  func(ctx context.Context) ([]models.LintResult, error)
 	getApis      func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error)
-	searchApis   func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error)
+	searchApis   func(ctx context.Context, page, perPage int, organisations []string, query string) ([]models.Api, models.Pagination, error)
 	saveServer   func(server models.Server) error
 	saveApi      func(api *models.Api) error
 	saveOrg      func(org *models.Organisation) error
@@ -72,9 +72,9 @@ func (s *stubRepo) ListLintResults(ctx context.Context) ([]models.LintResult, er
 func (s *stubRepo) GetApis(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error) {
 	return s.getApis(ctx, page, perPage, p, sorting)
 }
-func (s *stubRepo) SearchApis(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
+func (s *stubRepo) SearchApis(ctx context.Context, page, perPage int, organisations []string, query string) ([]models.Api, models.Pagination, error) {
 	if s.searchApis != nil {
-		return s.searchApis(ctx, page, perPage, organisation, query)
+		return s.searchApis(ctx, page, perPage, organisations, query)
 	}
 	return []models.Api{}, models.Pagination{}, nil
 }
@@ -902,8 +902,8 @@ func TestListApis_ForwardsAllFilters(t *testing.T) {
 	query := "digid"
 	repo := &stubRepo{
 		getApis: func(ctx context.Context, page, perPage int, p *models.ApiFiltersParams, sorting models.ApiSort) ([]models.Api, models.Pagination, error) {
-			if assert.NotNil(t, p.Organisation) {
-				assert.Equal(t, orgURI, *p.Organisation)
+			if assert.Len(t, p.Organisation, 1) {
+				assert.Equal(t, orgURI, p.Organisation[0])
 			}
 			assert.Equal(t, query, p.Query)
 			assert.Equal(t, []string{"active"}, p.Status)
@@ -919,7 +919,7 @@ func TestListApis_ForwardsAllFilters(t *testing.T) {
 	params := &models.ListApisParams{
 		Page:         1,
 		PerPage:      10,
-		Organisation: &orgURI,
+		Organisation: []string{orgURI},
 		Query:        query,
 		Status:       []string{"active"},
 		OasVersion:   []string{"3.0.0"},
@@ -973,11 +973,11 @@ func TestListApis_RejectsInvalidSortBeforeCallingRepository(t *testing.T) {
 func TestSearchApis_TrimsQueryAndAppliesDefaultLimit(t *testing.T) {
 	called := false
 	repo := &stubRepo{
-		searchApis: func(ctx context.Context, page, perPage int, organisation *string, query string) ([]models.Api, models.Pagination, error) {
+		searchApis: func(ctx context.Context, page, perPage int, organisations []string, query string) ([]models.Api, models.Pagination, error) {
 			called = true
 			assert.Equal(t, 1, page)
 			assert.Equal(t, 0, perPage)
-			assert.Nil(t, organisation)
+			assert.Empty(t, organisations)
 			assert.Equal(t, "digid", query)
 			return []models.Api{{
 					Id:           "api-1",
@@ -1042,7 +1042,9 @@ func TestGetApiFilters_ReturnsRequestedGroups(t *testing.T) {
 	assert.Contains(t, keys, "auth")
 	for _, g := range groups {
 		if g.Key == "organisation" {
-			assert.Equal(t, "single-select", g.Type)
+			assert.Equal(t, "search-multi-select", g.Type)
+			require.NotNil(t, g.ShowTop)
+			assert.Equal(t, 10, *g.ShowTop)
 			assert.Equal(t, "Voorbeeld Org", g.Options[0].Label)
 		}
 		if g.Key == "status" {
@@ -1050,6 +1052,42 @@ func TestGetApiFilters_ReturnsRequestedGroups(t *testing.T) {
 			assert.True(t, g.Options[0].Selected)
 		}
 	}
+}
+
+func TestGetApiFilters_SelectsEveryChosenOrganisation(t *testing.T) {
+	repo := &stubRepo{
+		filterCounts: func(ctx context.Context, p *models.ApiFiltersParams) (*models.ApiFilterCounts, error) {
+			return &models.ApiFilterCounts{
+				Organisation: []models.FilterCount{
+					{Value: "https://example.org/a", Label: "Alpha", Count: 2},
+					{Value: "https://example.org/z", Label: "Zulu", Count: 40},
+					{Value: "https://example.org/m", Label: "Mike", Count: 7},
+				},
+			}, nil
+		},
+	}
+	service := services.NewAPIsAPIService(repo)
+
+	groups, err := service.GetApiFilters(context.Background(), &models.ApiFiltersParams{
+		Organisation: []string{"https://example.org/a", "https://example.org/m"},
+	})
+	require.NoError(t, err)
+
+	var organisation *models.FilterGroup
+	for i := range groups {
+		if groups[i].Key == "organisation" {
+			organisation = &groups[i]
+		}
+	}
+	require.NotNil(t, organisation)
+	require.NoError(t, organisation.Validate())
+	// The largest come first, and every chosen organisation is selected.
+	assert.Equal(t, []string{"Zulu", "Mike", "Alpha"}, []string{
+		organisation.Options[0].Label, organisation.Options[1].Label, organisation.Options[2].Label,
+	})
+	assert.Equal(t, []bool{false, true, true}, []bool{
+		organisation.Options[0].Selected, organisation.Options[1].Selected, organisation.Options[2].Selected,
+	})
 }
 
 func TestGetApiFilters_KeepsSelectedOptionsWithoutCount(t *testing.T) {
@@ -1063,7 +1101,7 @@ func TestGetApiFilters_KeepsSelectedOptionsWithoutCount(t *testing.T) {
 
 	groups, err := service.GetApiFilters(context.Background(), &models.ApiFiltersParams{
 		Query:        "bla",
-		Organisation: &org,
+		Organisation: []string{org},
 		Status:       []string{"deprecated"},
 		OasVersion:   []string{"3.1.0"},
 		AdrScore:     []string{"88"},

@@ -246,12 +246,27 @@ func TestApiRepository_SearchApisFiltersByTitleAndOrganisation(t *testing.T) {
 		{Id: "other-a", OasUri: "https://example.com/other.yaml", Title: "Batch API", OrganisationID: &orgA},
 	}).Error)
 
-	results, pagination, err := repo.SearchApis(ctx, 1, 10, &orgA, "realtime")
+	results, pagination, err := repo.SearchApis(ctx, 1, 10, []string{orgA}, "realtime")
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	assert.Equal(t, "match-a", results[0].Id)
 	assert.Equal(t, 1, pagination.TotalRecords)
 	assert.Equal(t, 1, pagination.TotalPages)
+
+	// Several organisations match any of them.
+	results, pagination, err = repo.SearchApis(ctx, 1, 10, []string{orgA, orgB}, "realtime")
+	require.NoError(t, err)
+	ids := []string{}
+	for _, api := range results {
+		ids = append(ids, api.Id)
+	}
+	assert.ElementsMatch(t, []string{"match-a", "match-b"}, ids)
+	assert.Equal(t, 2, pagination.TotalRecords)
+
+	list, _, err := repo.GetApis(ctx, 1, 10, &models.ApiFiltersParams{Organisation: []string{orgA, orgB}},
+		models.ApiSort{Field: models.ApiSortTitle, Order: models.ApiSortAscending})
+	require.NoError(t, err)
+	assert.Len(t, list, 3)
 }
 
 func TestApiRepository_SearchApisTreatsLikeWildcardsAsLiterals(t *testing.T) {
@@ -375,7 +390,7 @@ func TestApiRepository_GetApiFilterCounts_SortsOrganisationsAlphabetically(t *te
 	require.NoError(t, db.Create(&apis).Error)
 
 	selectedOrganisation := orgB.Uri
-	counts, err := repo.GetApiFilterCounts(ctx, &models.ApiFiltersParams{Organisation: &selectedOrganisation})
+	counts, err := repo.GetApiFilterCounts(ctx, &models.ApiFiltersParams{Organisation: []string{selectedOrganisation}})
 	require.NoError(t, err)
 	require.Len(t, counts.Organisation, 3)
 

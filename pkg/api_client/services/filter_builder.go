@@ -17,12 +17,16 @@ func buildStatusGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCounts
 	}
 }
 
+// organisationShowTop is how many organisations the filter shows before the
+// user searches or expands the list.
+const organisationShowTop = 10
+
 func buildOrganisationGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCounts) models.FilterGroup {
-	selected := map[string]bool{}
-	if p != nil && p.Organisation != nil {
-		if value := strings.TrimSpace(*p.Organisation); value != "" {
-			selected[value] = true
-		}
+	var selected map[string]bool
+	if p != nil {
+		selected = selectedSet(p.Organisation)
+	} else {
+		selected = map[string]bool{}
 	}
 
 	options := make([]models.FilterOption, 0, len(counts.Organisation))
@@ -45,13 +49,17 @@ func buildOrganisationGroup(p *models.ApiFiltersParams, counts *models.ApiFilter
 			Selected: true,
 		}
 	})
+	// A search-multi-select shows only the first options, so the largest go first.
+	commonfilters.SortOptionsByCount(options)
 
+	showTop := organisationShowTop
 	return models.FilterGroup{
 		Key:         "organisation",
 		Label:       "Organisatie",
 		Description: "De organisatie die eigenaar is van de API.",
-		Type:        "single-select",
+		Type:        commonfilters.TypeSearchMultiSelect,
 		Options:     options,
+		ShowTop:     &showTop,
 	}
 }
 

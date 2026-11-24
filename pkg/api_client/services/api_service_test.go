@@ -1042,7 +1042,9 @@ func TestGetApiFilters_ReturnsRequestedGroups(t *testing.T) {
 	assert.Contains(t, keys, "auth")
 	for _, g := range groups {
 		if g.Key == "organisation" {
-			assert.Equal(t, "single-select", g.Type)
+			assert.Equal(t, "search-single-select", g.Type)
+			require.NotNil(t, g.ShowTop)
+			assert.Equal(t, 10, *g.ShowTop)
 			assert.Equal(t, "Voorbeeld Org", g.Options[0].Label)
 		}
 		if g.Key == "status" {

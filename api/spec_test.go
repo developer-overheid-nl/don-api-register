@@ -120,3 +120,18 @@ func collectNullExamples(value any, path string, found *[]string) {
 func endsWithExamplesPath(path string) bool {
 	return len(path) >= len(".examples") && path[len(path)-len(".examples"):] == ".examples"
 }
+
+func TestFilterGroupDocumentsSearchSelect(t *testing.T) {
+	var spec map[string]any
+	require.NoError(t, json.Unmarshal(OpenAPIJSON(), &spec))
+
+	schemas := spec["components"].(map[string]any)["schemas"].(map[string]any)
+	properties := schemas["FilterGroup"].(map[string]any)["properties"].(map[string]any)
+	enum := properties["type"].(map[string]any)["enum"]
+	assert.Contains(t, enum, "search-single-select")
+	assert.Contains(t, enum, "search-multi-select")
+	assert.NotContains(t, enum, "search-select")
+	showTop := properties["showTop"].(map[string]any)
+	assert.Equal(t, "integer", showTop["type"])
+	assert.Equal(t, float64(1), showTop["minimum"])
+}

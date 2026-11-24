@@ -17,6 +17,10 @@ func buildStatusGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCounts
 	}
 }
 
+// organisationShowTop is how many organisations the filter shows before the
+// user searches or expands the list.
+const organisationShowTop = 10
+
 func buildOrganisationGroup(p *models.ApiFiltersParams, counts *models.ApiFilterCounts) models.FilterGroup {
 	selected := map[string]bool{}
 	if p != nil && p.Organisation != nil {
@@ -45,13 +49,17 @@ func buildOrganisationGroup(p *models.ApiFiltersParams, counts *models.ApiFilter
 			Selected: true,
 		}
 	})
+	// A search-single-select shows only the first options, so the largest go first.
+	commonfilters.SortOptionsByCount(options)
 
+	showTop := organisationShowTop
 	return models.FilterGroup{
 		Key:         "organisation",
 		Label:       "Organisatie",
 		Description: "De organisatie die eigenaar is van de API.",
-		Type:        "single-select",
+		Type:        commonfilters.TypeSearchSingleSelect,
 		Options:     options,
+		ShowTop:     &showTop,
 	}
 }
 
